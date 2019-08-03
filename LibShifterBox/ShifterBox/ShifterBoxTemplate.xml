@@ -10,10 +10,6 @@
                     <Controls>
                         <Backdrop name="$(parent)Frame" edgeColor="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_NORMAL">
                             <AnchorFill />
-                            <OnInitialized>
-                                self:SetCenterColor(0, 0, 0, 1)
-                                self:SetEdgeTexture(nil, 1, 1, 1)
-                            </OnInitialized>
                         </Backdrop>
                     </Controls>
                 </Control>
@@ -23,37 +19,16 @@
                     <Controls>
                         <Backdrop name="$(parent)Frame" edgeColor="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_NORMAL">
                             <AnchorFill />
-                            <OnInitialized>
-                                self:SetCenterColor(0, 0, 0, 1)
-                                self:SetEdgeTexture(nil, 1, 1, 1)
-                            </OnInitialized>
                         </Backdrop>
                     </Controls>
                 </Control>
                 <Button name="$(parent)ToRightButton" inherits="ZO_ButtonBehaviorClickSound">
                     <Dimensions x="40" y="40" />
-                    <Anchor point="TOPLEFT" relativeTo="$(parent)LeftList" relativePoint="TOPRIGHT" offsetX="0" offsetY="70" />
+                    <Anchor point="TOPRIGHT" relativeTo="$(parent)Right" relativePoint="TOPLEFT" offsetX="0" offsetY="70" />
                     <Textures normal="/esoui/art/buttons/large_rightarrow_up.dds"
                               pressed="/esoui/art/buttons/large_rightarrow_down.dds"
                               mouseOver="/esoui/art/buttons/large_rightarrow_over.dds"
                               disabled="/esoui/art/buttons/large_rightarrow_disabled.dds"/>
-                    <OnClicked>
-                        d("One to the right!")
-                        local leftListContents = self:GetParent():GetNamedChild("LeftList"):GetNamedChild("Contents")
-                        local leftListRowCount = leftListContents:GetNumChildren()
-                        if leftListRowCount == 0 then
-                            self:SetState(BSTATE_DISABLED, true)
-                        else
-                            self:SetState(BSTATE_NORMAL, false)
-                        end
-                    </OnClicked>
-                    <OnInitialized>
-                        local leftListContents = self:GetParent():GetNamedChild("LeftList"):GetNamedChild("Contents")
-                        local leftListRowCount = leftListContents:GetNumChildren()
-                        if leftListRowCount == 0 then
-                            self:SetState(BSTATE_DISABLED, true)
-                        end
-                    </OnInitialized>
                 </Button>
                 <Button name="$(parent)ToLeftButton" inherits="ZO_ButtonBehaviorClickSound">
                     <Dimensions x="40" y="40" />
@@ -62,23 +37,6 @@
                               pressed="/esoui/art/buttons/large_leftarrow_down.dds"
                               mouseOver="/esoui/art/buttons/large_leftarrow_over.dds"
                               disabled="/esoui/art/buttons/large_leftarrow_disabled.dds"/>
-                    <OnClicked>
-                        d("One to the left!")
-                        local rightListContents = self:GetParent():GetNamedChild("RightList"):GetNamedChild("Contents")
-                        local rightListRowCount = rightListContents:GetNumChildren()
-                        if rightListRowCount == 0 then
-                            self:SetState(BSTATE_DISABLED, true)
-                        else
-                            self:SetState(BSTATE_NORMAL, false)
-                        end
-                    </OnClicked>
-                    <OnInitialized>
-                        local rightListContents = self:GetParent():GetNamedChild("RightList"):GetNamedChild("Contents")
-                        local rightListRowCount = rightListContents:GetNumChildren()
-                        if rightListRowCount == 0 then
-                            self:SetState(BSTATE_DISABLED, true)
-                        end
-                    </OnInitialized>
                 </Button>
             </Controls>
         </Control>
