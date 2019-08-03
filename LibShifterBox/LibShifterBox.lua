@@ -33,6 +33,8 @@ ShifterBoxList.SORT_KEYS = {
 
 function ShifterBoxList:New(control)
     local obj = ZO_SortFilterList.New(self, control)
+    -- TODO: review all - not really working anyway?
+    obj.buttonControl = control:GetNamedChild("Button")
     return obj
 end
 
@@ -44,8 +46,6 @@ function ShifterBoxList:Initialize(control)
     -- default sorting key
     self.sortHeaderGroup:SelectHeaderByKey("value")
     ZO_SortHeader_OnMouseExit(self.control:GetNamedChild("Headers"):GetNamedChild("Value"))
-    -- place where the entries are stored
-    self.entries = {}
     -- define the datatype for this list and enable the highlighting
     ZO_ScrollList_AddDataType(self.list, DATA_TYPE_DEFAULT, "ShifterBoxEntryTemplate", 36, function(control, data) self:SetupRowEntry(control, data) end)
     ZO_ScrollList_EnableHighlight(self.list, "ZO_ThinListHighlight")
@@ -54,22 +54,15 @@ function ShifterBoxList:Initialize(control)
     self:RefreshData()
 end
 
-function ShifterBoxList:SetDataList(dataList)
-    self.entries = {}
-    for _, data in pairs(dataList) do
-        table.insert(self.entries, data)
-    end
-end
-
 function ShifterBoxList:FilterScrollList()
     -- get the data of the scrollist and index it
     local scrollData = ZO_ScrollList_GetDataList(self.list)
     ZO_ClearNumericallyIndexedTable(scrollData)
     -- populate the table that is used as source for the list
-    for _, entry in pairs(self.entries) do
+    for key, value in pairs(self.control.entries) do
         local rowData = {
-            key = entry.key,
-            value = entry.value
+            key = key,
+            value = value
         }
         table.insert(scrollData, ZO_ScrollList_CreateDataEntry(DATA_TYPE_DEFAULT, rowData, DATA_CATEGORY_DEFAULT))
     end
@@ -88,6 +81,19 @@ function ShifterBoxList:SetupRowEntry(rowControl, rowData)
     local function onRowMouseExit(rowControl)
         self:Row_OnMouseExit(rowControl)
     end
+    local function onRowClicked(rowControl)
+        -- TODO: implement logic to mark entries
+        d("OnClicked")
+    end
+    local function onRowMouseDoubleClick(rowControl)
+        -- TODO: implement logic to shift entry
+        d("OnMouseDoubleClick")
+
+        -- remove the entry and refresh the lists
+        local data = rowControl.data
+        self.control.entries[data.key] = nil
+        self:Refresh()
+    end
 
     -- store the rowData on the control so it can be accessed from other places
     rowControl.data = rowData
@@ -100,12 +106,29 @@ function ShifterBoxList:SetupRowEntry(rowControl, rowData)
     rowControl:SetHandler("OnMouseEnter", onRowMouseEnter)
     rowControl:SetHandler("OnMouseExit", onRowMouseExit)
 
+    -- handle single clicks to mark entry
+    rowControl:SetHandler("OnClicked", onRowClicked)
+
+    -- handle double-clicks as well to directly shift
+    rowControl:SetHandler("OnMouseDoubleClick", onRowMouseDoubleClick)
+
     ZO_SortFilterList.SetupRow(self, rowControl, rowData)
 end
 
 function ShifterBoxList:Refresh()
+    if #self.control.entries == 0 then
+        self.buttonControl:SetState(BSTATE_DISABLED, true)
+    else
+        self.buttonControl:SetState(BSTATE_NORMAL, false)
+    end
     self:RefreshData()
 end
+
+
+
+
+
+
 
 
 -- =================================================================================================================
@@ -121,12 +144,10 @@ local function initShifterBoxControls(parentObj, leftListTitle, rightListTitle)
 
     local leftControl = control:GetNamedChild("Left")
     local leftListControl = leftControl:GetNamedChild("List")
-    local leftListContentsControl = leftListControl:GetNamedChild("Contents")
     local leftButtonControl = leftControl:GetNamedChild("Button")
 
     local rightControl = control:GetNamedChild("Right")
     local rightListControl = rightControl:GetNamedChild("List")
-    local rightListContentsControl = rightListControl:GetNamedChild("Contents")
     local rightButtonControl = rightControl:GetNamedChild("Button")
 
     local function initListFrames(parentListControl)
@@ -152,41 +173,21 @@ local function initShifterBoxControls(parentObj, leftListTitle, rightListTitle)
         end
     end
 
-    local function initButtonState(buttonControl, listContentControl)
-        local listRowCount = listContentControl:GetNumChildren()
-        if listRowCount == 0 then
-            buttonControl:SetState(BSTATE_DISABLED, true)
-        end
-    end
-
     local function leftButtonClicked(buttonControl)
         d("One to the left!")
 
         -- TODO: implement whole entry-moving!
+        --      allow selecting entries by clicking
         --      get the "entries" index
         --      remove the entries index
         --      add it to the other table
         --      refresh both tables
-
-        local rightListRowCount = rightListContentsControl:GetNumChildren()
-        if rightListRowCount == 0 then
-            buttonControl:SetState(BSTATE_DISABLED, true)
-        else
-            buttonControl:SetState(BSTATE_NORMAL, false)
-        end
     end
 
     local function rightButtonClicked(buttonControl)
         d("One to the right!")
 
         -- TODO: implement whole entry-moving!
-
-        local leftListRowCount = leftListContentsControl:GetNumChildren()
-        if leftListRowCount == 0 then
-            buttonControl:SetState(BSTATE_DISABLED, true)
-        else
-            buttonControl:SetState(BSTATE_NORMAL, false)
-        end
     end
 
     -- initialise the headers
@@ -196,17 +197,18 @@ local function initShifterBoxControls(parentObj, leftListTitle, rightListTitle)
     initListFrames(leftListControl)
     initListFrames(rightListControl)
 
-    -- initialize the button state (i.e. disable button when there are no entries to be moved)
-    initButtonState(leftButtonControl, leftListContentsControl)
-    initButtonState(rightButtonControl, rightListContentsControl)
-
     -- initialize the handler when the buttons are clicked
     leftButtonControl:SetHandler("OnClicked", leftButtonClicked)
     rightButtonControl:SetHandler("OnClicked", rightButtonClicked)
-
-
-    -- TODO: initialize the titles for the two listBoxes (or not if omitted)
 end
+
+--local function createAndInitShifterBoxList(sideControl)
+--    -- init the empty list on the leftList/rightList control
+--    sideControl.entries = {}
+--    -- create the ShifterBoxList object (with the empty list)
+--    local sideList = ShifterBoxList:New(sideControl)
+--    return sideList
+--end
 
 -- =================================================================================================================
 -- == SHIFTERBOX FUNCTIONS == --
@@ -233,18 +235,15 @@ function ShifterBox:New(uniqueAddonName, uniqueShifterBoxName, parentControl, le
     initShifterBoxControls(obj, leftListTitle, rightListTitle)
 
     -- initialize the ShifterBoxLists
-    obj.leftList = ShifterBoxList:New(obj.shifterBoxControl:GetNamedChild("Left"))
-    obj.rightList = ShifterBoxList:New(obj.shifterBoxControl:GetNamedChild("Right"))
+    local leftControl = obj.shifterBoxControl:GetNamedChild("Left")
+    local rightControl = obj.shifterBoxControl:GetNamedChild("Right")
+    leftControl.entries = {}
+    rightControl.entries = {}
+    obj.leftList = ShifterBoxList:New(leftControl)
+    obj.rightList = ShifterBoxList:New(rightControl)
 
-    -- TODO: Temporary - remove later!
-    obj.leftList:SetDataList({
-        { key = 1, value = "Goodbye_1"},
-        { key = 2, value = "SeeYou_2"},
-        { key = 3, value = "Farewell_3"},
-        { key = 4, value = "Greetings_4"},
-        { key = 5, value = "Alloha_5"},
-        { key = 6, value = "ZeeYa_6"},
-    })
+--    obj.leftList = createAndInitShifterBoxList(leftControl)
+--    obj.rightList = createAndInitShifterBoxList(rightControl)
 
     addonShifterBoxes[uniqueShifterBoxName] = obj
     return addonShifterBoxes[uniqueShifterBoxName]
@@ -303,20 +302,37 @@ function ShifterBox:SetHidden(hidden)
     self:SetHidden(hidden)
 end
 
-function ShifterBox:AddEntryToLeftList(key, value)
-    -- TODO: find correct list to populate
-    d("self.leftList.entries")
-    d(self.leftList.entries)
-    table.insert(self.leftList.entries, { key = key, value = value })
-
-    -- Refresh the visualisation of the data
+function ShifterBox:SetLeftListData(dataList)
+    local leftControl = self.leftList.control
+    leftControl.entries = dataList
     self.leftList:Refresh()
-
-    -- TODO: Add entry to left list
 end
 
-function ShifterBox:AddEntryToRightList(key, value)
-    -- TODO: Add entry to right list
+function ShifterBox:AddEntryToLeftList(key, value, overwrite)
+    local leftControl = self.leftList.control
+    -- only add entry to list if key does not exist yet, or if overwrite is set to true
+    if leftControl.entries[key] == nil or overwrite == true then
+        table.insert(leftControl.entries, key, value)
+        -- Refresh the visualisation of the data
+        self.leftList:Refresh()
+
+    end
+end
+
+function ShifterBox:SetRightListData(dataList)
+    local rightControl = self.rightList.control
+    rightControl.entries = dataList
+    self.rightList:Refresh()
+end
+
+function ShifterBox:AddEntryToRightList(key, value, overwrite)
+    local rightControl = self.rightList.control
+    -- only add entry to list if key does not exist yet, or if overwrite is set to true
+    if rightControl.entries[key] == nil or overwrite == true then
+        table.insert(rightControl.entries, key, value)
+        -- Refresh the visualisation of the data
+        self.rightList:Refresh()
+    end
 end
 
 function ShifterBox:RemoveEntryFromLeftList(key)
