@@ -4,48 +4,60 @@
         <Control name="ShifterBoxTemplate" virtual="true">
             <Controls>
 
-                <Control name="$(parent)LeftList" inherits="ZO_ScrollList">
+                <Control name="$(parent)Left">
                     <Anchor point="TOPLEFT" />
-                    <Dimensions x="180" y="220" />
                     <Controls>
-                        <Backdrop name="$(parent)Frame" edgeColor="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_NORMAL">
-                            <AnchorFill />
-                        </Backdrop>
+                        <Control name="$(parent)List" inherits="ZO_ScrollList">
+                            <Anchor point="TOPLEFT" />
+                            <Dimensions x="180" y="220" />
+                            <Controls>
+                                <Backdrop name="$(parent)Frame" edgeColor="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_NORMAL">
+                                    <AnchorFill />
+                                </Backdrop>
+                            </Controls>
+                        </Control>
+                        <Button name="$(parent)Button" inherits="ZO_ButtonBehaviorClickSound">
+                            <Dimensions x="40" y="40" />
+                            <Anchor point="BOTTOMLEFT" relativeTo="$(parent)List" relativePoint="BOTTOMRIGHT" offsetX="-2" offsetY="-70" />
+                            <Textures normal="/esoui/art/buttons/large_leftarrow_up.dds"
+                                      pressed="/esoui/art/buttons/large_leftarrow_down.dds"
+                                      mouseOver="/esoui/art/buttons/large_leftarrow_over.dds"
+                                      disabled="/esoui/art/buttons/large_leftarrow_disabled.dds"/>
+                        </Button>
                     </Controls>
                 </Control>
-                <Control name="$(parent)RightList" inherits="ZO_ScrollList">
+
+                <Control name="$(parent)Right">
                     <Anchor point="TOPLEFT" relativeTo="$(parent)LeftList" relativePoint="TOPRIGHT" offsetX="40" />
-                    <Dimensions x="180" y="220" />
                     <Controls>
-                        <Backdrop name="$(parent)Frame" edgeColor="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_NORMAL">
-                            <AnchorFill />
-                        </Backdrop>
+                        <Control name="$(parent)List" inherits="ZO_ScrollList">
+                            <Anchor point="TOPLEFT" />
+                            <Dimensions x="180" y="220" />
+                            <Controls>
+                                <Backdrop name="$(parent)Frame" edgeColor="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_NORMAL">
+                                    <AnchorFill />
+                                </Backdrop>
+                            </Controls>
+                        </Control>
+                        <Button name="$(parent)Button" inherits="ZO_ButtonBehaviorClickSound">
+                            <Dimensions x="40" y="40" />
+                            <Anchor point="TOPRIGHT" relativeTo="$(parent)List" relativePoint="TOPLEFT" offsetX="0" offsetY="70" />
+                            <Textures normal="/esoui/art/buttons/large_rightarrow_up.dds"
+                                      pressed="/esoui/art/buttons/large_rightarrow_down.dds"
+                                      mouseOver="/esoui/art/buttons/large_rightarrow_over.dds"
+                                      disabled="/esoui/art/buttons/large_rightarrow_disabled.dds"/>
+                        </Button>
                     </Controls>
                 </Control>
-                <Button name="$(parent)ToRightButton" inherits="ZO_ButtonBehaviorClickSound">
-                    <Dimensions x="40" y="40" />
-                    <Anchor point="TOPRIGHT" relativeTo="$(parent)Right" relativePoint="TOPLEFT" offsetX="0" offsetY="70" />
-                    <Textures normal="/esoui/art/buttons/large_rightarrow_up.dds"
-                              pressed="/esoui/art/buttons/large_rightarrow_down.dds"
-                              mouseOver="/esoui/art/buttons/large_rightarrow_over.dds"
-                              disabled="/esoui/art/buttons/large_rightarrow_disabled.dds"/>
-                </Button>
-                <Button name="$(parent)ToLeftButton" inherits="ZO_ButtonBehaviorClickSound">
-                    <Dimensions x="40" y="40" />
-                    <Anchor point="BOTTOMLEFT" relativeTo="$(parent)LeftList" relativePoint="BOTTOMRIGHT" offsetX="-2" offsetY="-70" />
-                    <Textures normal="/esoui/art/buttons/large_leftarrow_up.dds"
-                              pressed="/esoui/art/buttons/large_leftarrow_down.dds"
-                              mouseOver="/esoui/art/buttons/large_leftarrow_over.dds"
-                              disabled="/esoui/art/buttons/large_leftarrow_disabled.dds"/>
-                </Button>
+
             </Controls>
         </Control>
 
-        <Button name="ShifterBoxEntryTemplate" virtual="true">
+        <Button name="ShifterBoxEntryTemplate" verticalAlignment="CENTER" horizontalAlignment="LEFT" virtual="true">
             <Dimensions x="180" y="36" />
             <Controls>
                 <Label name="$(parent)Label" font="ZoFontGame" verticalAlignment="CENTER" horizontalAlignment="LEFT">
-                    <Anchor point="LEFT" />
+                    <Anchor point="LEFT" offsetX="10"/>
                     <Dimensions x="180" y="36" />
                 </Label>
             </Controls>
