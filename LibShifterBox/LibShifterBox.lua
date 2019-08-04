@@ -16,6 +16,14 @@ local DATA_CATEGORY_DEFAULT = 1
 
 local existingShifterBoxes = {}
 
+-- TODO: implement these settings
+lib.defaultSettings = {
+    sortBy = "value",      -- TODO: support "value" and "key" (and nil?)
+    showLeftAllButton = false,
+    showRightAllButton = false,
+    rowHeight = 36,
+}
+
 -- =================================================================================================================
 -- == LIBRARY LISTS == --
 -- -----------------------------------------------------------------------------------------------------------------
@@ -26,14 +34,15 @@ ShifterBoxList.SORT_KEYS = {
     ["key"] = {tiebreaker="value"}
 }
 
-function ShifterBoxList:New(control)
-    local obj = ZO_SortFilterList.New(self, control)
+function ShifterBoxList:New(control, rowHeight)
+    local obj = ZO_SortFilterList.New(self, control, rowHeight)
     obj.buttonControl = control:GetNamedChild("Button")
     obj.numSelected = 0
     return obj
 end
 
-function ShifterBoxList:Initialize(control)
+function ShifterBoxList:Initialize(control, rowHeight)
+    self.rowHeight = rowHeight
     -- initialize the SortFilterList
     ZO_SortFilterList.Initialize(self, control)
     -- set a text that is displayed when there are no entries
@@ -42,7 +51,7 @@ function ShifterBoxList:Initialize(control)
     self.sortHeaderGroup:SelectHeaderByKey("value")
     ZO_SortHeader_OnMouseExit(self.control:GetNamedChild("Headers"):GetNamedChild("Value"))
     -- define the datatype for this list and enable the highlighting
-    ZO_ScrollList_AddDataType(self.list, DATA_TYPE_DEFAULT, "ShifterBoxEntryTemplate", 36, function(control, data) self:SetupRowEntry(control, data) end)
+    ZO_ScrollList_AddDataType(self.list, DATA_TYPE_DEFAULT, "ShifterBoxEntryTemplate", self.rowHeight, function(control, data) self:SetupRowEntry(control, data) end)
     ZO_ScrollList_EnableHighlight(self.list, "ZO_ThinListHighlight")
     -- set up sorting function and refresh all data
     self.sortFunction = function(listEntry1, listEntry2) return ZO_TableOrderingFunction(listEntry1.data, listEntry2.data, self.currentSortKey, ShifterBoxList.SORT_KEYS, self.currentSortOrder) end
@@ -67,6 +76,9 @@ function ShifterBoxList:SortScrollList()
     -- get all data and sort it
     local scrollData = ZO_ScrollList_GetDataList(self.list)
     table.sort(scrollData, self.sortFunction)
+    if self.numSelected and self.numSelected > 0 then
+        self:UnselectAll()
+    end
 end
 
 function ShifterBoxList:SetupRowEntry(rowControl, rowData)
@@ -108,6 +120,9 @@ function ShifterBoxList:SetupRowEntry(rowControl, rowData)
 
     -- handle single clicks to mark entry
     rowControl:SetHandler("OnClicked", onRowClicked)
+
+   -- set the height for the row
+    rowControl:SetHeight(self.rowHeight)
 
     ZO_SortFilterList.SetupRow(self, rowControl, rowData)
 end
@@ -241,6 +256,17 @@ local function initShifterBoxHandlers(self)
     fromRightButtonControl:SetHandler("OnClicked", toLeftButtonClicked)
 end
 
+local function getMergedSettings(customSettings)
+    -- if no custom settings provided, use the default ones
+    if customSettings == nil then return lib.defaultSettings end
+    return {
+        sortBy = customSettings.sortBy or lib.defaultSettings.sortBy,
+        showLeftAllButton = customSettings.showLeftAllButton or lib.defaultSettings.showLeftAllButton,
+        showRightAllButton = customSettings.showRightAllButton or lib.defaultSettings.showRightAllButton,
+        rowHeight = customSettings.rowHeight or lib.defaultSettings.rowHeight,
+    }
+end
+
 -- =================================================================================================================
 -- == SHIFTERBOX FUNCTIONS == --
 -- -----------------------------------------------------------------------------------------------------------------
@@ -252,7 +278,8 @@ local ShifterBox = ZO_Object:Subclass()
 -- @param parentControl - the control reference to which the shifterBox should be added as a child
 -- @param leftListTitle - the title for the left listBox (can be empty)
 -- @param rightListTitle - the title for the right listBox (can be empty)
-function ShifterBox:New(uniqueAddonName, uniqueShifterBoxName, parentControl, leftListTitle, rightListTitle)
+-- @param customSettings - custom settings table (can be empty, default settings will be used then)
+function ShifterBox:New(uniqueAddonName, uniqueShifterBoxName, parentControl, leftListTitle, rightListTitle, customSettings)
     if existingShifterBoxes[uniqueAddonName] == nil then
         existingShifterBoxes[uniqueAddonName] = {}
     end
@@ -262,6 +289,7 @@ function ShifterBox:New(uniqueAddonName, uniqueShifterBoxName, parentControl, le
     local obj = ZO_Object.New(self)
     obj.addonName = uniqueAddonName
     obj.shifterBoxName = uniqueShifterBoxName
+    obj.shifterBoxSettings = getMergedSettings(customSettings)
     obj.shifterBoxControl = createShifterBox(uniqueAddonName, uniqueShifterBoxName, parentControl)
     initShifterBoxControls(obj, leftListTitle, rightListTitle)
     initShifterBoxHandlers(obj)
@@ -271,8 +299,8 @@ function ShifterBox:New(uniqueAddonName, uniqueShifterBoxName, parentControl, le
     local rightControl = obj.shifterBoxControl:GetNamedChild("Right")
     leftControl.entries = {}
     rightControl.entries = {}
-    obj.leftList = ShifterBoxList:New(leftControl)
-    obj.rightList = ShifterBoxList:New(rightControl)
+    obj.leftList = ShifterBoxList:New(leftControl, obj.shifterBoxSettings.rowHeight)
+    obj.rightList = ShifterBoxList:New(rightControl, obj.shifterBoxSettings.rowHeight)
 
     -- register the shifterBox in the internal list and return it
     addonShifterBoxes[uniqueShifterBoxName] = obj
