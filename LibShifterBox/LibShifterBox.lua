@@ -14,11 +14,6 @@ local HEADER_HEIGHT = 32
 local DATA_TYPE_DEFAULT = 1
 local DATA_CATEGORY_DEFAULT = 1
 
--- TODO: remove if no default settings to be added
-lib.defaultSettings = {
-
-}
-
 local existingShifterBoxes = {}
 
 -- =================================================================================================================
@@ -33,8 +28,6 @@ ShifterBoxList.SORT_KEYS = {
 
 function ShifterBoxList:New(control)
     local obj = ZO_SortFilterList.New(self, control)
-    -- TODO: review all - not really working anyway?
-    obj.buttonControl = control:GetNamedChild("Button")
     return obj
 end
 
@@ -76,23 +69,19 @@ end
 
 function ShifterBoxList:SetupRowEntry(rowControl, rowData)
     local function onRowMouseEnter(rowControl)
-        self:Row_OnMouseEnter(rowControl)
+--        self:Row_OnMouseEnter(rowControl)
     end
     local function onRowMouseExit(rowControl)
-        self:Row_OnMouseExit(rowControl)
+--        self:Row_OnMouseExit(rowControl)
     end
     local function onRowClicked(rowControl)
-        -- TODO: implement logic to mark entries
-        d("OnClicked")
-    end
-    local function onRowMouseDoubleClick(rowControl)
-        -- TODO: implement logic to shift entry
-        d("OnMouseDoubleClick")
-
-        -- remove the entry and refresh the lists
-        local data = rowControl.data
-        self.control.entries[data.key] = nil
-        self:Refresh()
+        if rowControl.selected and rowControl.selected == true then
+            self:Row_OnMouseExit(rowControl)
+            rowControl.selected = false
+        else
+            self:Row_OnMouseEnter(rowControl)
+            rowControl.selected = true
+        end
     end
 
     -- store the rowData on the control so it can be accessed from other places
@@ -109,19 +98,21 @@ function ShifterBoxList:SetupRowEntry(rowControl, rowData)
     -- handle single clicks to mark entry
     rowControl:SetHandler("OnClicked", onRowClicked)
 
-    -- handle double-clicks as well to directly shift
-    rowControl:SetHandler("OnMouseDoubleClick", onRowMouseDoubleClick)
-
     ZO_SortFilterList.SetupRow(self, rowControl, rowData)
 end
 
 function ShifterBoxList:Refresh()
-    if #self.control.entries == 0 then
-        self.buttonControl:SetState(BSTATE_DISABLED, true)
-    else
-        self.buttonControl:SetState(BSTATE_NORMAL, false)
-    end
+    d("===> ShifterBoxList:Refresh()")
     self:RefreshData()
+end
+
+function ShifterBoxList:UnselectAll()
+    local rowControls = self.list.contents
+    for childIndex = 1, rowControls:GetNumChildren() do
+        local rowControl = rowControls:GetChild(childIndex)
+        rowControl.selected = nil
+    end
+    self:Refresh()
 end
 
 
@@ -139,16 +130,17 @@ local function createShifterBox(uniqueAddonName, uniqueShifterBoxName, parentCon
     return CreateControlFromVirtual(shifterBoxName, parentControl, "ShifterBoxTemplate")
 end
 
-local function initShifterBoxControls(parentObj, leftListTitle, rightListTitle)
-    local control = parentObj.shifterBoxControl
+local function moveEntryFromTo(fromList, toList, key)
+    toList[key] = fromList[key]
+    fromList[key] = nil
+end
 
+local function initShifterBoxControls(self, leftListTitle, rightListTitle)
+    local control = self.shifterBoxControl
     local leftControl = control:GetNamedChild("Left")
-    local leftListControl = leftControl:GetNamedChild("List")
-    local leftButtonControl = leftControl:GetNamedChild("Button")
-
     local rightControl = control:GetNamedChild("Right")
-    local rightListControl = rightControl:GetNamedChild("List")
-    local rightButtonControl = rightControl:GetNamedChild("Button")
+    self.rightListControl = rightControl:GetNamedChild("List")
+    self.leftListControl = leftControl:GetNamedChild("List")
 
     local function initListFrames(parentListControl)
         local listFrameControl = parentListControl:GetNamedChild("Frame")
@@ -173,42 +165,51 @@ local function initShifterBoxControls(parentObj, leftListTitle, rightListTitle)
         end
     end
 
-    local function leftButtonClicked(buttonControl)
-        d("One to the left!")
-
-        -- TODO: implement whole entry-moving!
-        --      allow selecting entries by clicking
-        --      get the "entries" index
-        --      remove the entries index
-        --      add it to the other table
-        --      refresh both tables
-    end
-
-    local function rightButtonClicked(buttonControl)
-        d("One to the right!")
-
-        -- TODO: implement whole entry-moving!
-    end
-
     -- initialise the headers
     initHeaders(leftListTitle, rightListTitle)
 
     -- initialize the frame/border around the listBoxes
-    initListFrames(leftListControl)
-    initListFrames(rightListControl)
-
-    -- initialize the handler when the buttons are clicked
-    leftButtonControl:SetHandler("OnClicked", leftButtonClicked)
-    rightButtonControl:SetHandler("OnClicked", rightButtonClicked)
+    initListFrames(self.leftListControl)
+    initListFrames(self.rightListControl)
 end
 
---local function createAndInitShifterBoxList(sideControl)
---    -- init the empty list on the leftList/rightList control
---    sideControl.entries = {}
---    -- create the ShifterBoxList object (with the empty list)
---    local sideList = ShifterBoxList:New(sideControl)
---    return sideList
---end
+local function initShifterBoxHandlers(self)
+    local control = self.shifterBoxControl
+    local leftControl = control:GetNamedChild("Left")
+    local leftButtonControl = leftControl:GetNamedChild("Button")
+    local rightControl = control:GetNamedChild("Right")
+    local rightButtonControl = rightControl:GetNamedChild("Button")
+
+    local function toLeftButtonClicked(buttonControl)
+        local rightListContents = self.rightListControl.contents
+        for childIndex = 1, rightListContents:GetNumChildren() do
+            local rowControl = rightListContents:GetChild(childIndex)
+            if rowControl.selected and rowControl.selected == true then
+                moveEntryFromTo(rightControl.entries, leftControl.entries, rowControl.data.key)
+            end
+        end
+        -- then "unselect" all entries (and inheretly refresh the display)
+        self.leftList:UnselectAll()
+        self.rightList:UnselectAll()
+    end
+
+    local function toRightButtonClicked(buttonControl)
+        local leftListContents = self.leftListControl.contents
+        for childIndex = 1, leftListContents:GetNumChildren() do
+            local rowControl = leftListContents:GetChild(childIndex)
+            if rowControl.selected and rowControl.selected == true then
+                moveEntryFromTo(leftControl.entries, rightControl.entries, rowControl.data.key)
+            end
+        end
+        -- then "unselect" all entries (and inheretly refresh the display)
+        self.leftList:UnselectAll()
+        self.rightList:UnselectAll()
+    end
+
+    -- initialize the handler when the buttons are clicked
+    leftButtonControl:SetHandler("OnClicked", toLeftButtonClicked)
+    rightButtonControl:SetHandler("OnClicked", toRightButtonClicked)
+end
 
 -- =================================================================================================================
 -- == SHIFTERBOX FUNCTIONS == --
@@ -233,6 +234,7 @@ function ShifterBox:New(uniqueAddonName, uniqueShifterBoxName, parentControl, le
     obj.shifterBoxName = uniqueShifterBoxName
     obj.shifterBoxControl = createShifterBox(uniqueAddonName, uniqueShifterBoxName, parentControl)
     initShifterBoxControls(obj, leftListTitle, rightListTitle)
+    initShifterBoxHandlers(obj)
 
     -- initialize the ShifterBoxLists
     local leftControl = obj.shifterBoxControl:GetNamedChild("Left")
@@ -242,9 +244,7 @@ function ShifterBox:New(uniqueAddonName, uniqueShifterBoxName, parentControl, le
     obj.leftList = ShifterBoxList:New(leftControl)
     obj.rightList = ShifterBoxList:New(rightControl)
 
---    obj.leftList = createAndInitShifterBoxList(leftControl)
---    obj.rightList = createAndInitShifterBoxList(rightControl)
-
+    -- register the shifterBox in the internal list and return it
     addonShifterBoxes[uniqueShifterBoxName] = obj
     return addonShifterBoxes[uniqueShifterBoxName]
 end
