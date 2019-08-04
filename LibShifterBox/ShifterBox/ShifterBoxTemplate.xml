@@ -31,11 +31,11 @@
                         </Control>
                         <Button name="$(parent)Button" inherits="ZO_ButtonBehaviorClickSound">
                             <Dimensions x="40" y="40" />
-                            <Anchor point="BOTTOMLEFT" relativeTo="$(parent)List" relativePoint="BOTTOMRIGHT" offsetX="-2" offsetY="-70" />
-                            <Textures normal="/esoui/art/buttons/large_leftarrow_up.dds"
-                                      pressed="/esoui/art/buttons/large_leftarrow_down.dds"
-                                      mouseOver="/esoui/art/buttons/large_leftarrow_over.dds"
-                                      disabled="/esoui/art/buttons/large_leftarrow_disabled.dds"/>
+                            <Anchor point="TOPLEFT" relativeTo="$(parent)List" relativePoint="TOPRIGHT" offsetX="0" offsetY="50" />
+                            <Textures normal="/esoui/art/buttons/large_rightarrow_up.dds"
+                                      pressed="/esoui/art/buttons/large_rightarrow_down.dds"
+                                      mouseOver="/esoui/art/buttons/large_rightarrow_over.dds"
+                                      disabled="/esoui/art/buttons/large_rightarrow_disabled.dds"/>
                         </Button>
                     </Controls>
                 </Control>
@@ -67,11 +67,11 @@
                         </Control>
                         <Button name="$(parent)Button" inherits="ZO_ButtonBehaviorClickSound">
                             <Dimensions x="40" y="40" />
-                            <Anchor point="TOPRIGHT" relativeTo="$(parent)List" relativePoint="TOPLEFT" offsetX="0" offsetY="70" />
-                            <Textures normal="/esoui/art/buttons/large_rightarrow_up.dds"
-                                      pressed="/esoui/art/buttons/large_rightarrow_down.dds"
-                                      mouseOver="/esoui/art/buttons/large_rightarrow_over.dds"
-                                      disabled="/esoui/art/buttons/large_rightarrow_disabled.dds"/>
+                            <Anchor point="BOTTOMRIGHT" relativeTo="$(parent)List" relativePoint="BOTTOMLEFT" offsetX="-2" offsetY="-50" />
+                            <Textures normal="/esoui/art/buttons/large_leftarrow_up.dds"
+                                      pressed="/esoui/art/buttons/large_leftarrow_down.dds"
+                                      mouseOver="/esoui/art/buttons/large_leftarrow_over.dds"
+                                      disabled="/esoui/art/buttons/large_leftarrow_disabled.dds"/>
                         </Button>
                     </Controls>
                 </Control>
