@@ -317,7 +317,7 @@ end
 --- Sets the complete shifterBox to hidden, or shows it again
 -- @param isHidden - whether the shifterBox should be hidden (boolean)
 function ShifterBox:SetHidden(hidden)
-    self:SetHidden(hidden)
+    self.shifterBoxControl:SetHidden(hidden)
 end
 
 function ShifterBox:SetLeftListData(dataList)
