@@ -1,26 +1,56 @@
-# ShifterBoxLib
-ShifterBoxLib, a Library Add-on for '[The Elder Scrolls Online](https://www.elderscrollsonline.com/ "Home - The Elder Scrolls Online")'
+# LibShifterBox
+LibShifterBox, a library add-on for '[The Elder Scrolls Online](https://www.elderscrollsonline.com/ "Home - The Elder Scrolls Online")'
+
+
 
 ***
 
 ## Download
-Not yet available
+Coming soon to [esoui.com](http://www.esoui.com/) !
+
+
+## Example
+This is a full example of how to use the LibShifterBox.
+
+TO BE COMPLETED
+
+```lua
+local leftListData = {
+    [1] = "Goodbye_1",
+    [2] = "SeeYou_2",
+    [3] = "Farewell_3",
+    [4] = "Greetings_4",
+    [5] = "Alloha_5",
+    [6] = "ZeeYa_6",
+}
+        
+local itemQualitiesShifterBox = LibShifterBox("MyNewAddon", "ItemQualities", parentControl)
+itemQualitiesShifterBox:SetAnchor(TOPLEFT, headerControl, BOTTOMLEFT, 0, 20)
+itemQualitiesShifterBox:SetDimensions(300, 200)
+itemQualitiesShifterBox:SetLeftListEntries(leftListData)
+```
 
 
 ***
 
-## How to use
-Not yet available
-
-
-
-
 ## API Reference
   * [Create](#create)
-  * [ShifterBox:SetAnchor](#shifterbox-setanchor)
-  * [ShifterBox:SetDimensions](#shifterbox-setdimensions)
-  * [ShifterBox:SetEnabled](#shifterbox-setenabled)
-  * [ShifterBox:SetHidden](#shifterbox-sethidden)
+  * [ShifterBox:SetAnchor](#shifterboxsetanchor)
+  * [ShifterBox:SetDimensions](#shifterboxsetdimensions)
+  * [ShifterBox:SetEnabled](#shifterboxsetenabled)
+  * [ShifterBox:SetHidden](#shifterboxsethidden)
+  * [LeftListBox](#leftlistbox)
+    * [ShifterBox:SetLeftListEntries](#shifterboxsetleftlistentries)
+    * [ShifterBox:GetLeftListEntries](#shifterboxgetleftlistentries)
+    * [ShifterBox:AddEntryToLeftList](#shifterboxaddentrytoleftlist)
+    * [ShifterBox:RemoveEntryFromLeftList](#shifterboxremoveentryfromleftlist)
+    * [ShifterBox:ClearLeftList](#shifterboxclearleftlist)
+  * [RightListBox](#rightlistbox)
+    * [ShifterBox:SetRightListEntries](#shifterboxsetrightlistentries)
+    * [ShifterBox:GetRightListEntries](#shifterboxgetrightlistentries)
+    * [ShifterBox:AddEntryToRightList](#shifterboxaddentrytorightlist)
+    * [ShifterBox:RemoveEntryFromRightList](#shifterboxremoveentryfromrightlist)
+    * [ShifterBox:ClearRightList](#shifterboxclearrightlist)
 
 ### Create
 Returns a new instance of ShifterBox with the given control name. `leftListTitle` and `rightListTitle` are optional and if provided render headers to sort the list. If not provided the headers are not shown and the list is sorted in ascending order.
