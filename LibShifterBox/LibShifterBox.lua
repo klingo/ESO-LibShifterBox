@@ -102,7 +102,6 @@ function ShifterBoxList:SetupRowEntry(rowControl, rowData)
 end
 
 function ShifterBoxList:Refresh()
-    d("===> ShifterBoxList:Refresh()")
     self:RefreshData()
 end
 
@@ -315,7 +314,6 @@ function ShifterBox:AddEntryToLeftList(key, value, overwrite)
         table.insert(leftControl.entries, key, value)
         -- Refresh the visualisation of the data
         self.leftList:Refresh()
-
     end
 end
 
@@ -344,19 +342,29 @@ function ShifterBox:RemoveEntryFromRightList(key)
 end
 
 function ShifterBox:GetLeftListEntries()
-    -- TODO: get a list of all entiers on the left side
+    local leftControl = self.leftList.control
+    return leftControl.entries
 end
 
 function ShifterBox:GetRightListEntries()
-    -- TODO: get a list of all entiers on the right side
+    local rightControl = self.rightList.control
+    return rightControl.entries
 end
 
 function ShifterBox:ClearLeftList()
-    -- TODO: clear the left list (remove all entries)
+    local leftControl = self.leftList.control
+    -- remove the entries
+    leftControl.entries = {}
+    -- and refresh the visualisation of the data
+    self.leftList:Refresh()
 end
 
 function ShifterBox:ClearRightList()
-    -- TODO: clear the right list (remove all entries)
+    local rightControl = self.rightList.control
+    -- remove the entries
+    rightControl.entries = {}
+    -- and refresh the visualisation of the data
+    self.rightList:Refresh()
 end
 
 
