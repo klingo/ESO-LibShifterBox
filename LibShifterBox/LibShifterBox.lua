@@ -320,11 +320,18 @@ function ShifterBox:SetHidden(hidden)
     self.shifterBoxControl:SetHidden(hidden)
 end
 
-function ShifterBox:SetLeftListData(dataList)
+-- ---------------------------------------------------------------------------------------------------------------------
+
+function ShifterBox:SetLeftListEntries(entries)
     local leftControl = self.leftList.control
-    leftControl.entries = dataList
+    leftControl.entries = entries
     -- Unselect/Refresh the visualisation of the data
     self.leftList:UnselectAll()
+end
+
+function ShifterBox:GetLeftListEntries()
+    local leftControl = self.leftList.control
+    return leftControl.entries
 end
 
 function ShifterBox:AddEntryToLeftList(key, value, overwrite)
@@ -337,11 +344,32 @@ function ShifterBox:AddEntryToLeftList(key, value, overwrite)
     end
 end
 
-function ShifterBox:SetRightListData(dataList)
+function ShifterBox:RemoveEntryFromLeftList(key)
+    local leftControl = self.leftList.control
+    leftControl.entries[key] = nil
+    self.leftList:UnselectAll()
+end
+
+function ShifterBox:ClearLeftList()
+    local leftControl = self.leftList.control
+    -- remove the entries
+    leftControl.entries = {}
+    -- and refresh the visualisation of the data
+    self.leftList:Refresh()
+end
+
+-- ---------------------------------------------------------------------------------------------------------------------
+
+function ShifterBox:SetRightListEntries(entries)
     local rightControl = self.rightList.control
-    rightControl.entries = dataList
+    rightControl.entries = entries
     -- Unselect/Refresh the visualisation of the data
     self.rightList:UnselectAll()
+end
+
+function ShifterBox:GetRightListEntries()
+    local rightControl = self.rightList.control
+    return rightControl.entries
 end
 
 function ShifterBox:AddEntryToRightList(key, value, overwrite)
@@ -354,34 +382,10 @@ function ShifterBox:AddEntryToRightList(key, value, overwrite)
     end
 end
 
-function ShifterBox:RemoveEntryFromLeftList(key)
-    local leftControl = self.leftList.control
-    leftControl.entries[key] = nil
-    self.leftList:UnselectAll()
-end
-
 function ShifterBox:RemoveEntryFromRightList(key)
     local rightControl = self.rightList.control
     rightControl.entries[key] = nil
     self.rightList:UnselectAll()
-end
-
-function ShifterBox:GetLeftListEntries()
-    local leftControl = self.leftList.control
-    return leftControl.entries
-end
-
-function ShifterBox:GetRightListEntries()
-    local rightControl = self.rightList.control
-    return rightControl.entries
-end
-
-function ShifterBox:ClearLeftList()
-    local leftControl = self.leftList.control
-    -- remove the entries
-    leftControl.entries = {}
-    -- and refresh the visualisation of the data
-    self.leftList:Refresh()
 end
 
 function ShifterBox:ClearRightList()
@@ -391,6 +395,8 @@ function ShifterBox:ClearRightList()
     -- and refresh the visualisation of the data
     self.rightList:Refresh()
 end
+
+-- ---------------------------------------------------------------------------------------------------------------------
 
 
 -- =================================================================================================================

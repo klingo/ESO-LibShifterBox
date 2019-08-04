@@ -56,6 +56,70 @@ Sets the whole ShifterBox to hidden or shown state.
 shifterBox:SetHidden(hidden)
 ```
 
+### LeftListBox
+
+#### ShifterBox:SetLeftListEntries
+Sets the provided list into the left listBox. This replaces any existing entries.
+```lua
+shifterBox:SetLeftListEntries(entries)
+```
+
+#### ShifterBox:GetLeftListEntries
+Returns a table with all entries that are currently in the left listBox.
+```lua
+shifterBox:GetLeftListEntries()
+```
+
+#### ShifterBox:AddEntryToLeftList
+Adds one additional entry into the left listBox. If the key already exists the entry will not be added unless the `overwrite` param is set to `true`
+```lua
+shifterBox:AddEntryToLeftList(key, value, overwrite)
+```
+
+#### ShifterBox:RemoveEntryFromLeftList
+Removes the specified entry from the left listBox.
+```lua
+shifterBox:RemoveEntryFromLeftList(key)
+```
+
+#### ShifterBox:ClearLeftList
+Removes all entries from the left listBox.
+```lua
+shifterBox:ClearLeftList()
+```
+
+
+### RightListBox
+
+#### ShifterBox:SetRightListEntries
+Sets the provided list into the right listBox. This replaces any existing entries.
+```lua
+shifterBox:SetRightListEntries(entries)
+```
+#### ShifterBox:GetRightListEntries
+Returns a table with all entries that are currently in the right listBox.
+```lua
+shifterBox:GetRightListEntries()
+```
+#### ShifterBox:AddEntryToRightList
+Adds one additional entry into the right listBox. If the key already exists the entry will not be added unless the `overwrite` param is set to `true`
+```lua
+shifterBox:AddEntryToRightList(key, value, overwrite)
+```
+
+#### ShifterBox:RemoveEntryFromRightList
+Removes the specified entry from the right listBox.
+```lua
+shifterBox:RemoveEntryFromRightList(key)
+```
+
+#### ShifterBox:ClearRightList
+Removes all entries from the right listBox.
+```lua
+shifterBox:ClearRightList()
+```
+
+
 ***
 
 ## Disclaimer
