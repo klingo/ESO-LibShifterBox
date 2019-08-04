@@ -12,16 +12,18 @@ Coming soon to [esoui.com](http://www.esoui.com/) !
 ## Example
 This is a full example of how to use the LibShifterBox.
 
+![alt text][shifterbox-example]
+
 TO BE COMPLETED
 
 ```lua
 local leftListData = {
-    [1] = "Goodbye_1",
-    [2] = "SeeYou_2",
-    [3] = "Farewell_3",
-    [4] = "Greetings_4",
-    [5] = "Alloha_5",
-    [6] = "ZeeYa_6",
+    [ITEM_QUALITY_TRASH] = GetItemQualityColor(ITEM_QUALITY_TRASH):Colorize(GetString("SI_ITEMQUALITY", ITEM_QUALITY_TRASH)),
+    [ITEM_QUALITY_NORMAL] = GetItemQualityColor(ITEM_QUALITY_NORMAL):Colorize(GetString("SI_ITEMQUALITY", ITEM_QUALITY_NORMAL)),
+    [ITEM_QUALITY_MAGIC] = GetItemQualityColor(ITEM_QUALITY_MAGIC):Colorize(GetString("SI_ITEMQUALITY", ITEM_QUALITY_MAGIC)),
+    [ITEM_QUALITY_ARCANE] = GetItemQualityColor(ITEM_QUALITY_ARCANE):Colorize(GetString("SI_ITEMQUALITY", ITEM_QUALITY_ARCANE)),
+    [ITEM_QUALITY_ARTIFACT] = GetItemQualityColor(ITEM_QUALITY_ARTIFACT):Colorize(GetString("SI_ITEMQUALITY", ITEM_QUALITY_ARTIFACT)),
+    [ITEM_QUALITY_LEGENDARY] = GetItemQualityColor(ITEM_QUALITY_LEGENDARY):Colorize(GetString("SI_ITEMQUALITY", ITEM_QUALITY_LEGENDARY)),
 }
         
 local itemQualitiesShifterBox = LibShifterBox("MyNewAddon", "ItemQualities", parentControl)
@@ -55,11 +57,22 @@ itemQualitiesShifterBox:SetLeftListEntries(leftListData)
 ### Create
 Returns a new instance of ShifterBox with the given control name. `leftListTitle` and `rightListTitle` are optional and if provided render headers to sort the list. If not provided the headers are not shown and the list is sorted in ascending order.
 ```lua
-local shifterBox = LibShifterBox(uniqueAddonName, uniqueShifterBoxName, parentControl, leftListTitle, rightListTitle)
+local shifterBox = LibShifterBox(uniqueAddonName, uniqueShifterBoxName, parentControl, leftListTitle, rightListTitle, customSettings)
 ```
 or
 ```lua
-local shifterBox = LibShifterBox.Create(uniqueAddonName, uniqueShifterBoxName, parentControl, leftListTitle, rightListTitle)
+local shifterBox = LibShifterBox.Create(uniqueAddonName, uniqueShifterBoxName, parentControl, leftListTitle, rightListTitle, customSettings)
+```
+
+#### CustomSettings
+Optionally custom settings can be passed on when the ShifterBox is created. The following values can be set:
+```lua
+customSettings = {
+    sortBy = "value",   -- sort the list by value or key (allowed are: "value" or "key")
+    rowHeight = 32,     -- the height of an entry row
+    showLeftAllButton = false,  -- whether the "all to the left" button should be shown
+    showRightAllButton = false, -- whether the "all to the right" button should be shown
+}
 ```
 
 ### ShifterBox:SetAnchor
@@ -101,7 +114,7 @@ shifterBox:GetLeftListEntries()
 ```
 
 #### ShifterBox:AddEntryToLeftList
-Adds one additional entry into the left listBox. If the key already exists the entry will not be added unless the `overwrite` param is set to `true`
+Adds one additional entry into the left listBox. If the key already exists the entry will not be added unless the `overwrite` param is set to `true`.
 ```lua
 shifterBox:AddEntryToLeftList(key, value, overwrite)
 ```
@@ -132,7 +145,7 @@ Returns a table with all entries that are currently in the right listBox.
 shifterBox:GetRightListEntries()
 ```
 #### ShifterBox:AddEntryToRightList
-Adds one additional entry into the right listBox. If the key already exists the entry will not be added unless the `overwrite` param is set to `true`
+Adds one additional entry into the right listBox. If the key already exists the entry will not be added unless the `overwrite` param is set to `true`.
 ```lua
 shifterBox:AddEntryToRightList(key, value, overwrite)
 ```
@@ -156,3 +169,6 @@ shifterBox:ClearRightList()
 
 **Disclaimer:**
 This Add-on is not created by, affiliated with or sponsored by ZeniMax Media Inc. or its affiliates. The Elder Scrolls® and related logos are registered trademarks or trademarks of ZeniMax Media Inc. in the United States and/or other countries. All rights reserved.
+
+
+[shifterbox-example]: ./info/images/ShifterBox_Example.png "ShifterBox Example"

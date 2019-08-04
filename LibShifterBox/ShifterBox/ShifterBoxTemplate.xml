@@ -80,11 +80,11 @@
         </Control>
 
         <Button name="ShifterBoxEntryTemplate" verticalAlignment="CENTER" horizontalAlignment="LEFT" virtual="true">
-            <Dimensions x="180" y="36" />
+            <Dimensions x="180" y="32" />
             <Controls>
                 <Label name="$(parent)Label" font="ZoFontGame" verticalAlignment="CENTER" horizontalAlignment="LEFT">
                     <Anchor point="LEFT" offsetX="10"/>
-                    <Dimensions x="180" y="36" />
+                    <Dimensions x="180" y="32" />
                 </Label>
             </Controls>
         </Button>
