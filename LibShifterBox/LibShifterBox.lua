@@ -129,6 +129,18 @@ function ShifterBoxList:UnselectAll()
     self:Refresh()
 end
 
+function ShifterBoxList:SetEntriesEnabled(enabled)
+    -- first unselect all entries (which also disables the buttons)
+    self:UnselectAll()
+    -- then change the actual state of the rowControl-buttons
+    local rowControls = self.list.contents
+    for childIndex = 1, rowControls:GetNumChildren() do
+        local rowControl = rowControls:GetChild(childIndex)
+        rowControl:SetEnabled(enabled)
+    end
+    rowControls:SetAlpha(enabled and 1 or 0.4)
+end
+
 
 -- =================================================================================================================
 -- == PRIVATE FUNCTIONS == --
@@ -309,9 +321,8 @@ function ShifterBox:SetDimensions(width, height)
 end
 
 function ShifterBox:SetEnabled(enabled)
-    -- TODO: Set buttons disabled
-
-    -- TODO: Set listBoxes disabled
+    self.leftList:SetEntriesEnabled(enabled)
+    self.rightList:SetEntriesEnabled(enabled)
 end
 
 --- Sets the complete shifterBox to hidden, or shows it again
