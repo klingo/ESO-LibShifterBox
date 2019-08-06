@@ -179,8 +179,8 @@ local function _initShifterBoxControls(self, leftListTitle, rightListTitle)
     local rightControl = control:GetNamedChild("Right")
     local fromLeftButtonControl = leftControl:GetNamedChild("Button")
     local fromRightButtonControl = rightControl:GetNamedChild("Button")
-    self.rightListControl = rightControl:GetNamedChild("List")
-    self.leftListControl = leftControl:GetNamedChild("List")
+    local rightListControl = rightControl:GetNamedChild("List")
+    local leftListControl = leftControl:GetNamedChild("List")
 
     local function initListFrames(parentListControl)
         local listFrameControl = parentListControl:GetNamedChild("Frame")
@@ -213,8 +213,8 @@ local function _initShifterBoxControls(self, leftListTitle, rightListTitle)
     initHeaders(leftListTitle, rightListTitle)
 
     -- initialize the frame/border around the listBoxes
-    initListFrames(self.leftListControl)
-    initListFrames(self.rightListControl)
+    initListFrames(leftListControl)
+    initListFrames(rightListControl)
 
     -- initialize the buttons in disabled state
     initButton(fromLeftButtonControl)
@@ -229,7 +229,7 @@ local function _initShifterBoxHandlers(self)
     local fromRightButtonControl = rightControl:GetNamedChild("Button")
 
     local function toLeftButtonClicked(buttonControl)
-        local rightListContents = self.rightListControl.contents
+        local rightListContents = self.rightList.list.contents
         for childIndex = 1, rightListContents:GetNumChildren() do
             local rowControl = rightListContents:GetChild(childIndex)
             if rowControl.selected and rowControl.selected == true then
@@ -242,7 +242,7 @@ local function _initShifterBoxHandlers(self)
     end
 
     local function toRightButtonClicked(buttonControl)
-        local leftListContents = self.leftListControl.contents
+        local leftListContents = self.leftList.list.contents
         for childIndex = 1, leftListContents:GetNumChildren() do
             local rowControl = leftListContents:GetChild(childIndex)
             if rowControl.selected and rowControl.selected == true then
@@ -330,10 +330,10 @@ end
 function ShifterBox:SetDimensions(width, height)
     local fromLeftButton = self.leftList.control:GetNamedChild("Button")
     local fromRightButton = self.rightList.control:GetNamedChild("Button")
-    local leftListControl = self.leftList.list
-    local rightListControl = self.rightList.list
-    local leftHeadersControl = leftListControl:GetParent():GetNamedChild("Headers")
-    local rightHeadersControl = rightListControl:GetParent():GetNamedChild("Headers")
+    local leftList = self.leftList.list
+    local rightList = self.rightList.list
+    local leftHeadersControl = leftList:GetParent():GetNamedChild("Headers")
+    local rightHeadersControl = rightList:GetParent():GetNamedChild("Headers")
 
     -- widh must be at least three times the space between the listBoxes
     if width < (3 * LIST_SPACING) then width = (3 * LIST_SPACING) end
@@ -346,17 +346,17 @@ function ShifterBox:SetDimensions(width, height)
     local arrowOffset = (height - (2 * ARROW_SIZE)) / 4
 
     -- set the dimenions of the listBoxes
-    leftListControl:SetDimensions(singleListWidth, height)
+    leftList:SetDimensions(singleListWidth, height)
     leftHeadersControl:SetDimensions(singleListWidth, HEADER_HEIGHT)
-    rightListControl:SetDimensions(singleListWidth, height)
+    rightList:SetDimensions(singleListWidth, height)
     rightHeadersControl:SetDimensions(singleListWidth, HEADER_HEIGHT)
 
     -- for both buttons, clear the anchors first and then set new ones with the updated offsets
     fromRightButton:ClearAnchors()
-    fromRightButton:SetAnchor(BOTTOMRIGHT, rightListControl, BOTTOMLEFT, -2, arrowOffset * -1) -- lower arrow requires negative offset
+    fromRightButton:SetAnchor(BOTTOMRIGHT, rightList, BOTTOMLEFT, -2, arrowOffset * -1) -- lower arrow requires negative offset
 
     fromLeftButton:ClearAnchors()
-    fromLeftButton:SetAnchor(TOPLEFT, leftListControl, TOPRIGHT, 0, arrowOffset)
+    fromLeftButton:SetAnchor(TOPLEFT, leftList, TOPRIGHT, 0, arrowOffset)
 end
 
 function ShifterBox:SetEnabled(enabled)
@@ -368,6 +368,31 @@ end
 -- @param isHidden - whether the shifterBox should be hidden (boolean)
 function ShifterBox:SetHidden(hidden)
     self.shifterBoxControl:SetHidden(hidden)
+end
+
+function ShifterBox:SelectEntryByKey(key)
+    local function selectRowByKey(rowControls, key)
+        for childIndex = 1, rowControls:GetNumChildren() do
+            local rowControl = rowControls:GetChild(childIndex)
+            if rowControl.data.key == key then
+                local onRowClicked = rowControl:GetHandler("OnClicked")
+                if onRowClicked ~= nil then onRowClicked(rowControl) end
+                return
+            end
+        end
+    end
+
+    local leftListControl = self.leftList.control
+    if leftListControl.entries[key] ~= nil then
+        local leftList = self.leftList.list
+        selectRowByKey(leftList.contents, key)
+    else
+        local rightListControl = self.rightList.control
+        if rightListControl.entries[key] ~= nil then
+            local rightList = self.rightList.list
+            selectRowByKey(rightList.contents, key)
+        end
+    end
 end
 
 -- ---------------------------------------------------------------------------------------------------------------------
@@ -387,8 +412,8 @@ function ShifterBox:SetLeftListEntries(entries)
 end
 
 function ShifterBox:GetLeftListEntries()
-    local leftControl = self.leftList.control
-    return leftControl.entries
+    local leftListEntries = self.leftList.control.entries
+    return leftListEntries
 end
 
 function ShifterBox:AddEntryToLeftList(key, value)
@@ -435,8 +460,8 @@ function ShifterBox:SetRightListEntries(entries)
 end
 
 function ShifterBox:GetRightListEntries()
-    local rightControl = self.rightList.control
-    return rightControl.entries
+    local rightListEntries = self.rightList.control.entries
+    return rightListEntries
 end
 
 function ShifterBox:AddEntryToRightList(key, value)

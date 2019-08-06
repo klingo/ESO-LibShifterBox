@@ -30,6 +30,7 @@ local itemQualitiesShifterBox = LibShifterBox("MyNewAddon", "ItemQualities", par
 itemQualitiesShifterBox:SetAnchor(TOPLEFT, headerControl, BOTTOMLEFT, 0, 20)
 itemQualitiesShifterBox:SetDimensions(300, 200)
 itemQualitiesShifterBox:SetLeftListEntries(leftListData)
+itemQualitiesShifterBox:SelectEntryByKey(ITEM_QUALITY_ARCANE)
 ```
 
 
@@ -41,6 +42,7 @@ itemQualitiesShifterBox:SetLeftListEntries(leftListData)
   * [ShifterBox:SetDimensions](#shifterboxsetdimensions)
   * [ShifterBox:SetEnabled](#shifterboxsetenabled)
   * [ShifterBox:SetHidden](#shifterboxsethidden)
+  * [ShifterBox:SelectEntryByKey](#shifterboxselectentrybykey)
   * [LeftListBox](#leftlistbox)
     * [ShifterBox:SetLeftListEntries](#shifterboxsetleftlistentries)
     * [ShifterBox:GetLeftListEntries](#shifterboxgetleftlistentries)
@@ -98,6 +100,13 @@ Sets the whole ShifterBox to hidden or shown state.
 ```lua
 shifterBox:SetHidden(hidden)
 ```
+
+### ShifterBox:SelectEntryByKey
+Selects (or deselects if already selected) an entry on either listBox based on the provided key.
+```lua
+shifterBox:SelectEntryByKey(key)
+```
+
 
 ### LeftListBox
 
