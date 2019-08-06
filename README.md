@@ -1,6 +1,7 @@
 # LibShifterBox
 LibShifterBox, a library add-on for '[The Elder Scrolls Online](https://www.elderscrollsonline.com/ "Home - The Elder Scrolls Online")'
 
+![alt text][shifterbox-example]
 
 
 ***
@@ -11,10 +12,8 @@ Coming soon to [esoui.com](http://www.esoui.com/) !
 
 ## Example
 This is a full example of how to use the LibShifterBox.
-
-![alt text][shifterbox-example]
-
-TO BE COMPLETED
+\
+First the initial setup of the ShifterBox needs to be done:
 
 ```lua
 local leftListData = {
@@ -25,13 +24,42 @@ local leftListData = {
     [ITEM_QUALITY_ARTIFACT] = GetItemQualityColor(ITEM_QUALITY_ARTIFACT):Colorize(GetString("SI_ITEMQUALITY", ITEM_QUALITY_ARTIFACT)),
     [ITEM_QUALITY_LEGENDARY] = GetItemQualityColor(ITEM_QUALITY_LEGENDARY):Colorize(GetString("SI_ITEMQUALITY", ITEM_QUALITY_LEGENDARY)),
 }
+
+local customSettings = {
+    rowHeight = 30,
+    sortBy = "key"
+}
         
-local itemQualitiesShifterBox = LibShifterBox("MyNewAddon", "ItemQualities", parentControl)
+local itemQualitiesShifterBox = LibShifterBox("MyNewAddon", "ItemQualities", parentControl, "Lefties", "Righties", customSettings)
 itemQualitiesShifterBox:SetAnchor(TOPLEFT, headerControl, BOTTOMLEFT, 0, 20)
 itemQualitiesShifterBox:SetDimensions(300, 200)
 itemQualitiesShifterBox:SetLeftListEntries(leftListData)
 itemQualitiesShifterBox:SelectEntryByKey(ITEM_QUALITY_ARCANE)
 ```
+![alt text][shifterbox-example-1]
+
+\
+Additional entries can be added, or existing ones replaced:
+```lua
+itemQualitiesShifterBox:AddEntryToRightList(10, "HelloWorld")
+itemQualitiesShifterBox:AddEntryToRightList(ITEM_QUALITY_ARTIFACT, "Epic-Replacement", true)
+```
+![alt text][shifterbox-example-2]
+
+\
+Entries can be selected by their key:
+```lua
+itemQualitiesShifterBox:SelectEntryByKey(ITEM_QUALITY_LEGENDARY)
+itemQualitiesShifterBox:SelectEntryByKey(10)
+```
+![alt text][shifterbox-example-3]
+
+\
+The whole ShifterBox is set to disabled:
+```lua
+itemQualitiesShifterBox:SetEnabled(false)
+```
+![alt text][shifterbox-example-4]
 
 
 ***
@@ -72,8 +100,6 @@ Optionally custom settings can be passed on when the ShifterBox is created. The 
 customSettings = {
     sortBy = "value",   -- sort the list by value or key (allowed are: "value" or "key")
     rowHeight = 32,     -- the height of an entry row
-    showLeftAllButton = false,  -- whether the "all to the left" button should be shown
-    showRightAllButton = false, -- whether the "all to the right" button should be shown
 }
 ```
 
@@ -181,3 +207,7 @@ This Add-on is not created by, affiliated with or sponsored by ZeniMax Media Inc
 
 
 [shifterbox-example]: ./info/images/ShifterBox_Example.png "ShifterBox Example"
+[shifterbox-example-1]: ./info/images/ShifterBox_Example_1.png "ShifterBox Example - Init"
+[shifterbox-example-2]: ./info/images/ShifterBox_Example_2.png "ShifterBox Example - Added/Replaced"
+[shifterbox-example-3]: ./info/images/ShifterBox_Example_3.png "ShifterBox Example - Selected"
+[shifterbox-example-4]: ./info/images/ShifterBox_Example_4.png "ShifterBox Example - Disabled"
