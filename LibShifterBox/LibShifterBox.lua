@@ -184,6 +184,12 @@ local function _createShifterBox(uniqueAddonName, uniqueShifterBoxName, parentCo
     return CreateControlFromVirtual(shifterBoxName, parentControl, "ShifterBoxTemplate")
 end
 
+local function _getDeepClonedTable(sourceTable)
+    local targetTable = {}
+    ZO_DeepTableCopy(sourceTable, targetTable)
+    return targetTable
+end
+
 local function _moveEntryFromTo(fromList, toList, key)
     toList[key] = fromList[key]
     fromList[key] = nil
@@ -422,7 +428,7 @@ function ShifterBox:SetLeftListEntries(entries)
 
     -- now the entries can be added to the left list
     local leftControl = self.leftList.control
-    leftControl.entries = entries
+    leftControl.entries = _getDeepClonedTable(entries)
     -- Unselect/Refresh the visualisation of the data
     self.leftList:UnselectAll()
 end
@@ -477,7 +483,7 @@ function ShifterBox:SetRightListEntries(entries)
 
     -- now the entries can be added to the left list
     local rightControl = self.rightList.control
-    rightControl.entries = entries
+    rightControl.entries = _getDeepClonedTable(entries)
     -- Unselect/Refresh the visualisation of the data
     self.rightList:UnselectAll()
 end
