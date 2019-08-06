@@ -123,9 +123,9 @@ shifterBox:GetLeftListEntries()
 ```
 
 #### ShifterBox:AddEntryToLeftList
-Adds one additional entry into the left listBox. If the key already exists the entry will not be added.
+Adds one additional entry into the left listBox. If the key already exists the entry will not be added; unless if `replace` is set to `true`, then the entry with the same key in **either** listBox will be replaced.
 ```lua
-shifterBox:AddEntryToLeftList(key, value)
+shifterBox:AddEntryToLeftList(key, value, replace)
 ```
 
 #### ShifterBox:RemoveEntryFromLeftList
@@ -154,9 +154,9 @@ Returns a table with all entries that are currently in the right listBox.
 shifterBox:GetRightListEntries()
 ```
 #### ShifterBox:AddEntryToRightList
-Adds one additional entry into the right listBox. If the key already exists the entry will not be added.
+Adds one additional entry into the right listBox. If the key already exists the entry will not be added; unless if `replace` is set to `true`, then the entry with the same key in **either** listBox will be replaced.
 ```lua
-shifterBox:AddEntryToRightList(key, value)
+shifterBox:AddEntryToRightList(key, value, replace)
 ```
 
 #### ShifterBox:RemoveEntryFromRightList

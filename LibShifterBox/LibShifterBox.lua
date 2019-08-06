@@ -416,14 +416,21 @@ function ShifterBox:GetLeftListEntries()
     return leftListEntries
 end
 
-function ShifterBox:AddEntryToLeftList(key, value)
-    -- assert that key does not exist yet in either list
+function ShifterBox:AddEntryToLeftList(key, value, replace)
     local leftControl = self.leftList.control
-    _assertKeyIsNotInTable(key, leftControl)
     local rightControl = self.rightList.control
-    _assertKeyIsNotInTable(key, rightControl)
-
-    -- only add entry to list if key does not exist yet
+    if replace and replace == true then
+        -- if replace is set to true, make sure that a potential entry with the same key is removed from the other list
+        if rightControl.entries[key] ~= nil then
+            rightControl.entries[key] = nil
+            self.rightList:UnselectAll()
+        end
+    else
+        -- if replace is not set or set to false, then assert that key does not exist in either list
+        _assertKeyIsNotInTable(key, leftControl)
+        _assertKeyIsNotInTable(key, rightControl)
+    end
+    -- then add entry to the corresponding list
     table.insert(leftControl.entries, key, value)
     -- Unselect/Refresh the visualisation of the data
     self.leftList:UnselectAll()
@@ -464,14 +471,21 @@ function ShifterBox:GetRightListEntries()
     return rightListEntries
 end
 
-function ShifterBox:AddEntryToRightList(key, value)
-    -- assert that key does not exist yet in either list
+function ShifterBox:AddEntryToRightList(key, value, replace)
     local leftControl = self.leftList.control
-    _assertKeyIsNotInTable(key, leftControl)
     local rightControl = self.rightList.control
-    _assertKeyIsNotInTable(key, rightControl)
-
-    -- only add entry to list if key does not exist yet
+    if replace and replace == true then
+        -- if replace is set to true, make sure that a potential entry with the same key is removed from the other list
+        if leftControl.entries[key] ~= nil then
+            leftControl.entries[key] = nil
+            self.leftList:UnselectAll()
+        end
+    else
+        -- if replace is not set or set to false, then assert that key does not exist in either list
+        _assertKeyIsNotInTable(key, leftControl)
+        _assertKeyIsNotInTable(key, rightControl)
+    end
+    -- then add entry to the corresponding list
     table.insert(rightControl.entries, key, value)
     -- Unselect/Refresh the visualisation of the data
     self.rightList:UnselectAll()
