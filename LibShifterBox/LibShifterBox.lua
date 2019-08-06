@@ -82,10 +82,14 @@ end
 
 function ShifterBoxList:SetupRowEntry(rowControl, rowData)
     local function onRowMouseEnter(rowControl)
---        self:Row_OnMouseEnter(rowControl)
+        -- only show tooltip if the text/label was truncated
+        local wasTruncated = rowControl:GetNamedChild("Label"):WasTruncated()
+        if wasTruncated then
+            ZO_Tooltips_ShowTextTooltip(rowControl, TOP, rowControl.data.value)
+        end
     end
     local function onRowMouseExit(rowControl)
---        self:Row_OnMouseExit(rowControl)
+        ZO_Tooltips_HideTextTooltip()
     end
     local function onRowClicked(rowControl)
         if rowControl.selected and rowControl.selected == true then
