@@ -130,6 +130,13 @@ function ShifterBoxList:SetupRowEntry(rowControl, rowData)
     ZO_SortFilterList.SetupRow(self, rowControl, rowData)
 end
 
+function ShifterBoxList:SetCustomDimensions(width, height, headerHeight)
+    -- first set width/height of the listbox itself
+    self.list:SetDimensions(width, height)
+    -- and of the header
+    self.headersContainer:SetDimensions(width, headerHeight)
+end
+
 function ShifterBoxList:Refresh()
     self:RefreshData()
 end
@@ -336,8 +343,6 @@ function ShifterBox:SetDimensions(width, height)
     local fromRightButton = self.rightList.control:GetNamedChild("Button")
     local leftList = self.leftList.list
     local rightList = self.rightList.list
-    local leftHeadersControl = leftList:GetParent():GetNamedChild("Headers")
-    local rightHeadersControl = rightList:GetParent():GetNamedChild("Headers")
 
     -- widh must be at least three times the space between the listBoxes
     if width < (3 * LIST_SPACING) then width = (3 * LIST_SPACING) end
@@ -350,10 +355,8 @@ function ShifterBox:SetDimensions(width, height)
     local arrowOffset = (height - (2 * ARROW_SIZE)) / 4
 
     -- set the dimenions of the listBoxes
-    leftList:SetDimensions(singleListWidth, height)
-    leftHeadersControl:SetDimensions(singleListWidth, HEADER_HEIGHT)
-    rightList:SetDimensions(singleListWidth, height)
-    rightHeadersControl:SetDimensions(singleListWidth, HEADER_HEIGHT)
+    self.leftList:SetCustomDimensions(singleListWidth, height, HEADER_HEIGHT)
+    self.rightList:SetCustomDimensions(singleListWidth, height, HEADER_HEIGHT)
 
     -- for both buttons, clear the anchors first and then set new ones with the updated offsets
     fromRightButton:ClearAnchors()
