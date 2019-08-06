@@ -159,17 +159,21 @@ end
 -- =================================================================================================================
 -- == PRIVATE FUNCTIONS == --
 -- -----------------------------------------------------------------------------------------------------------------
-local function createShifterBox(uniqueAddonName, uniqueShifterBoxName, parentControl)
+local function _createShifterBox(uniqueAddonName, uniqueShifterBoxName, parentControl)
     local shifterBoxName = table.concat({uniqueAddonName, "_", uniqueShifterBoxName})
     return CreateControlFromVirtual(shifterBoxName, parentControl, "ShifterBoxTemplate")
 end
 
-local function moveEntryFromTo(fromList, toList, key)
+local function _moveEntryFromTo(fromList, toList, key)
     toList[key] = fromList[key]
     fromList[key] = nil
 end
 
-local function initShifterBoxControls(self, leftListTitle, rightListTitle)
+local function _assertKeyIsNotInTable(key, sideControl)
+    assert(sideControl.entries[key] == nil, string.format("[ShifterBox]Error: Violation of UNIQUE KEY. Cannot insert duplicate key '%s' in control '%s'. The statement has been terminated.", tostring(key), sideControl:GetName()))
+end
+
+local function _initShifterBoxControls(self, leftListTitle, rightListTitle)
     local control = self.shifterBoxControl
     local leftControl = control:GetNamedChild("Left")
     local rightControl = control:GetNamedChild("Right")
@@ -217,7 +221,7 @@ local function initShifterBoxControls(self, leftListTitle, rightListTitle)
     initButton(fromRightButtonControl)
 end
 
-local function initShifterBoxHandlers(self)
+local function _initShifterBoxHandlers(self)
     local control = self.shifterBoxControl
     local leftControl = control:GetNamedChild("Left")
     local fromLeftButtonControl = leftControl:GetNamedChild("Button")
@@ -229,7 +233,7 @@ local function initShifterBoxHandlers(self)
         for childIndex = 1, rightListContents:GetNumChildren() do
             local rowControl = rightListContents:GetChild(childIndex)
             if rowControl.selected and rowControl.selected == true then
-                moveEntryFromTo(rightControl.entries, leftControl.entries, rowControl.data.key)
+                _moveEntryFromTo(rightControl.entries, leftControl.entries, rowControl.data.key)
             end
         end
         -- then "unselect" all entries (and inheretly refresh the display)
@@ -242,7 +246,7 @@ local function initShifterBoxHandlers(self)
         for childIndex = 1, leftListContents:GetNumChildren() do
             local rowControl = leftListContents:GetChild(childIndex)
             if rowControl.selected and rowControl.selected == true then
-                moveEntryFromTo(leftControl.entries, rightControl.entries, rowControl.data.key)
+                _moveEntryFromTo(leftControl.entries, rightControl.entries, rowControl.data.key)
             end
         end
         -- then "unselect" all entries (and inheretly refresh the display)
@@ -255,15 +259,15 @@ local function initShifterBoxHandlers(self)
     fromRightButtonControl:SetHandler("OnClicked", toLeftButtonClicked)
 end
 
-local function applyCustomSettings(customSettings)
+local function _applyCustomSettings(customSettings)
     -- if no custom settings provided, use the default ones
     if customSettings == nil then return lib.defaultSettings end
     -- otherwise validate them
     if customSettings.sortBy then
-        assert(customSettings.sortBy == "value" or customSettings.sortBy == "key", string.format("[LibShifterBox]Error: Invalid sortBy parameter [%s] provided! Only [value] and [key] are allowed.", tostring(customSettings.sortBy)))
+        assert(customSettings.sortBy == "value" or customSettings.sortBy == "key", string.format("[LibShifterBox]Error: Invalid sortBy parameter '%s' provided! Only 'value' and 'key' are allowed.", tostring(customSettings.sortBy)))
     end
     if customSettings.rowHeight then
-        assert(type(customSettings.rowHeight) == "number" and customSettings.rowHeight > 0, string.format("[LibShifterBox]Error: Invalid rowHeight parameter [%s] provided! Must be a numeric and positive.", tostring(customSettings.rowHeight)))
+        assert(type(customSettings.rowHeight) == "number" and customSettings.rowHeight > 0, string.format("[LibShifterBox]Error: Invalid rowHeight parameter '%s' provided! Must be a numeric and positive.", tostring(customSettings.rowHeight)))
     end
     return {
         sortBy = customSettings.sortBy or lib.defaultSettings.sortBy,
@@ -272,6 +276,7 @@ local function applyCustomSettings(customSettings)
         rowHeight = customSettings.rowHeight or lib.defaultSettings.rowHeight,
     }
 end
+
 
 -- =================================================================================================================
 -- == SHIFTERBOX FUNCTIONS == --
@@ -290,15 +295,15 @@ function ShifterBox:New(uniqueAddonName, uniqueShifterBoxName, parentControl, le
         existingShifterBoxes[uniqueAddonName] = {}
     end
     local addonShifterBoxes = existingShifterBoxes[uniqueAddonName]
-    assert(addonShifterBoxes[uniqueShifterBoxName] == nil, string.format("[LibShifterBox]Error: ShifterBox with the unique identifier [%s] is already registered for the addon [%s]!", tostring(uniqueShifterBoxName), tostring(uniqueAddonName)))
+    assert(addonShifterBoxes[uniqueShifterBoxName] == nil, string.format("[LibShifterBox]Error: ShifterBox with the unique identifier '%s' is already registered for the addon '%s'!", tostring(uniqueShifterBoxName), tostring(uniqueAddonName)))
 
     local obj = ZO_Object.New(self)
     obj.addonName = uniqueAddonName
     obj.shifterBoxName = uniqueShifterBoxName
-    obj.shifterBoxSettings = applyCustomSettings(customSettings)
-    obj.shifterBoxControl = createShifterBox(uniqueAddonName, uniqueShifterBoxName, parentControl)
-    initShifterBoxControls(obj, leftListTitle, rightListTitle)
-    initShifterBoxHandlers(obj)
+    obj.shifterBoxSettings = _applyCustomSettings(customSettings)
+    obj.shifterBoxControl = _createShifterBox(uniqueAddonName, uniqueShifterBoxName, parentControl)
+    _initShifterBoxControls(obj, leftListTitle, rightListTitle)
+    _initShifterBoxHandlers(obj)
 
     -- initialize the ShifterBoxLists
     local leftControl = obj.shifterBoxControl:GetNamedChild("Left")
@@ -368,6 +373,13 @@ end
 -- ---------------------------------------------------------------------------------------------------------------------
 
 function ShifterBox:SetLeftListEntries(entries)
+    -- assert that key does not exist yet in the other list
+    local rightControl = self.rightList.control
+    for key, _ in pairs(entries) do
+        _assertKeyIsNotInTable(key, rightControl)
+    end
+
+    -- now the entries can be added to the left list
     local leftControl = self.leftList.control
     leftControl.entries = entries
     -- Unselect/Refresh the visualisation of the data
@@ -379,14 +391,17 @@ function ShifterBox:GetLeftListEntries()
     return leftControl.entries
 end
 
-function ShifterBox:AddEntryToLeftList(key, value, overwrite)
+function ShifterBox:AddEntryToLeftList(key, value)
+    -- assert that key does not exist yet in either list
     local leftControl = self.leftList.control
-    -- only add entry to list if key does not exist yet, or if overwrite is set to true
-    if leftControl.entries[key] == nil or overwrite == true then
-        table.insert(leftControl.entries, key, value)
-        -- Unselect/Refresh the visualisation of the data
-         self.leftList:UnselectAll()
-    end
+    _assertKeyIsNotInTable(key, leftControl)
+    local rightControl = self.rightList.control
+    _assertKeyIsNotInTable(key, rightControl)
+
+    -- only add entry to list if key does not exist yet
+    table.insert(leftControl.entries, key, value)
+    -- Unselect/Refresh the visualisation of the data
+    self.leftList:UnselectAll()
 end
 
 function ShifterBox:RemoveEntryFromLeftList(key)
@@ -406,6 +421,13 @@ end
 -- ---------------------------------------------------------------------------------------------------------------------
 
 function ShifterBox:SetRightListEntries(entries)
+    -- assert that key does not exist yet in the other list
+    local leftControl = self.leftList.control
+    for key, _ in pairs(entries) do
+        _assertKeyIsNotInTable(key, leftControl)
+    end
+
+    -- now the entries can be added to the left list
     local rightControl = self.rightList.control
     rightControl.entries = entries
     -- Unselect/Refresh the visualisation of the data
@@ -417,14 +439,17 @@ function ShifterBox:GetRightListEntries()
     return rightControl.entries
 end
 
-function ShifterBox:AddEntryToRightList(key, value, overwrite)
+function ShifterBox:AddEntryToRightList(key, value)
+    -- assert that key does not exist yet in either list
+    local leftControl = self.leftList.control
+    _assertKeyIsNotInTable(key, leftControl)
     local rightControl = self.rightList.control
-    -- only add entry to list if key does not exist yet, or if overwrite is set to true
-    if rightControl.entries[key] == nil or overwrite == true then
-        table.insert(rightControl.entries, key, value)
-        -- Unselect/Refresh the visualisation of the data
-        self.rightList:UnselectAll()
-    end
+    _assertKeyIsNotInTable(key, rightControl)
+
+    -- only add entry to list if key does not exist yet
+    table.insert(rightControl.entries, key, value)
+    -- Unselect/Refresh the visualisation of the data
+    self.rightList:UnselectAll()
 end
 
 function ShifterBox:RemoveEntryFromRightList(key)
