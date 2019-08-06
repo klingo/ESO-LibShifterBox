@@ -103,6 +103,12 @@ customSettings = {
 }
 ```
 
+### GetControl
+Returns the (first to be created) ShifterBox control based on the `uniqueAddonName` and `uniqueShifterBoxName`.
+```lua
+local shifterBox = LibShifterBox.GetControl(uniqueAddonName, uniqueShifterBoxName)
+```
+
 ### ShifterBox:SetAnchor
 Sets the anchor of the ShifterBox to any other control of your UI. Only one anchor is supported and any previous anchors will first be cleared.
 ```lua
