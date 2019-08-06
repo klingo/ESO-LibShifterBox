@@ -138,7 +138,16 @@ function ShifterBoxList:SetCustomDimensions(width, height, headerHeight)
 end
 
 function ShifterBoxList:Refresh()
+    -- first refresh the data
     self:RefreshData()
+    -- then make sure that all rows have the correct width
+    local width = self.list:GetWidth()
+    local rowControls = self.list.contents
+    for childIndex = 1, rowControls:GetNumChildren() do
+        local rowControl = rowControls:GetChild(childIndex)
+        local rowControlLabel = rowControl:GetNamedChild("Label")
+        rowControlLabel:SetWidth(width)
+    end
 end
 
 function ShifterBoxList:UnselectAll()
