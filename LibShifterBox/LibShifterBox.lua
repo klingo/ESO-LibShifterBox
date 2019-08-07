@@ -141,6 +141,17 @@ function ShifterBoxList:SetCustomDimensions(width, height, headerHeight)
     -- and of the header (needed to cut down headers that are too long)
     local headerValueControl = self.headersContainer:GetNamedChild("Value")
     headerValueControl:SetWidth(width)
+    -- then re-set the anchor for the arrow to reposition itself
+    local headerValueNameControl = headerValueControl:GetNamedChild("Name")
+    local headerArrowControl = self.headersContainer:GetNamedChild("Arrow")
+    local headerTextWidth = headerValueNameControl:GetTextWidth()
+    headerArrowControl:ClearAnchors()
+    if headerTextWidth > width then
+        -- FIXME: does not correctly work when the ShifterBox is made bigger because the TextWidth() is not updated yet
+        headerArrowControl:SetAnchor(LEFT, headerValueNameControl, LEFT, width, 0)
+    else
+        headerArrowControl:SetAnchor(LEFT, headerValueNameControl, LEFT, headerTextWidth, 0)
+    end
 end
 
 function ShifterBoxList:Refresh()

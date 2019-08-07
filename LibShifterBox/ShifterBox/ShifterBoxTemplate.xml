@@ -13,7 +13,7 @@
                             <Controls>
                                 <Control name="$(parent)Value" inherits="ZO_SortHeader">
                                     <Anchor point="TOPLEFT" />
-                                    <Dimensions x="80" y="32" />
+                                    <Dimensions x="180" y="32" />
                                     <OnInitialized>
                                         ZO_SortHeader_Initialize(self, "Left", "value", ZO_SORT_ORDER_UP, TEXT_ALIGN_LEFT, "ZoFontHeader")
                                     </OnInitialized>
@@ -49,7 +49,7 @@
                             <Controls>
                                 <Control name="$(parent)Value" inherits="ZO_SortHeader">
                                     <Anchor point="TOPLEFT" />
-                                    <Dimensions x="80" y="32" />
+                                    <Dimensions x="180" y="32" />
                                     <OnInitialized>
                                         ZO_SortHeader_Initialize(self, "Right", "value", ZO_SORT_ORDER_UP, TEXT_ALIGN_LEFT, "ZoFontHeader")
                                     </OnInitialized>
