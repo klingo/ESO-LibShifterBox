@@ -19,9 +19,10 @@ local existingShifterBoxes = {}
 
 lib.defaultSettings = {
     sortBy = "value",
-    showLeftAllButton = false,      -- TODO: implement this setting
-    showRightAllButton = false,     -- TODO: implement this setting
+--    showLeftAllButton = false,      -- TODO: implement this setting
+--    showRightAllButton = false,     -- TODO: implement this setting
     rowHeight = 32,
+    emptyListText = "empty",
 }
 
 -- =================================================================================================================
@@ -46,7 +47,7 @@ function ShifterBoxList:Initialize(control, shifterBoxSettings)
     -- initialize the SortFilterList
     ZO_SortFilterList.Initialize(self, control)
     -- set a text that is displayed when there are no entries
-    self:SetEmptyText("empty")
+    self:SetEmptyText(shifterBoxSettings.emptyListText)
     -- default sorting key
     self.sortHeaderGroup:SelectHeaderByKey("value")
     ZO_SortHeader_OnMouseExit(self.control:GetNamedChild("Headers"):GetNamedChild("Value"))
@@ -319,6 +320,7 @@ local function _applyCustomSettings(customSettings)
         showLeftAllButton = customSettings.showLeftAllButton or lib.defaultSettings.showLeftAllButton,
         showRightAllButton = customSettings.showRightAllButton or lib.defaultSettings.showRightAllButton,
         rowHeight = customSettings.rowHeight or lib.defaultSettings.rowHeight,
+        emptyListText = customSettings.emptyListText or lib.defaultSettings.emptyListText,
     }
 end
 

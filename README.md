@@ -27,7 +27,8 @@ local leftListData = {
 
 local customSettings = {
     rowHeight = 30,
-    sortBy = "key"
+    sortBy = "key",
+    emptyListText = "empty"
 }
         
 local itemQualitiesShifterBox = LibShifterBox("MyNewAddon", "ItemQualities", parentControl, "Lefties", "Righties", customSettings)
@@ -98,8 +99,9 @@ local shifterBox = LibShifterBox.Create(uniqueAddonName, uniqueShifterBoxName, p
 Optionally custom settings can be passed on when the ShifterBox is created. The following values can be set:
 ```lua
 customSettings = {
-    sortBy = "value",   -- sort the list by value or key (allowed are: "value" or "key")
-    rowHeight = 32,     -- the height of an entry row
+    sortBy = "value",           -- sort the list by value or key (allowed are: "value" or "key")
+    rowHeight = 32,             -- the height of an entry row
+    emptyListText = "empty"     -- the text to be displayed when there is no row/entry in a list
 }
 ```
 
