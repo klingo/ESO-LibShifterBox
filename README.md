@@ -103,10 +103,16 @@ customSettings = {
 }
 ```
 
-### GetControl
-Returns the (first to be created) ShifterBox control based on the `uniqueAddonName` and `uniqueShifterBoxName`.
+### GetShifterBox
+Returns the (first to be created) ShifterBox instance based on the `uniqueAddonName` and `uniqueShifterBoxName`.
 ```lua
-local shifterBox = LibShifterBox.GetControl(uniqueAddonName, uniqueShifterBoxName)
+local shifterBox = LibShifterBox.GetShifterBox(uniqueAddonName, uniqueShifterBoxName)
+```
+
+### GetControl
+Returns the Control object of the (first to be created) ShifterBox based on the `uniqueAddonName` and `uniqueShifterBoxName`.
+```lua
+local shifterBoxControl = LibShifterBox.GetControl(uniqueAddonName, uniqueShifterBoxName)
 ```
 
 ### ShifterBox:SetAnchor

@@ -540,10 +540,18 @@ end
 -- =================================================================================================================
 -- == LIBRARY FUNCTIONS == --
 -- -----------------------------------------------------------------------------------------------------------------
-function lib.GetControl(uniqueAddonName, uniqueShifterBoxName)
+function lib.GetShifterBox(uniqueAddonName, uniqueShifterBoxName)
     local addonShifterBoxes = existingShifterBoxes[uniqueAddonName]
     if addonShifterBoxes ~= nil then
         return addonShifterBoxes[uniqueShifterBoxName]
+    end
+    return nil
+end
+
+function lib.GetControl(uniqueAddonName, uniqueShifterBoxName)
+    local shifterBox = lib.GetShifterBox(uniqueAddonName, uniqueShifterBoxName)
+    if shifterBox ~= nil then
+        return shifterBox.shifterBoxControl
     end
     return nil
 end
