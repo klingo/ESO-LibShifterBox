@@ -13,6 +13,7 @@ local ARROW_SIZE = 36
 local HEADER_HEIGHT = 32
 local DATA_TYPE_DEFAULT = 1
 local DATA_CATEGORY_DEFAULT = 1
+local SCROLLBAR_WIDTH = ZO_SCROLL_BAR_WIDTH
 
 local existingShifterBoxes = {}
 
@@ -82,9 +83,12 @@ end
 
 function ShifterBoxList:SetupRowEntry(rowControl, rowData)
     local function onRowMouseEnter(rowControl)
-        -- only show tooltip if the text/label was truncated
+        local labelControl = rowControl:GetNamedChild("Label")
+        local textWidth = labelControl:GetTextWidth()
+        local desiredWidth = labelControl:GetDesiredWidth()
+        -- only show tooltip if the text/label was truncated or if the text is wider than the desiredWidth minus the scrollbar width
         local wasTruncated = rowControl:GetNamedChild("Label"):WasTruncated()
-        if wasTruncated then
+        if wasTruncated or (textWidth + SCROLLBAR_WIDTH) > desiredWidth then
             ZO_Tooltips_ShowTextTooltip(rowControl, TOP, rowControl.data.value)
         end
     end
@@ -141,12 +145,11 @@ function ShifterBoxList:Refresh()
     -- first refresh the data
     self:RefreshData()
     -- then make sure that all rows have the correct width
-    local width = self.list:GetWidth()
     local rowControls = self.list.contents
     for childIndex = 1, rowControls:GetNumChildren() do
         local rowControl = rowControls:GetChild(childIndex)
         local rowControlLabel = rowControl:GetNamedChild("Label")
-        rowControlLabel:SetWidth(width)
+        rowControlLabel:SetWidth(rowControl:GetWidth())
     end
 end
 
@@ -379,6 +382,10 @@ function ShifterBox:SetDimensions(width, height)
 
     fromLeftButton:ClearAnchors()
     fromLeftButton:SetAnchor(TOPLEFT, leftList, TOPRIGHT, 0, arrowOffset)
+
+    -- Refresh the visualisation of the data
+    self.leftList:Refresh()
+    self.rightList:Refresh()
 end
 
 function ShifterBox:SetEnabled(enabled)
