@@ -9,7 +9,7 @@
                     <Controls>
                         <Control name="$(parent)Headers" hidden="true">
                             <Anchor point="TOPLEFT" />
-                            <Dimensions x="180" />
+                            <Dimensions x="180" y="0" />
                             <Controls>
                                 <Control name="$(parent)Value" inherits="ZO_SortHeader">
                                     <Anchor point="TOPLEFT" />
@@ -45,7 +45,7 @@
                     <Controls>
                         <Control name="$(parent)Headers" hidden="true">
                             <Anchor point="TOPLEFT" />
-                            <Dimensions x="180" />
+                            <Dimensions x="180" y="0" />
                             <Controls>
                                 <Control name="$(parent)Value" inherits="ZO_SortHeader">
                                     <Anchor point="TOPLEFT" />

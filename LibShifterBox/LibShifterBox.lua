@@ -230,20 +230,23 @@ local function _initShifterBoxControls(self, leftListTitle, rightListTitle)
         listFrameControl:SetEdgeTexture(nil, 1, 1, 1)
     end
 
-    local function initHeaders(leftListTitle, rightListTitle)
+    local function initHeaders(self, leftListTitle, rightListTitle)
         if leftListTitle ~= nil or rightListTitle ~= nil then
+            self.headerHeight = HEADER_HEIGHT
             -- show the headers (default = hidden)
             local leftHeaders = leftControl:GetNamedChild("Headers")
             local leftHeadersTitle = leftHeaders:GetNamedChild("Value"):GetNamedChild("Name")
-            leftHeaders:SetHeight(HEADER_HEIGHT)
+            leftHeaders:SetHeight(self.headerHeight)
             leftHeaders:SetHidden(false)
-            leftHeadersTitle:SetText(leftListTitle)
+            leftHeadersTitle:SetText(leftListTitle or "")
 
             local rightHeaders = rightControl:GetNamedChild("Headers")
             local rightHeadersTitle = rightHeaders:GetNamedChild("Value"):GetNamedChild("Name")
-            rightHeaders:SetHeight(HEADER_HEIGHT)
+            rightHeaders:SetHeight(self.headerHeight)
             rightHeaders:SetHidden(false)
-            rightHeadersTitle:SetText(rightListTitle)
+            rightHeadersTitle:SetText(rightListTitle or "")
+        else
+            self.headerHeight = 0
         end
     end
 
@@ -252,7 +255,7 @@ local function _initShifterBoxControls(self, leftListTitle, rightListTitle)
     end
 
     -- initialise the headers
-    initHeaders(leftListTitle, rightListTitle)
+    initHeaders(self, leftListTitle, rightListTitle)
 
     -- initialize the frame/border around the listBoxes
     initListFrames(leftListControl)
@@ -386,8 +389,8 @@ function ShifterBox:SetDimensions(width, height)
     local arrowOffset = (height - (2 * ARROW_SIZE)) / 4
 
     -- set the dimenions of the listBoxes
-    self.leftList:SetCustomDimensions(singleListWidth, height, HEADER_HEIGHT)
-    self.rightList:SetCustomDimensions(singleListWidth, height, HEADER_HEIGHT)
+    self.leftList:SetCustomDimensions(singleListWidth, height, self.headerHeight)
+    self.rightList:SetCustomDimensions(singleListWidth, height, self.headerHeight)
 
     -- for both buttons, clear the anchors first and then set new ones with the updated offsets
     fromRightButton:ClearAnchors()
