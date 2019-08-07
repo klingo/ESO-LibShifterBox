@@ -137,8 +137,10 @@ end
 function ShifterBoxList:SetCustomDimensions(width, height, headerHeight)
     -- first set width/height of the listbox itself
     self.list:SetDimensions(width, height)
-    -- and of the header
     self.headersContainer:SetDimensions(width, headerHeight)
+    -- and of the header (needed to cut down headers that are too long)
+    local headerValueControl = self.headersContainer:GetNamedChild("Value")
+    headerValueControl:SetWidth(width)
 end
 
 function ShifterBoxList:Refresh()
