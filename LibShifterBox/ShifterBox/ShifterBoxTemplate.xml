@@ -1,7 +1,7 @@
 <GuiXml>
     <Controls>
 
-        <Control name="ShifterBoxTemplate" virtual="true">
+        <Control name="ShifterBoxTemplate" resizeToFitDescendents="true" virtual="true">
             <Controls>
 
                 <Control name="$(parent)Left">

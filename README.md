@@ -110,7 +110,7 @@ local shifterBox = LibShifterBox.GetShifterBox(uniqueAddonName, uniqueShifterBox
 ```
 
 ### GetControl
-Returns the Control object of the (first to be created) ShifterBox based on the `uniqueAddonName` and `uniqueShifterBoxName`.
+Returns the Control object of the (first to be created) ShifterBox based on the `uniqueAddonName` and `uniqueShifterBoxName`. This can be needed to e.g. anchor other controls to the ShifterBox.
 ```lua
 local shifterBoxControl = LibShifterBox.GetControl(uniqueAddonName, uniqueShifterBoxName)
 ```
