@@ -35,7 +35,6 @@ local itemQualitiesShifterBox = LibShifterBox("MyNewAddon", "ItemQualities", par
 itemQualitiesShifterBox:SetAnchor(TOPLEFT, headerControl, BOTTOMLEFT, 0, 20)
 itemQualitiesShifterBox:SetDimensions(300, 200)
 itemQualitiesShifterBox:SetLeftListEntries(leftListData)
-itemQualitiesShifterBox:SelectEntryByKey(ITEM_QUALITY_ARCANE)
 ```
 ![alt text][shifterbox-example-1]
 
@@ -67,6 +66,8 @@ itemQualitiesShifterBox:SetEnabled(false)
 
 ## API Reference
   * [Create](#create)
+  * [GetShifterBox](#getshifterbox)
+  * [GetControl](#getcontrol)
   * [ShifterBox:SetAnchor](#shifterboxsetanchor)
   * [ShifterBox:SetDimensions](#shifterboxsetdimensions)
   * [ShifterBox:SetEnabled](#shifterboxsetenabled)
