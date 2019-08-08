@@ -13,10 +13,12 @@ Coming soon to [esoui.com](http://www.esoui.com/) !
 ## Example
 This is a full example of how to use the LibShifterBox.
 \
+\
 First the initial setup of the ShifterBox needs to be done:
 
 ```lua
-local leftListData = {
+-- prepare the list of entries; in this case a list of item qualities in matching colour
+local leftListEntries = {
     [ITEM_QUALITY_TRASH] = GetItemQualityColor(ITEM_QUALITY_TRASH):Colorize(GetString("SI_ITEMQUALITY", ITEM_QUALITY_TRASH)),
     [ITEM_QUALITY_NORMAL] = GetItemQualityColor(ITEM_QUALITY_NORMAL):Colorize(GetString("SI_ITEMQUALITY", ITEM_QUALITY_NORMAL)),
     [ITEM_QUALITY_MAGIC] = GetItemQualityColor(ITEM_QUALITY_MAGIC):Colorize(GetString("SI_ITEMQUALITY", ITEM_QUALITY_MAGIC)),
@@ -24,24 +26,31 @@ local leftListData = {
     [ITEM_QUALITY_ARTIFACT] = GetItemQualityColor(ITEM_QUALITY_ARTIFACT):Colorize(GetString("SI_ITEMQUALITY", ITEM_QUALITY_ARTIFACT)),
     [ITEM_QUALITY_LEGENDARY] = GetItemQualityColor(ITEM_QUALITY_LEGENDARY):Colorize(GetString("SI_ITEMQUALITY", ITEM_QUALITY_LEGENDARY)),
 }
+-- Reminder: When you use colorized texts as values, please be aware that the color-coding becomes part of the value and thus may prevent from sorting in (visualy) alphabetical order!
 
+-- optionally, we can override the default settings
 local customSettings = {
     rowHeight = 30,
     sortBy = "key",
     emptyListText = "empty"
 }
-        
+
+-- create the shifterBox and anchor it to a headerControl; also we can change the dimensions
 local itemQualitiesShifterBox = LibShifterBox("MyNewAddon", "ItemQualities", parentControl, "Lefties", "Righties", customSettings)
 itemQualitiesShifterBox:SetAnchor(TOPLEFT, headerControl, BOTTOMLEFT, 0, 20)
 itemQualitiesShifterBox:SetDimensions(300, 200)
-itemQualitiesShifterBox:SetLeftListEntries(leftListData)
+
+-- finally, the previously defined entries are added to the left list
+itemQualitiesShifterBox:SetLeftListEntries(leftListEntries)
 ```
 ![alt text][shifterbox-example-1]
 
 \
 Additional entries can be added, or existing ones replaced:
 ```lua
+-- this adds a new entry to the right list
 itemQualitiesShifterBox:AddEntryToRightList(10, "HelloWorld")
+-- this replaces the existing [Epic] entry from the left and adds it with a new value to the right list
 itemQualitiesShifterBox:AddEntryToRightList(ITEM_QUALITY_ARTIFACT, "Epic-Replacement", true)
 ```
 ![alt text][shifterbox-example-2]
@@ -87,7 +96,7 @@ itemQualitiesShifterBox:SetEnabled(false)
     * [ShifterBox:ClearRightList](#shifterboxclearrightlist)
 
 ### Create
-Returns a new instance of ShifterBox with the given control name. `leftListTitle` and `rightListTitle` are optional and if provided render headers to sort the list. If not provided the headers are not shown and the list is sorted in ascending order.
+Returns a new instance of ShifterBox with the given control name. `leftListTitle` and `rightListTitle` are optional and if provided render headers to sort the list. If not provided the headers are not shown and the list is sorted in ascending order. `customSettings` can also optionally be provided (with individual values), otherwise the default settings are used.
 ```lua
 local shifterBox = LibShifterBox(uniqueAddonName, uniqueShifterBoxName, parentControl, leftListTitle, rightListTitle, customSettings)
 ```
@@ -113,7 +122,7 @@ local shifterBox = LibShifterBox.GetShifterBox(uniqueAddonName, uniqueShifterBox
 ```
 
 ### GetControl
-Returns the Control object of the (first to be created) ShifterBox based on the `uniqueAddonName` and `uniqueShifterBoxName`. This can be needed to e.g. anchor other controls to the ShifterBox.
+Returns the CT_CONTROL object of the (first to be created) ShifterBox based on the `uniqueAddonName` and `uniqueShifterBoxName`. This can be used to e.g. anchor other controls to the ShifterBox.
 ```lua
 local shifterBoxControl = LibShifterBox.GetControl(uniqueAddonName, uniqueShifterBoxName)
 ```
