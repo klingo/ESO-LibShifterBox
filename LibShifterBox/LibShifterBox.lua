@@ -17,7 +17,7 @@ local SCROLLBAR_WIDTH = ZO_SCROLL_BAR_WIDTH
 
 local existingShifterBoxes = {}
 
-lib.defaultSettings = {
+local defaultSettings = {
     sortBy = "value",
 --    showLeftAllButton = false,      -- TODO: implement this setting
 --    showRightAllButton = false,     -- TODO: implement this setting
@@ -213,7 +213,7 @@ local function _moveEntryFromTo(fromList, toList, key)
 end
 
 local function _assertKeyIsNotInTable(key, sideControl)
-    assert(sideControl.entries[key] == nil, string.format("[ShifterBox]Error: Violation of UNIQUE KEY. Cannot insert duplicate key '%s' in control '%s'. The statement has been terminated.", tostring(key), sideControl:GetName()))
+    assert(sideControl.entries[key] == nil, string.format(LIB_IDENTIFIER.."_Error: Violation of UNIQUE KEY. Cannot insert duplicate key '%s' in control '%s'. The statement has been terminated.", tostring(key), sideControl:GetName()))
 end
 
 local function _initShifterBoxControls(self, leftListTitle, rightListTitle)
@@ -307,21 +307,22 @@ end
 
 local function _applyCustomSettings(customSettings)
     -- if no custom settings provided, use the default ones
-    if customSettings == nil then return lib.defaultSettings end
+    local settings = ZO_ShallowTableCopy(defaultSettings)
+    if customSettings == nil then return settings end
     -- otherwise validate them
     if customSettings.sortBy then
-        assert(customSettings.sortBy == "value" or customSettings.sortBy == "key", string.format("[LibShifterBox]Error: Invalid sortBy parameter '%s' provided! Only 'value' and 'key' are allowed.", tostring(customSettings.sortBy)))
+        assert(customSettings.sortBy == "value" or customSettings.sortBy == "key", string.format(LIB_IDENTIFIER.."_Error: Invalid sortBy parameter '%s' provided! Only 'value' and 'key' are allowed.", tostring(customSettings.sortBy)))
+        settings.sortBy = customSettings.sortBy
     end
     if customSettings.rowHeight then
-        assert(type(customSettings.rowHeight) == "number" and customSettings.rowHeight > 0, string.format("[LibShifterBox]Error: Invalid rowHeight parameter '%s' provided! Must be a numeric and positive.", tostring(customSettings.rowHeight)))
+        assert(type(customSettings.rowHeight) == "number" and customSettings.rowHeight > 0, string.format(LIB_IDENTIFIER.."_Error: Invalid rowHeight parameter '%s' provided! Must be a numeric and positive.", tostring(customSettings.rowHeight)))
+        settings.rowHeight = customSettings.rowHeight
     end
-    return {
-        sortBy = customSettings.sortBy or lib.defaultSettings.sortBy,
-        showLeftAllButton = customSettings.showLeftAllButton or lib.defaultSettings.showLeftAllButton,
-        showRightAllButton = customSettings.showRightAllButton or lib.defaultSettings.showRightAllButton,
-        rowHeight = customSettings.rowHeight or lib.defaultSettings.rowHeight,
-        emptyListText = customSettings.emptyListText or lib.defaultSettings.emptyListText,
-    }
+    if customSettings.emptyListText then
+        assert(type(customSettings.emptyListText) == "string", string.format(LIB_IDENTIFIER.."_Error: Invalid emptyListText parameter '%s' provided! Must be a string.", tostring(customSettings.emptyListText)))
+        settings.emptyListText = customSettings.emptyListText
+    end
+    return settings
 end
 
 
@@ -342,7 +343,7 @@ function ShifterBox:New(uniqueAddonName, uniqueShifterBoxName, parentControl, le
         existingShifterBoxes[uniqueAddonName] = {}
     end
     local addonShifterBoxes = existingShifterBoxes[uniqueAddonName]
-    assert(addonShifterBoxes[uniqueShifterBoxName] == nil, string.format("[LibShifterBox]Error: ShifterBox with the unique identifier '%s' is already registered for the addon '%s'!", tostring(uniqueShifterBoxName), tostring(uniqueAddonName)))
+    assert(addonShifterBoxes[uniqueShifterBoxName] == nil, string.format(LIB_IDENTIFIER.."_Error: ShifterBox with the unique identifier '%s' is already registered for the addon '%s'!", tostring(uniqueShifterBoxName), tostring(uniqueAddonName)))
 
     local obj = ZO_Object.New(self)
     obj.addonName = uniqueAddonName
