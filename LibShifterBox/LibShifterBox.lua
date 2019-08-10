@@ -26,7 +26,7 @@ local defaultSettings = {
 }
 
 -- =================================================================================================================
--- == LIBRARY LISTS == --
+-- == SCROLL-LISTS == --
 -- -----------------------------------------------------------------------------------------------------------------
 local ShifterBoxList = ZO_SortFilterList:Subclass()
 
@@ -194,7 +194,7 @@ end
 
 
 -- =================================================================================================================
--- == PRIVATE FUNCTIONS == --
+-- == SHIFTERBOX PRIVATE FUNCTIONS == --
 -- -----------------------------------------------------------------------------------------------------------------
 local function _createShifterBox(uniqueAddonName, uniqueShifterBoxName, parentControl)
     local shifterBoxName = table.concat({uniqueAddonName, "_", uniqueShifterBoxName})
@@ -382,7 +382,7 @@ end
 
 
 -- =================================================================================================================
--- == SHIFTERBOX FUNCTIONS == --
+-- == SHIFTERBOX PUBLIC FUNCTIONS == --
 -- -----------------------------------------------------------------------------------------------------------------
 local ShifterBox = ZO_Object:Subclass()
 
@@ -540,12 +540,14 @@ function ShifterBox:ClearRightList()
     _clearList(self.rightList)
 end
 
--- ---------------------------------------------------------------------------------------------------------------------
-
 
 -- =================================================================================================================
 -- == LIBRARY FUNCTIONS == --
 -- -----------------------------------------------------------------------------------------------------------------
+--- Returns an existing ShifterBox instance
+-- @param uniqueAddonName - a string identifer for the consuming addon
+-- @param uniqueShifterBoxName - a string identifier for the specific shifterBox
+-- @return an existing shifterBox instance or nil if not found with the passed names
 function lib.GetShifterBox(uniqueAddonName, uniqueShifterBoxName)
     local addonShifterBoxes = existingShifterBoxes[uniqueAddonName]
     if addonShifterBoxes ~= nil then
@@ -554,6 +556,10 @@ function lib.GetShifterBox(uniqueAddonName, uniqueShifterBoxName)
     return nil
 end
 
+--- Returns the CT_CONTROL object of an existing ShifterBox instance
+-- @param uniqueAddonName - a string identifer for the consuming addon
+-- @param uniqueShifterBoxName - a string identifier for the specific shifterBox
+-- @return an existing shifterBox CT_CONTROL object or nil if not found with the passed names
 function lib.GetControl(uniqueAddonName, uniqueShifterBoxName)
     local shifterBox = lib.GetShifterBox(uniqueAddonName, uniqueShifterBoxName)
     if shifterBox ~= nil then
