@@ -333,6 +333,53 @@ local function _removeEntryFromList(list, key)
     end
 end
 
+local function _setListEntries(list, entries, otherList)
+    -- assert that key does not exist yet in the other list
+    local otherListControl = otherList.control
+    for key, _ in pairs(entries) do
+        _assertKeyIsNotInTable(key, otherListControl)
+    end
+
+    -- now the entries can be added to the left list
+    local listControl = list.control
+    listControl.entries = _getDeepClonedTable(entries)
+    -- Unselect/Refresh the visualisation of the data
+    list:UnselectAll()
+end
+
+local function _getEntries(list)
+    local listEntries = list.control.entries
+    return listEntries
+end
+
+local function _addEntryToList(list, key, value, replace, otherList)
+    local listControl = list.control
+    local otherListControl = otherList.control
+    if replace and replace == true then
+        -- if replace is set to true, make sure that a potential entry with the same key is removed from the other list
+        if otherListControl.entries[key] ~= nil then
+            otherListControl.entries[key] = nil
+            otherList:UnselectAll()
+        end
+    else
+        -- if replace is not set or set to false, then assert that key does not exist in either list
+        _assertKeyIsNotInTable(key, listControl)
+        _assertKeyIsNotInTable(key, otherListControl)
+    end
+    -- then add entry to the corresponding list
+    table.insert(listControl.entries, key, value)
+    -- Unselect/Refresh the visualisation of the data
+    list:UnselectAll()
+end
+
+local function _clearList(list)
+    local listControl = list.control
+    -- remove the entries
+    listControl.entries = {}
+    -- and refresh the visualisation of the data
+    list:Refresh()
+end
+
 
 -- =================================================================================================================
 -- == SHIFTERBOX FUNCTIONS == --
@@ -459,99 +506,38 @@ end
 -- ---------------------------------------------------------------------------------------------------------------------
 
 function ShifterBox:SetLeftListEntries(entries)
-    -- assert that key does not exist yet in the other list
-    local rightControl = self.rightList.control
-    for key, _ in pairs(entries) do
-        _assertKeyIsNotInTable(key, rightControl)
-    end
-
-    -- now the entries can be added to the left list
-    local leftControl = self.leftList.control
-    leftControl.entries = _getDeepClonedTable(entries)
-    -- Unselect/Refresh the visualisation of the data
-    self.leftList:UnselectAll()
+    _setListEntries(self.leftList, entries, self.rightList)
 end
 
 function ShifterBox:GetLeftListEntries()
-    local leftListEntries = self.leftList.control.entries
-    return leftListEntries
+    return _getEntries(self.leftList)
 end
 
 function ShifterBox:AddEntryToLeftList(key, value, replace)
-    local leftControl = self.leftList.control
-    local rightControl = self.rightList.control
-    if replace and replace == true then
-        -- if replace is set to true, make sure that a potential entry with the same key is removed from the other list
-        if rightControl.entries[key] ~= nil then
-            rightControl.entries[key] = nil
-            self.rightList:UnselectAll()
-        end
-    else
-        -- if replace is not set or set to false, then assert that key does not exist in either list
-        _assertKeyIsNotInTable(key, leftControl)
-        _assertKeyIsNotInTable(key, rightControl)
-    end
-    -- then add entry to the corresponding list
-    table.insert(leftControl.entries, key, value)
-    -- Unselect/Refresh the visualisation of the data
-    self.leftList:UnselectAll()
+    _addEntryToList(self.leftList, key, value, replace, self.rightList)
+
 end
 
 function ShifterBox:ClearLeftList()
-    local leftControl = self.leftList.control
-    -- remove the entries
-    leftControl.entries = {}
-    -- and refresh the visualisation of the data
-    self.leftList:Refresh()
+    _clearList(self.leftList)
 end
 
 -- ---------------------------------------------------------------------------------------------------------------------
 
 function ShifterBox:SetRightListEntries(entries)
-    -- assert that key does not exist yet in the other list
-    local leftControl = self.leftList.control
-    for key, _ in pairs(entries) do
-        _assertKeyIsNotInTable(key, leftControl)
-    end
-
-    -- now the entries can be added to the left list
-    local rightControl = self.rightList.control
-    rightControl.entries = _getDeepClonedTable(entries)
-    -- Unselect/Refresh the visualisation of the data
-    self.rightList:UnselectAll()
+    _setListEntries(self.rightList, entries, self.leftList)
 end
 
 function ShifterBox:GetRightListEntries()
-    local rightListEntries = self.rightList.control.entries
-    return rightListEntries
+    return _getEntries(self.rightList)
 end
 
 function ShifterBox:AddEntryToRightList(key, value, replace)
-    local leftControl = self.leftList.control
-    local rightControl = self.rightList.control
-    if replace and replace == true then
-        -- if replace is set to true, make sure that a potential entry with the same key is removed from the other list
-        if leftControl.entries[key] ~= nil then
-            leftControl.entries[key] = nil
-            self.leftList:UnselectAll()
-        end
-    else
-        -- if replace is not set or set to false, then assert that key does not exist in either list
-        _assertKeyIsNotInTable(key, leftControl)
-        _assertKeyIsNotInTable(key, rightControl)
-    end
-    -- then add entry to the corresponding list
-    table.insert(rightControl.entries, key, value)
-    -- Unselect/Refresh the visualisation of the data
-    self.rightList:UnselectAll()
+    _addEntryToList(self.rightList, key, value, replace, self.leftList)
 end
 
 function ShifterBox:ClearRightList()
-    local rightControl = self.rightList.control
-    -- remove the entries
-    rightControl.entries = {}
-    -- and refresh the visualisation of the data
-    self.rightList:Refresh()
+    _clearList(self.rightList)
 end
 
 -- ---------------------------------------------------------------------------------------------------------------------
