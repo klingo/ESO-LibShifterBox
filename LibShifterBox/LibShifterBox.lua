@@ -325,6 +325,14 @@ local function _applyCustomSettings(customSettings)
     return settings
 end
 
+local function _removeEntryFromList(list, key)
+    local listControl = list.control
+    if listControl.entries[key] ~= nil then
+        listControl.entries[key] = nil
+        list:UnselectAll()
+    end
+end
+
 
 -- =================================================================================================================
 -- == SHIFTERBOX FUNCTIONS == --
@@ -443,6 +451,11 @@ function ShifterBox:SelectEntryByKey(key)
     end
 end
 
+function ShifterBox:RemoveEntryByKey(key)
+    _removeEntryFromList(self.leftList, key)
+    _removeEntryFromList(self.rightList, key)
+end
+
 -- ---------------------------------------------------------------------------------------------------------------------
 
 function ShifterBox:SetLeftListEntries(entries)
@@ -481,12 +494,6 @@ function ShifterBox:AddEntryToLeftList(key, value, replace)
     -- then add entry to the corresponding list
     table.insert(leftControl.entries, key, value)
     -- Unselect/Refresh the visualisation of the data
-    self.leftList:UnselectAll()
-end
-
-function ShifterBox:RemoveEntryFromLeftList(key)
-    local leftControl = self.leftList.control
-    leftControl.entries[key] = nil
     self.leftList:UnselectAll()
 end
 
@@ -536,12 +543,6 @@ function ShifterBox:AddEntryToRightList(key, value, replace)
     -- then add entry to the corresponding list
     table.insert(rightControl.entries, key, value)
     -- Unselect/Refresh the visualisation of the data
-    self.rightList:UnselectAll()
-end
-
-function ShifterBox:RemoveEntryFromRightList(key)
-    local rightControl = self.rightList.control
-    rightControl.entries[key] = nil
     self.rightList:UnselectAll()
 end
 

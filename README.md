@@ -82,17 +82,16 @@ itemQualitiesShifterBox:SetEnabled(false)
   * [ShifterBox:SetEnabled](#shifterboxsetenabled)
   * [ShifterBox:SetHidden](#shifterboxsethidden)
   * [ShifterBox:SelectEntryByKey](#shifterboxselectentrybykey)
+  * [ShifterBox:RemoveEntryByKey](#shifterboxremoveentrybykey)
   * [LeftListBox](#leftlistbox)
     * [ShifterBox:SetLeftListEntries](#shifterboxsetleftlistentries)
     * [ShifterBox:GetLeftListEntries](#shifterboxgetleftlistentries)
     * [ShifterBox:AddEntryToLeftList](#shifterboxaddentrytoleftlist)
-    * [ShifterBox:RemoveEntryFromLeftList](#shifterboxremoveentryfromleftlist)
     * [ShifterBox:ClearLeftList](#shifterboxclearleftlist)
   * [RightListBox](#rightlistbox)
     * [ShifterBox:SetRightListEntries](#shifterboxsetrightlistentries)
     * [ShifterBox:GetRightListEntries](#shifterboxgetrightlistentries)
     * [ShifterBox:AddEntryToRightList](#shifterboxaddentrytorightlist)
-    * [ShifterBox:RemoveEntryFromRightList](#shifterboxremoveentryfromrightlist)
     * [ShifterBox:ClearRightList](#shifterboxclearrightlist)
 
 ### Create
@@ -157,6 +156,12 @@ Selects (or deselects if already selected) an entry on either listBox based on t
 shifterBox:SelectEntryByKey(key)
 ```
 
+### ShifterBox:RemoveEntryByKey
+Removes and entry on either listBox based on the provided key.
+```lua
+shifterBox:RemoveEntryByKey(key)
+```
+
 
 ### LeftListBox
 
@@ -176,12 +181,6 @@ shifterBox:GetLeftListEntries()
 Adds one additional entry into the left listBox. If the key already exists the entry will not be added; unless if `replace` is set to `true`, then the entry with the same key in **either** listBox will be replaced.
 ```lua
 shifterBox:AddEntryToLeftList(key, value, replace)
-```
-
-#### ShifterBox:RemoveEntryFromLeftList
-Removes the specified entry from the left listBox.
-```lua
-shifterBox:RemoveEntryFromLeftList(key)
 ```
 
 #### ShifterBox:ClearLeftList
@@ -207,12 +206,6 @@ shifterBox:GetRightListEntries()
 Adds one additional entry into the right listBox. If the key already exists the entry will not be added; unless if `replace` is set to `true`, then the entry with the same key in **either** listBox will be replaced.
 ```lua
 shifterBox:AddEntryToRightList(key, value, replace)
-```
-
-#### ShifterBox:RemoveEntryFromRightList
-Removes the specified entry from the right listBox.
-```lua
-shifterBox:RemoveEntryFromRightList(key)
 ```
 
 #### ShifterBox:ClearRightList
