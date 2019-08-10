@@ -1,9 +1,7 @@
 <GuiXml>
     <Controls>
-
         <Control name="ShifterBoxTemplate" resizeToFitDescendents="true" virtual="true">
             <Controls>
-
                 <Control name="$(parent)Left">
                     <Anchor point="TOPLEFT" />
                     <Controls>
@@ -39,7 +37,6 @@
                         </Button>
                     </Controls>
                 </Control>
-
                 <Control name="$(parent)Right">
                     <Anchor point="TOPLEFT" relativeTo="$(parent)LeftHeaders" relativePoint="TOPRIGHT" offsetX="40" />
                     <Controls>
@@ -75,10 +72,8 @@
                         </Button>
                     </Controls>
                 </Control>
-
             </Controls>
         </Control>
-
         <Button name="ShifterBoxEntryTemplate" verticalAlignment="CENTER" horizontalAlignment="LEFT" virtual="true">
             <Dimensions x="180" y="32" />
             <Controls>
@@ -88,6 +83,5 @@
                 </Label>
             </Controls>
         </Button>
-
     </Controls>
 </GuiXml>
