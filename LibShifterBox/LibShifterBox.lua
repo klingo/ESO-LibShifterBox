@@ -60,10 +60,8 @@ function ShifterBoxList:Initialize(control, shifterBoxSettings)
 end
 
 function ShifterBoxList:FilterScrollList()
-    -- get the data of the scrollist and index it
     local scrollData = ZO_ScrollList_GetDataList(self.list)
     ZO_ClearNumericallyIndexedTable(scrollData)
-    -- populate the table that is used as source for the list
     for key, value in pairs(self.control.entries) do
         local rowData = {
             key = key,
@@ -74,7 +72,6 @@ function ShifterBoxList:FilterScrollList()
 end
 
 function ShifterBoxList:SortScrollList()
-    -- get all data and sort it
     local scrollData = ZO_ScrollList_GetDataList(self.list)
     table.sort(scrollData, self.sortFunction)
     if self.numSelected and self.numSelected > 0 then
@@ -106,7 +103,6 @@ function ShifterBoxList:SetupRowEntry(rowControl, rowData)
             rowControl.selected = true
             self.numSelected = self.numSelected + 1
         end
-
         -- update the buttonState
         if self.numSelected == 0 then
             self.buttonControl:SetState(BSTATE_DISABLED, true)
@@ -114,24 +110,19 @@ function ShifterBoxList:SetupRowEntry(rowControl, rowData)
             self.buttonControl:SetState(BSTATE_NORMAL, false)
         end
     end
-
     -- store the rowData on the control so it can be accessed from other places
     rowControl.data = rowData
-
     -- set the value for the row entry
     local labelControl = rowControl:GetNamedChild("Label")
     labelControl:SetText(rowData.value)
-
     -- the below two handlers only work if "PersonalAssistantBankingRuleListRowTemplate" is set to a <Button> control
     rowControl:SetHandler("OnMouseEnter", onRowMouseEnter)
     rowControl:SetHandler("OnMouseExit", onRowMouseExit)
-
     -- handle single clicks to mark entry
     rowControl:SetHandler("OnClicked", onRowClicked)
-
    -- set the height for the row
     rowControl:SetHeight(self.rowHeight)
-
+    -- then setup the row
     ZO_SortFilterList.SetupRow(self, rowControl, rowData)
 end
 
@@ -156,9 +147,8 @@ function ShifterBoxList:SetCustomDimensions(width, height, headerHeight)
 end
 
 function ShifterBoxList:Refresh()
-    -- first refresh the data
     self:RefreshData()
-    -- then make sure that all rows have the correct width
+    -- after data is refreshed,  make sure that all rows have the correct width
     local rowControls = self.list.contents
     for childIndex = 1, rowControls:GetNumChildren() do
         local rowControl = rowControls:GetChild(childIndex)
@@ -176,14 +166,12 @@ function ShifterBoxList:UnselectAll()
     -- when unselecting all entries, disable the button
     self.numSelected = 0
     self.buttonControl:SetState(BSTATE_DISABLED, true)
-    -- and refresh the view
     self:Refresh()
 end
 
 function ShifterBoxList:SetEntriesEnabled(enabled)
-    -- first unselect all entries (which also disables the buttons)
     self:UnselectAll()
-    -- then change the actual state of the rowControl-buttons
+    -- after unselecing all entries, change the actual state of the rowControl-buttons
     local rowControls = self.list.contents
     for childIndex = 1, rowControls:GetNumChildren() do
         local rowControl = rowControls:GetChild(childIndex)
@@ -325,6 +313,26 @@ local function _applyCustomSettings(customSettings)
     return settings
 end
 
+local function _getListBoxWidthAndArrowOffset(width, height)
+    -- widh must be at least three times the space between the listBoxes
+    if width < (3 * LIST_SPACING) then width = (3 * LIST_SPACING) end
+    -- the width of a listBox is the total width minus the spacing divided by two
+    local singleListWidth = (width - LIST_SPACING) / 2
+    -- height must be at least 2x the height of the arrows
+    if height < (2 * ARROW_SIZE) then height = (2 * ARROW_SIZE) end
+    -- the offset of the arrow is 1/4th of the remaining height
+    local arrowOffset = (height - (2 * ARROW_SIZE)) / 4
+    return singleListWidth, arrowOffset
+end
+
+local function _setListBoxDimensions(list, singleListWidth, height, headerHeight, buttonAnchorOptions)
+    local buttonControl = list.control:GetNamedChild("Button")
+    buttonControl:ClearAnchors()
+    buttonControl:SetAnchor(unpack(buttonAnchorOptions))
+    list:SetCustomDimensions(singleListWidth, height, headerHeight)
+    list:Refresh()
+end
+
 local function _removeEntryFromList(list, key)
     local listControl = list.control
     if listControl.entries[key] ~= nil then
@@ -339,7 +347,6 @@ local function _setListEntries(list, entries, otherList)
     for key, _ in pairs(entries) do
         _assertKeyIsNotInTable(key, otherListControl)
     end
-
     -- now the entries can be added to the left list
     local listControl = list.control
     listControl.entries = _getDeepClonedTable(entries)
@@ -374,9 +381,7 @@ end
 
 local function _clearList(list)
     local listControl = list.control
-    -- remove the entries
     listControl.entries = {}
-    -- and refresh the visualisation of the data
     list:Refresh()
 end
 
@@ -431,35 +436,14 @@ end
 -- @param width - the width for the whole shifterBox
 -- @param height - the height for the whole shifterBox (incl. headers if applicable)
 function ShifterBox:SetDimensions(width, height)
-    local fromLeftButton = self.leftList.control:GetNamedChild("Button")
-    local fromRightButton = self.rightList.control:GetNamedChild("Button")
-    local leftList = self.leftList.list
-    local rightList = self.rightList.list
-
-    -- widh must be at least three times the space between the listBoxes
-    if width < (3 * LIST_SPACING) then width = (3 * LIST_SPACING) end
-    -- the width of a listBox is the total width minus the spacing divided by two
-    local singleListWidth = (width - LIST_SPACING) / 2
-
-    -- height must be at least 2x the height of the arrows
-    if height < (2 * ARROW_SIZE) then height = (2 * ARROW_SIZE) end
-    -- the offset of the arrow is 1/4th of the remaining height
-    local arrowOffset = (height - (2 * ARROW_SIZE)) / 4
-
-    -- set the dimenions of the listBoxes
-    self.leftList:SetCustomDimensions(singleListWidth, height, self.headerHeight)
-    self.rightList:SetCustomDimensions(singleListWidth, height, self.headerHeight)
-
-    -- for both buttons, clear the anchors first and then set new ones with the updated offsets
-    fromRightButton:ClearAnchors()
-    fromRightButton:SetAnchor(BOTTOMRIGHT, rightList, BOTTOMLEFT, -2, arrowOffset * -1) -- lower arrow requires negative offset
-
-    fromLeftButton:ClearAnchors()
-    fromLeftButton:SetAnchor(TOPLEFT, leftList, TOPRIGHT, 0, arrowOffset)
-
-    -- Refresh the visualisation of the data
-    self.leftList:Refresh()
-    self.rightList:Refresh()
+    local singleListWidth, arrowOffset = _getListBoxWidthAndArrowOffset(width, height)
+    local headerHeight = self.headerHeight
+    local leftList = self.leftList
+    local rightList = self.rightList
+    local leftButtonAnchorOptions = {TOPLEFT, leftList.list, TOPRIGHT, 0, arrowOffset}
+    local rightButtonAnchorOptions = {BOTTOMRIGHT, rightList.list, BOTTOMLEFT, -2, arrowOffset * -1} -- lower arrow requires negative offset
+    _setListBoxDimensions(leftList, singleListWidth, height, self.headerHeight, leftButtonAnchorOptions)
+    _setListBoxDimensions(rightList, singleListWidth, height, self.headerHeight, rightButtonAnchorOptions)
 end
 
 function ShifterBox:SetEnabled(enabled)
