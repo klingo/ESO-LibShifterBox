@@ -82,17 +82,25 @@ itemQualitiesShifterBox:SetEnabled(false)
   * [ShifterBox:SetDimensions](#shifterboxsetdimensions)
   * [ShifterBox:SetEnabled](#shifterboxsetenabled)
   * [ShifterBox:SetHidden](#shifterboxsethidden)
+  * [ShifterBox:ShowCategory](#shifterboxshowcategory)
+  * [ShifterBox:HideCategory](#shifterboxhidecategory)
   * [ShifterBox:SelectEntryByKey](#shifterboxselectentrybykey)
+  * [ShifterBox:SelectEntriesByKey](#shifterboxselectentriesbykey)
   * [ShifterBox:RemoveEntryByKey](#shifterboxremoveentrybykey)
+  * [ShifterBox:RemoveEntriesByKey](#shifterboxremoveentriesbykey)
   * [LeftListBox](#leftlistbox)
-    * [ShifterBox:SetLeftListEntries](#shifterboxsetleftlistentries)
     * [ShifterBox:GetLeftListEntries](#shifterboxgetleftlistentries)
     * [ShifterBox:AddEntryToLeftList](#shifterboxaddentrytoleftlist)
+    * [ShifterBox:AddEntriesToLeftList](#shifterboxaddentriestoleftlist)
+    * [ShifterBox:MoveEntryToLeftList](#shifterboxmoveentrytoleftlist)
+    * [ShifterBox:MoveEntriesToLeftList](#shifterboxmoveentriestoleftlist)
     * [ShifterBox:ClearLeftList](#shifterboxclearleftlist)
   * [RightListBox](#rightlistbox)
-    * [ShifterBox:SetRightListEntries](#shifterboxsetrightlistentries)
     * [ShifterBox:GetRightListEntries](#shifterboxgetrightlistentries)
     * [ShifterBox:AddEntryToRightList](#shifterboxaddentrytorightlist)
+    * [ShifterBox:AddEntriesToRightList](#shifterboxaddentriestorightlist)
+    * [ShifterBox:MoveEntryToRightList](#shifterboxmoveentrytorightlist)
+    * [ShifterBox:MoveEntriesToRightList](#shifterboxmoveentriestorightlist)
     * [ShifterBox:ClearRightList](#shifterboxclearrightlist)
 
 ### Create
@@ -159,10 +167,28 @@ Sets the whole ShifterBox to hidden or shows it again.
 shifterBox:SetHidden(hidden)
 ```
 
+### ShifterBox:ShowCategory
+Shows all entries that have been added to the shifterBox under the provided `categoryId`.
+```lua
+shifterBox:ShowCategory(categoryId)
+```
+
+### ShifterBox:HideCategory
+Hides all entries that have been added to the shifterBox under the provided `categoryId`.
+```lua
+shifterBox:HideCategory(categoryId)
+```
+
 ### ShifterBox:SelectEntryByKey
 Selects (or deselects if already selected) an entry on either listBox based on the provided key.
 ```lua
 shifterBox:SelectEntryByKey(key)
+```
+
+### ShifterBox:SelectEntriesByKey
+Selects (or deselects if already selected) a list of entries on either listBox. The provided `keys` must be a table with keys such as `keys = {1, 2, 3}`.
+```lua
+shifterBox:SelectEntriesByKey(keys)
 ```
 
 ### ShifterBox:RemoveEntryByKey
@@ -171,14 +197,14 @@ Removes an entry on either listBox based on the provided key.
 shifterBox:RemoveEntryByKey(key)
 ```
 
+### ShifterBox:RemoveEntriesByKey
+Removes a list of entries on either listBox. The provided `keys` must be a table with keys such as `keys = {1, 2, 3}`.
+```lua
+shifterBox:RemoveEntriesByKey(keys)
+```
+
 
 ### LeftListBox
-
-#### ShifterBox:SetLeftListEntries
-Sets the provided list into the left listBox. This replaces any existing entries.
-```lua
-shifterBox:SetLeftListEntries(entries)
-```
 
 #### ShifterBox:GetLeftListEntries
 Returns a table with all entries that are currently in the left listBox.
@@ -188,8 +214,30 @@ shifterBox:GetLeftListEntries()
 
 #### ShifterBox:AddEntryToLeftList
 Adds one additional entry into the left listBox. If the key already exists the entry will not be added; unless if `replace` is set to `true`, then the entry with the same key in **either** listBox will be replaced.
+\
+Optionally a `categoryId` can be provided to assign the entry to a specific category. These then can be shown/hidden with `ShowCategory(categoryId)` and `HideCategory(categoryId)`. If not provided, the default categoryId is used (`LibShifterBox.DEFAULT_CATEGORY`)
 ```lua
-shifterBox:AddEntryToLeftList(key, value, replace)
+shifterBox:AddEntryToLeftList(key, value, replace, categoryId)
+```
+
+#### ShifterBox:AddEntriesToLeftList
+Adds a list of entries into the left listBox. If any of the keys already exists the entry will not be added; unless if `replace` is set to `true`, then the entry with the same key in **either** listBox will be replaced.
+\
+Optionally a `categoryId` can be provided to assign the entries to a specific category. These then can be shown/hidden with `ShowCategory(categoryId)` and `HideCategory(categoryId)`. If not provided, the default categoryId is used (`LibShifterBox.DEFAULT_CATEGORY`)
+```lua
+shifterBox:AddEntriesToLeftList(entries, replace, categoryId)
+```
+
+#### ShifterBox:MoveEntryToLeftList
+Moves a single entry from the right listBox into the left listBox.
+```lua
+shifterBox:MoveEntryToLeftList(key)
+```
+
+#### ShifterBox:MoveEntriesToLeftList
+Moves a list of entries from the right listBox into the left listBox. The provided `keys` must be a table with keys such as `keys = {1, 2, 3}`.
+```lua
+shifterBox:MoveEntriesToLeftList(keys)
 ```
 
 #### ShifterBox:ClearLeftList
@@ -201,20 +249,38 @@ shifterBox:ClearLeftList()
 
 ### RightListBox
 
-#### ShifterBox:SetRightListEntries
-Sets the provided list into the right listBox. This replaces any existing entries.
-```lua
-shifterBox:SetRightListEntries(entries)
-```
 #### ShifterBox:GetRightListEntries
 Returns a table with all entries that are currently in the right listBox.
 ```lua
 shifterBox:GetRightListEntries()
 ```
+
 #### ShifterBox:AddEntryToRightList
 Adds one additional entry into the right listBox. If the key already exists the entry will not be added; unless if `replace` is set to `true`, then the entry with the same key in **either** listBox will be replaced.
+\
+Optionally a `categoryId` can be provided to assign the entry to a specific category. These then can be shown/hidden with `ShowCategory(categoryId)` and `HideCategory(categoryId)`. If not provided, the default categoryId is used (`LibShifterBox.DEFAULT_CATEGORY`)
 ```lua
-shifterBox:AddEntryToRightList(key, value, replace)
+shifterBox:AddEntryToRightList(key, value, replace, categoryId)
+```
+
+#### ShifterBox:AddEntriesToRightList
+Adds a list of entries into the right listBox. If any of the keys already exists the entry will not be added; unless if `replace` is set to `true`, then the entry with the same key in **either** listBox will be replaced.
+\
+Optionally a `categoryId` can be provided to assign the entries to a specific category. These then can be shown/hidden with `ShowCategory(categoryId)` and `HideCategory(categoryId)`. If not provided, the default categoryId is used (`LibShifterBox.DEFAULT_CATEGORY`)
+```lua
+shifterBox:AddEntriesToRightList(entries, replace, categoryId)
+```
+
+#### ShifterBox:MoveEntryToRightList
+Moves a single entry from the left listBox into the right listBox.
+```lua
+shifterBox:MoveEntryToRightList(key)
+```
+
+#### ShifterBox:MoveEntriesToRightList
+Moves a list of entries from the left listBox into the right listBox. The provided `keys` must be a table with keys such as `keys = {1, 2, 3}`.
+```lua
+shifterBox:MoveEntriesToRightList(keys)
 ```
 
 #### ShifterBox:ClearRightList
