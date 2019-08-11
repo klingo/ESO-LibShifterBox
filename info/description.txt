@@ -1,0 +1,29 @@
+[SIZE=5]Features[/SIZE]
+[LIST]
+[*]tbd
+[/LIST]
+
+
+[SIZE=5]Quick Start[/SIZE]
+Add LibShifterBox as a dependency to your add-on manifest:
+[CODE]## DependsOn: LibShifterBox[/CODE]
+
+Then you can create a shifterBox instance, anchor it to another control and start adding entries like this:
+[highlight="Lua"]
+local shifterBox = LibShifterBox("MyAddon", "MyShifterBox", parentControl, "Lefties", "Righties")
+shifterBox:SetAnchor(TOPLEFT, headerControl, BOTTOMLEFT, 0, 20) -- required to correctly position/anchor it in your UI
+shifterBox:SetDimensions(300, 200) -- optionally set your own overall dimensions of the shifterBox
+shifterBox:SetLeftListEntries({[1] = "AAA", [2] = "BBB", [3] = "CCC"}) -- add three entries to the left list
+shifterBox:AddEntryToRightList(4, "DDD") -- add one entry to the right list
+[/highlight]
+
+[SIZE=5]API Reference[/SIZE]
+[LIST]
+[*]For the most up-to-date API reference, please check the GitHub page: [B][URL="https://github.com/klingo/ESO-LibShifterBox#api-reference"]LibShifterBox API Reference[/URL][/B]
+[/LIST]
+
+[SIZE=5]Issues? Requests?[/SIZE][LIST]
+[*] In case of issues or requests, please either drop a comment here on the AddOn page, or alternatively raise an issue on the GitHub page ([URL="https://github.com/klingo/ESO-LibShifterBox/issues/new"]Link: New Issue[/URL])[/LIST]
+
+[SIZE=5]Info[/SIZE][LIST]
+[*] Source code is on GitHub: [URL="https://github.com/klingo/ESO-LibShifterBox"]LibShifterBox[/URL][/LIST]
