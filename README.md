@@ -10,7 +10,7 @@ LibShifterBox, a library add-on for '[The Elder Scrolls Online](https://www.elde
 Coming soon to [esoui.com](http://www.esoui.com/) !
 
 
-## Example
+## Quick Start Example
 This is a full example of how to use the LibShifterBox.
 \
 \
@@ -77,6 +77,7 @@ itemQualitiesShifterBox:SetEnabled(false)
   * [Create](#create)
   * [GetShifterBox](#getshifterbox)
   * [GetControl](#getcontrol)
+  * [ShifterBox:GetControl](#shifterboxgetcontrol)
   * [ShifterBox:SetAnchor](#shifterboxsetanchor)
   * [ShifterBox:SetDimensions](#shifterboxsetdimensions)
   * [ShifterBox:SetEnabled](#shifterboxsetenabled)
@@ -122,8 +123,16 @@ local shifterBox = LibShifterBox.GetShifterBox(uniqueAddonName, uniqueShifterBox
 
 ### GetControl
 Returns the CT_CONTROL object of the (first to be created) ShifterBox based on the `uniqueAddonName` and `uniqueShifterBoxName`. This can be used to e.g. anchor other controls to the ShifterBox.
+\
+It is preferred to use the `:GetControl()` function of your instantiated shifterBox (see below).
 ```lua
 local shifterBoxControl = LibShifterBox.GetControl(uniqueAddonName, uniqueShifterBoxName)
+```
+
+### ShifterBox:GetControl
+Returns the CT_CONTROL object of the instantiated shifterBox. This can be used to e.g. anchor other controls to the ShifterBox.
+```lua
+local shifterBoxControl = shifterBox:GetControl()
 ```
 
 ### ShifterBox:SetAnchor
@@ -133,7 +142,7 @@ shifterBox:SetAnchor(whereOnMe, anchorTargetControl, whereOnTarget, offsetX, off
 ```
 
 ### ShifterBox:SetDimensions
-Sets the dimensions of the overall ShifterBox (across both listBoxes). The provided width is distributed to the two listBoxes and the space in between (for the buttons). There is a minimum height/width of 80.
+Sets the dimensions of the overall ShifterBox (across both listBoxes and including header titles if applicable). The provided width is distributed to the two listBoxes and the space in between (for the buttons). There is a minimum height/width of 80x80.
 ```lua
 shifterBox:SetDimensions(width, height)
 ```
@@ -145,7 +154,7 @@ shifterBox:SetEnabled(enabled)
 ```
 
 ### ShifterBox:SetHidden
-Sets the whole ShifterBox to hidden or shown state.
+Sets the whole ShifterBox to hidden or shows it again.
 ```lua
 shifterBox:SetHidden(hidden)
 ```
@@ -157,7 +166,7 @@ shifterBox:SelectEntryByKey(key)
 ```
 
 ### ShifterBox:RemoveEntryByKey
-Removes and entry on either listBox based on the provided key.
+Removes an entry on either listBox based on the provided key.
 ```lua
 shifterBox:RemoveEntryByKey(key)
 ```

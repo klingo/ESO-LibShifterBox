@@ -457,6 +457,10 @@ function ShifterBox:SetHidden(hidden)
     self.shifterBoxControl:SetHidden(hidden)
 end
 
+function ShifterBox:GetControl()
+    return self.shifterBoxControl
+end
+
 function ShifterBox:SelectEntryByKey(key)
     local function selectRowByKey(rowControls, key)
         for childIndex = 1, rowControls:GetNumChildren() do
