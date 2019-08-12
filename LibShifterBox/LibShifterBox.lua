@@ -32,7 +32,7 @@ local defaultSettings = {
 -- TODO: UnselectAllEntries
 -- TODO: GetLeftListEntries / GetRightListEntries
 -- TODO: GetEntries incl. category
--- TODO: when shifting entries over, the button sometimes stays activated? (selectedMultiData is correct)
+-- TODO: SetEnabled to disable buttons and unseelect all entries
 
 
 -- =================================================================================================================
@@ -440,6 +440,8 @@ local function _initShifterBoxHandlers(self)
         -- then commit the changes to the scrollList and refresh the hidden states
         self.leftList:RefreshSortAndCategories()
         self.rightList:RefreshSortAndCategories()
+        -- finally disable the button itself
+        buttonControl:SetState(BSTATE_DISABLED, true)
     end
 
     local function toRightButtonClicked(buttonControl)
@@ -450,6 +452,8 @@ local function _initShifterBoxHandlers(self)
         -- then commit the changes to the scrollList and refresh the hidden states
         self.leftList:RefreshSortAndCategories()
         self.rightList:RefreshSortAndCategories()
+        -- finally disable the button itself
+        buttonControl:SetState(BSTATE_DISABLED, true)
     end
 
     -- initialize the handler when the buttons are clicked
