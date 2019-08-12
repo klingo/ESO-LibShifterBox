@@ -109,6 +109,18 @@ function ShifterBoxList:SortScrollList()
     table.sort(scrollData, self.sortFunction)
 end
 
+function ShifterBoxList:RefreshSortAndCategories()
+    -- first refresh the sorting (SortScrollList & CommitScrollList)
+    self:RefreshSort()
+    -- then refresh the hidden categories
+    local categories = self.list.categories
+    for categoryId, category in pairs(categories) do
+        if category.hidden then
+            ZO_ScrollList_HideCategory(self.list, categoryId)
+        end
+    end
+end
+
 function ShifterBoxList:AddEntry(key, value, categoryId)
     local scrollData = ZO_ScrollList_GetDataList(self.list)
     local rowData = {
@@ -138,15 +150,6 @@ end
 function ShifterBoxList:ClearEntries()
     local scrollData = ZO_ScrollList_GetDataList(self.list)
     ZO_ClearNumericallyIndexedTable(scrollData)
-end
-
-function ShifterBoxList:RefreshCategoriesHiddenState()
-    local categories = self.list.categories
-    for categoryId, category in pairs(categories) do
-        if category.hidden then
-            ZO_ScrollList_HideCategory(self.list, categoryId)
-        end
-    end
 end
 
 function ShifterBoxList:RefreshSelectedControls()
@@ -435,10 +438,8 @@ local function _initShifterBoxHandlers(self)
             _moveEntryFromTo(self.rightList, self.leftList, data.key)
         end
         -- then commit the changes to the scrollList and refresh the hidden states
-        self.leftList:RefreshSort()
-        self.leftList:RefreshCategoriesHiddenState()
-        self.rightList:RefreshSort()
-        self.rightList:RefreshCategoriesHiddenState()
+        self.leftList:RefreshSortAndCategories()
+        self.rightList:RefreshSortAndCategories()
     end
 
     local function toRightButtonClicked(buttonControl)
@@ -447,10 +448,8 @@ local function _initShifterBoxHandlers(self)
             _moveEntryFromTo(self.leftList, self.rightList, data.key)
         end
         -- then commit the changes to the scrollList and refresh the hidden states
-        self.leftList:RefreshSort()
-        self.leftList:RefreshCategoriesHiddenState()
-        self.rightList:RefreshSort()
-        self.rightList:RefreshCategoriesHiddenState()
+        self.leftList:RefreshSortAndCategories()
+        self.rightList:RefreshSortAndCategories()
     end
 
     -- initialize the handler when the buttons are clicked
@@ -530,13 +529,12 @@ end
 
 local function _removeEntriesFromList(list, keys)
     local hasAtLeastOneRemoved = false
-    for aaa, key in pairs(keys) do
+    for _, key in pairs(keys) do
         local removedKey = list:RemoveEntry(key)
         if removedKey ~= nil then hasAtLeastOneRemoved = true end
     end
     if hasAtLeastOneRemoved then
-        list:RefreshSort()
-        list:RefreshCategoriesHiddenState()
+        list:RefreshSortAndCategories()
     end
 end
 
@@ -592,10 +590,8 @@ local function _moveEntriesToOtherList(sourceList, keys, destList)
     end
     if atLeastOneMoved then
         -- if an entry was moved, "unselect" all entries (and inheretly refresh the display)
-        sourceList:RefreshSort()
-        sourceList:RefreshCategoriesHiddenState()
-        destList:RefreshSort()
-        destList:RefreshCategoriesHiddenState()
+        sourceList:RefreshSortAndCategories()
+        destList:RefreshSortAndCategories()
     end
 end
 
