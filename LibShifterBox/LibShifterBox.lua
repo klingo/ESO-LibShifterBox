@@ -27,10 +27,12 @@ local defaultSettings = {
     emptyListText = "empty",
 }
 
--- TODO: ShowAllCategories
+-- OPEN TASKS
+-- TODO: ShowAllCategories <-- to be tested!
+-- TODO: SelectEntryByKey / SelectEntriesByKeyys
 -- TODO: UnselectAllEntries
+-- TODO: GetLeftListEntries / GetRightListEntries
 -- TODO: GetEntries incl. category
--- TODO: "empty" text is not removed when entry shifted over
 -- TODO: when shifting entries over, they are not sorted anymore --> SortScrollList() ?
 -- TODO: when shifting entries over, the button sometimes stays activated? (selectedMultiData is correct)
 
@@ -38,6 +40,7 @@ local defaultSettings = {
 -- =================================================================================================================
 -- == SCROLL-LISTS == --
 -- -----------------------------------------------------------------------------------------------------------------
+-- Source: https://esoapi.uesp.net/100027/src/libraries/zo_sortfilterlist/zo_sortfilterlist.lua.html
 local ShifterBoxList = ZO_SortFilterList:Subclass()
 
 ShifterBoxList.SORT_KEYS = {
@@ -433,9 +436,9 @@ local function _initShifterBoxHandlers(self)
             _moveEntryFromTo(self.rightList, self.leftList, data.key)
         end
         -- then commit the changes to the scrollList and refresh the hidden states
-        ZO_ScrollList_Commit(self.leftList.list)
+        self.leftList:CommitScrollList()
         self.leftList:RefreshCategoriesHiddenState()
-        ZO_ScrollList_Commit(self.rightList.list)
+        self.rightList:CommitScrollList()
         self.rightList:RefreshCategoriesHiddenState()
     end
 
@@ -445,9 +448,9 @@ local function _initShifterBoxHandlers(self)
             _moveEntryFromTo(self.leftList, self.rightList, data.key)
         end
         -- then commit the changes to the scrollList and refresh the hidden states
-        ZO_ScrollList_Commit(self.leftList.list)
+        self.leftList:CommitScrollList()
         self.leftList:RefreshCategoriesHiddenState()
-        ZO_ScrollList_Commit(self.rightList.list)
+        self.rightList:CommitScrollList()
         self.rightList:RefreshCategoriesHiddenState()
     end
 
@@ -533,7 +536,7 @@ local function _removeEntriesFromList(list, keys)
         if removedKey ~= nil then hasAtLeastOneRemoved = true end
     end
     if hasAtLeastOneRemoved then
-        ZO_ScrollList_Commit(list.list)
+        list:CommitScrollList()
         list:RefreshCategoriesHiddenState()
     end
 end
@@ -590,9 +593,9 @@ local function _moveEntriesToOtherList(sourceList, keys, destList)
     end
     if atLeastOneMoved then
         -- if an entry was moved, "unselect" all entries (and inheretly refresh the display)
-        ZO_ScrollList_Commit(sourceList.list)
+        sourceList:CommitScrollList()
         sourceList:RefreshCategoriesHiddenState()
-        ZO_ScrollList_Commit(destList.list)
+        destList:CommitScrollList()
         destList:RefreshCategoriesHiddenState()
     end
 end
