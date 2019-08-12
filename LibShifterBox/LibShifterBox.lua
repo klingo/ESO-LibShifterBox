@@ -28,7 +28,7 @@ local defaultSettings = {
 }
 
 -- OPEN TASKS
--- TODO: SelectEntryByKey / SelectEntriesByKeyys
+-- TODO: buttonCOntrol state change in "ToggleEntrySelection" to ensure buttons enable via script as well
 -- TODO: UnselectAllEntries
 -- TODO: GetLeftListEntries / GetRightListEntries
 -- TODO: GetEntries incl. category
@@ -199,13 +199,17 @@ end
 -- @param control - the control of the entry (optional - can be deferred from data)
 -- @param reselectingDuringRebuild - to be defined
 -- @param animateInstantly - if the selection animation is instantly or not
-function ShifterBoxList:ToggleEntrySelection(data, control, reselectingDuringRebuild, animateInstantly)
+-- @param deselectOnReselect - if the entry is already selected, instead of reselecting it will be deselected
+function ShifterBoxList:ToggleEntrySelection(data, control, reselectingDuringRebuild, animateInstantly, deselectOnReselect )
     d("SelectEntry")
     if reselectingDuringRebuild == nil then
         reselectingDuringRebuild = false
     end
     if animateInstantly == nil then
         animateInstantly = false
+    end
+    if deselectOnReselect  == nil then
+        deselectOnReselect  = true
     end
     local dataKey
     if data ~= nil then
@@ -225,23 +229,21 @@ function ShifterBoxList:ToggleEntrySelection(data, control, reselectingDuringReb
     end
     if data ~= nil then
         if not control then
-            control = ZO_ScrollList_GetDataControl(self, data)
+            control = ZO_ScrollList_GetDataControl(self.list, data)
         end
-        if control then
-            -- check if already selected
-            if self.list.selectedMultiDataKey[dataKey] ~= nil then
-                -- remove selected data
-                self.list.selectedMultiData[dataKey] = nil
-                self.list.selectedMultiDataKey[dataKey] = nil
-                -- and unselect the control
-                self:UnselectControl(control, animateInstantly)
-            else
-                -- add selected data
-                self.list.selectedMultiData[dataKey] = data
-                self.list.selectedMultiDataKey[dataKey] = true
-                -- and select the control
-                self:SelectControl(control, animateInstantly)
-            end
+        -- check if already selected
+        if self.list.selectedMultiDataKey[dataKey] == nil then
+            -- add selected data
+            self.list.selectedMultiData[dataKey] = data
+            self.list.selectedMultiDataKey[dataKey] = true
+            -- and select the control (if applicable)
+            if control then self:SelectControl(control, animateInstantly) end
+        elseif deselectOnReselect then
+            -- remove selected data
+            self.list.selectedMultiData[dataKey] = nil
+            self.list.selectedMultiDataKey[dataKey] = nil
+            -- and unselect the control (if applicable)
+            if control then self:UnselectControl(control, animateInstantly) end
         end
     end
     if self.list.selectionCallback then
@@ -504,24 +506,16 @@ end
 -- ---------------------------------------------------------------------------------------------------------------------
 
 local function _selectEntries(list, keys)
-    -- TODO: to be refactored!!!
-    local function selectRowByKey(rowControls, key)
-        for childIndex = 1, rowControls:GetNumChildren() do
-            local rowControl = rowControls:GetChild(childIndex)
-            local data = ZO_ScrollList_GetData(rowControl)
+    local visibleData = list.list.visibleData
+    for _, visibleKey in ipairs(visibleData) do
+        local dataEntry = list.list.data[visibleKey]
+        local data = dataEntry.data
+        for _, key in pairs(keys) do
             if data.key == key then
-                local onRowClicked = rowControl:GetHandler("OnClicked")
-                if onRowClicked ~= nil then onRowClicked(rowControl) end
-                return
+                local control = dataEntry.control -- can be nil if control is out-of-scroll-view
+                list:ToggleEntrySelection(data, control, nil, nil, false)
+                break
             end
-        end
-    end
-
-    local listEntries = list.control.entries
-    local listContents = list.list.contents
-    for _, key in pairs(keys) do
-        if listEntries[key] ~= nil then
-             selectRowByKey(listContents, key)
         end
     end
 end
