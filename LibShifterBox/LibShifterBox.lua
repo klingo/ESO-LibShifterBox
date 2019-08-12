@@ -28,7 +28,6 @@ local defaultSettings = {
 }
 
 -- OPEN TASKS
--- TODO: ShowAllCategories <-- to be tested!
 -- TODO: SelectEntryByKey / SelectEntriesByKeyys
 -- TODO: UnselectAllEntries
 -- TODO: GetLeftListEntries / GetRightListEntries
@@ -688,6 +687,17 @@ function ShifterBox:ShowCategory(categoryId)
     assert(categoryId ~= nil, string.format(LIB_IDENTIFIER.."_Error: categoryId cannot be nil!"))
     ZO_ScrollList_ShowCategory(self.leftList.list, categoryId)
     ZO_ScrollList_ShowCategory(self.rightList.list, categoryId)
+end
+
+function ShifterBox:ShowAllCategories()
+    local leftList = self.leftList.list
+    for categoryId in pairs(leftList.categories) do
+        ZO_ScrollList_ShowCategory(leftList, categoryId)
+    end
+    local rightList = self.rightList.list
+    for categoryId in pairs(rightList.categories) do
+        ZO_ScrollList_ShowCategory(rightList, categoryId)
+    end
 end
 
 function ShifterBox:HideCategory(categoryId)
