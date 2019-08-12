@@ -48,7 +48,6 @@ ShifterBoxList.SORT_KEYS = {
 function ShifterBoxList:New(control, shifterBoxSettings)
     local obj = ZO_SortFilterList.New(self, control, shifterBoxSettings)
     obj.buttonControl = control:GetNamedChild("Button")
-    obj.numSelected = 0
     -- TODO: instead return obj.list ???
     return obj
 end
@@ -152,6 +151,7 @@ function ShifterBoxList:RefreshSelectedControls()
     end
 end
 
+--- this function only visually selects an entry, it does NOT store it in the selected-list though!
 function ShifterBoxList:SelectControl(control, animateInstantly)
     local controlTemplate = self.list.selectionTemplate
     local animationFieldName = ANIMATION_FIELD_NAME
@@ -169,6 +169,7 @@ function ShifterBoxList:SelectControl(control, animateInstantly)
     end
 end
 
+--- this function only visually unselects an entry, it does NOT remove it from the selected-list though!
 function ShifterBoxList:UnselectControl(control, animateInstantly)
     local animationFieldName = ANIMATION_FIELD_NAME
     -- UnselectControl()
@@ -182,16 +183,19 @@ function ShifterBoxList:UnselectControl(control, animateInstantly)
 end
 
 -- Custom implementation based on: https://esoapi.uesp.net/100027/src/libraries/zo_templates/scrolltemplates.lua.html#1456
+--- this function toggles the selection of an entry and also adds/removes it to/from the selected-list
+-- @param data - the table with the data of the entry (mandatory)
+-- @param control - the control of the entry (optional - can be deferred from data)
+-- @param reselectingDuringRebuild - to be defined
+-- @param animateInstantly - if the selection animation is instantly or not
 function ShifterBoxList:ToggleEntrySelection(data, control, reselectingDuringRebuild, animateInstantly)
     d("SelectEntry")
     if reselectingDuringRebuild == nil then
         reselectingDuringRebuild = false
     end
-
     if animateInstantly == nil then
         animateInstantly = false
     end
-
     local dataKey
     if data ~= nil then
         for i = 1, #self.list.data do
@@ -201,23 +205,17 @@ function ShifterBoxList:ToggleEntrySelection(data, control, reselectingDuringReb
                 break
             end
         end
-
         -- this data we tried to select isn't in the scroll list at all, just abort
-        if dataKey == nil then
-            return
-        end
+        if dataKey == nil then return end
     end
-
     if self.list.selectedMultiData == nil then
         self.list.selectedMultiData = {}
         self.list.selectedMultiDataKey = {}
     end
-
     if data ~= nil then
         if not control then
             control = ZO_ScrollList_GetDataControl(self, data)
         end
-
         if control then
             -- check if already selected
             if self.list.selectedMultiDataKey[dataKey] ~= nil then
@@ -235,7 +233,6 @@ function ShifterBoxList:ToggleEntrySelection(data, control, reselectingDuringReb
             end
         end
     end
-
     if self.list.selectionCallback then
         self.list.selectionCallback(data, self.list.selectedMultiData, reselectingDuringRebuild)
     end
@@ -245,9 +242,6 @@ function ShifterBoxList:SortScrollList()
     d("SortScrollList")
     local scrollData = ZO_ScrollList_GetDataList(self.list)
     table.sort(scrollData, self.sortFunction)
-    if self.numSelected and self.numSelected > 0 then
-        self:UnselectAll()
-    end
 end
 
 function ShifterBoxList:SetupRowEntry(rowControl, rowData)
@@ -294,7 +288,7 @@ function ShifterBoxList:SetupRowEntry(rowControl, rowData)
     -- set the height for the row
     rowControl:SetHeight(self.rowHeight)
 
-    -- reselect entries if necessary
+    -- reselect entries (only visually) if necessary
     local selectedMultiDataKey = self.list.selectedMultiDataKey
     if selectedMultiDataKey and selectedMultiDataKey[rowData.key] ~= nil then
         self:SelectControl(rowControl, false)
@@ -336,20 +330,7 @@ function ShifterBoxList:Refresh()
     end
 end
 
-function ShifterBoxList:UnselectAll()
-    local rowControls = self.list.contents
-    for childIndex = 1, rowControls:GetNumChildren() do
-        local rowControl = rowControls:GetChild(childIndex)
-        rowControl.selected = nil
-    end
-    -- when unselecting all entries, disable the button
-    self.numSelected = 0
-    self.buttonControl:SetState(BSTATE_DISABLED, true)
-    self:Refresh()
-end
-
 function ShifterBoxList:SetEntriesEnabled(enabled)
-    self:UnselectAll()
     -- after unselecing all entries, change the actual state of the rowControl-buttons
     local rowControls = self.list.contents
     for childIndex = 1, rowControls:GetNumChildren() do
@@ -592,8 +573,7 @@ local function _addEntriesToList(list, entries, replace, otherList, categoryId)
     end
     if hasAtLeastOneAdded then
         -- Afterwards unselect/refresh the visualisation of the data
-        list:UnselectAll()
-        otherList:UnselectAll()
+        -- TODO: something needs to be done here?
     end
 end
 
