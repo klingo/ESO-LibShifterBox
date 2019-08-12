@@ -33,7 +33,6 @@ local defaultSettings = {
 -- TODO: UnselectAllEntries
 -- TODO: GetLeftListEntries / GetRightListEntries
 -- TODO: GetEntries incl. category
--- TODO: when shifting entries over, they are not sorted anymore --> SortScrollList() ?
 -- TODO: when shifting entries over, the button sometimes stays activated? (selectedMultiData is correct)
 
 
@@ -86,6 +85,10 @@ function ShifterBoxList:Initialize(control, shifterBoxSettings)
     self:RefreshData()
 end
 
+-- ZO_SortFilterList:RefreshData()      =>  BuildMasterList()   =>  FilterScrollList()  =>  SortScrollList()    =>  CommitScrollList()
+-- ZO_SortFilterList:RefreshFilters()                           =>  FilterScrollList()  =>  SortScrollList()    =>  CommitScrollList()
+-- ZO_SortFilterList:RefreshSort()                                                      =>  SortScrollList()    =>  CommitScrollList()
+
 function ShifterBoxList:BuildMasterList()
     d("BuildMasterList")
     -- intended to be overriden
@@ -102,6 +105,9 @@ function ShifterBoxList:SortScrollList()
     d("SortScrollList)")
     -- intended to be overriden
     -- should take the filtered data and sort it
+
+    local scrollData = ZO_ScrollList_GetDataList(self.list)
+    table.sort(scrollData, self.sortFunction)
 end
 
 function ShifterBoxList:AddEntry(key, value, categoryId)
@@ -239,12 +245,6 @@ function ShifterBoxList:ToggleEntrySelection(data, control, reselectingDuringReb
     if self.list.selectionCallback then
         self.list.selectionCallback(data, self.list.selectedMultiData, reselectingDuringRebuild)
     end
-end
-
-function ShifterBoxList:SortScrollList()
-    d("SortScrollList")
-    local scrollData = ZO_ScrollList_GetDataList(self.list)
-    table.sort(scrollData, self.sortFunction)
 end
 
 function ShifterBoxList:SetupRowEntry(rowControl, rowData)
@@ -436,9 +436,9 @@ local function _initShifterBoxHandlers(self)
             _moveEntryFromTo(self.rightList, self.leftList, data.key)
         end
         -- then commit the changes to the scrollList and refresh the hidden states
-        self.leftList:CommitScrollList()
+        self.leftList:RefreshSort()
         self.leftList:RefreshCategoriesHiddenState()
-        self.rightList:CommitScrollList()
+        self.rightList:RefreshSort()
         self.rightList:RefreshCategoriesHiddenState()
     end
 
@@ -448,9 +448,9 @@ local function _initShifterBoxHandlers(self)
             _moveEntryFromTo(self.leftList, self.rightList, data.key)
         end
         -- then commit the changes to the scrollList and refresh the hidden states
-        self.leftList:CommitScrollList()
+        self.leftList:RefreshSort()
         self.leftList:RefreshCategoriesHiddenState()
-        self.rightList:CommitScrollList()
+        self.rightList:RefreshSort()
         self.rightList:RefreshCategoriesHiddenState()
     end
 
@@ -536,7 +536,7 @@ local function _removeEntriesFromList(list, keys)
         if removedKey ~= nil then hasAtLeastOneRemoved = true end
     end
     if hasAtLeastOneRemoved then
-        list:CommitScrollList()
+        list:RefreshSort()
         list:RefreshCategoriesHiddenState()
     end
 end
@@ -593,9 +593,9 @@ local function _moveEntriesToOtherList(sourceList, keys, destList)
     end
     if atLeastOneMoved then
         -- if an entry was moved, "unselect" all entries (and inheretly refresh the display)
-        sourceList:CommitScrollList()
+        sourceList:RefreshSort()
         sourceList:RefreshCategoriesHiddenState()
-        destList:CommitScrollList()
+        destList:RefreshSort()
         destList:RefreshCategoriesHiddenState()
     end
 end
