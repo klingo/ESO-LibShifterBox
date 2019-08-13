@@ -87,6 +87,7 @@ itemQualitiesShifterBox:SetEnabled(false)
   * [ShifterBox:HideCategory](#shifterboxhidecategory)
   * [ShifterBox:SelectEntryByKey](#shifterboxselectentrybykey)
   * [ShifterBox:SelectEntriesByKey](#shifterboxselectentriesbykey)
+  * [ShifterBox:UnselectAllEntries](#shifterboxunselectallentries)
   * [ShifterBox:RemoveEntryByKey](#shifterboxremoveentrybykey)
   * [ShifterBox:RemoveEntriesByKey](#shifterboxremoveentriesbykey)
   * [LeftListBox](#leftlistbox)
@@ -196,6 +197,12 @@ shifterBox:SelectEntryByKey(key)
 Selects (or deselects if already selected) a list of entries on either listBox. The provided `keys` must be a table with keys such as `keys = {1, 2, 3}`.
 ```lua
 shifterBox:SelectEntriesByKey(keys)
+```
+
+### ShifterBox:UnselectAllEntries
+Deselects all entries on either listBox.
+```lua
+shifterBox:UnselectAllEntries()
 ```
 
 ### ShifterBox:RemoveEntryByKey

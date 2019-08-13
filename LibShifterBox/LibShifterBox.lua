@@ -29,7 +29,6 @@ local defaultSettings = {
 
 -- OPEN TASKS
 -- TODO: MoveEntryToRightList etc. not working properly
--- TODO: UnselectAllEntries (NEW)
 -- TODO: SetEnabled to disable buttons and unseelect all entries
 
 
@@ -162,6 +161,12 @@ function ShifterBoxList:RefreshSelectedControls()
             self:SelectControl(control, false)
         end
     end
+end
+
+function ShifterBoxList:UnselectEntries()
+    self.list.selectedMultiData = {}
+    self:RefreshSortAndCategories()
+    self.buttonControl:SetState(BSTATE_DISABLED, true)
 end
 
 --- this function only visually selects an entry, it does NOT store it in the selected-list though!
@@ -723,6 +728,11 @@ end
 function ShifterBox:SelectEntriesByKey(keys)
     _selectEntries(self.leftList, keys)
     _selectEntries(self.rightList, keys)
+end
+
+function ShifterBox:UnselectAllEntries()
+    self.leftList:UnselectEntries()
+    self.rightList:UnselectEntries()
 end
 
 function ShifterBox:RemoveEntryByKey(key)
