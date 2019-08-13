@@ -318,15 +318,15 @@ function ShifterBoxList:SetCustomDimensions(width, height, headerHeight)
 end
 
 function ShifterBoxList:Refresh()
-    d("Refresh")
-    self:RefreshData()
-    -- after data is refreshed,  make sure that all rows have the correct width
+    -- make sure that all rows have the correct width
     local rowControls = self.list.contents
     for childIndex = 1, rowControls:GetNumChildren() do
         local rowControl = rowControls:GetChild(childIndex)
         local rowControlLabel = rowControl:GetNamedChild("Label")
         rowControlLabel:SetWidth(rowControl:GetWidth())
     end
+    -- then refresh/sort the data (i.e. update scrollbar)
+    self:RefreshSortAndCategories()
 end
 
 function ShifterBoxList:SetEntriesEnabled(enabled)
