@@ -28,7 +28,6 @@ local defaultSettings = {
 }
 
 -- OPEN TASKS
--- TODO: MoveEntryToRightList etc. not working properly
 -- TODO: UnselectAll when mouse-over causes text to become white
 
 
@@ -609,16 +608,12 @@ local function _addEntryToList(list, key, value, replace, otherList, categoryId)
 end
 
 local function _moveEntriesToOtherList(sourceList, keys, destList)
-    local atLeastOneMoved = false
     for _, key in pairs(keys) do
-        local moved = _moveEntryFromTo(sourceList, destList, key)
-        if moved then atLeastOneMoved = true end
+        _moveEntryFromTo(sourceList, destList, key)
     end
-    if atLeastOneMoved then
-        -- if an entry was moved, "unselect" all entries (and inheretly refresh the display)
-        sourceList:RefreshSortAndCategories()
-        destList:RefreshSortAndCategories()
-    end
+    -- refresh the display afterwards
+    sourceList:RefreshSortAndCategories()
+    destList:RefreshSortAndCategories()
 end
 
 local function _moveEntryToOtherList(sourceList, key, destList)
