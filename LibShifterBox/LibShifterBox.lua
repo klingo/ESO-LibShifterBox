@@ -404,10 +404,6 @@ local function _initShifterBoxControls(self, leftListTitle, rightListTitle)
         end
     end
 
-    local function initButton(buttonControl)
-        buttonControl:SetState(BSTATE_DISABLED, true)
-    end
-
     -- initialise the headers
     initHeaders(self, leftListTitle, rightListTitle)
 
@@ -416,8 +412,8 @@ local function _initShifterBoxControls(self, leftListTitle, rightListTitle)
     initListFrames(rightListControl)
 
     -- initialize the buttons in disabled state
-    initButton(fromLeftButtonControl)
-    initButton(fromRightButtonControl)
+    fromLeftButtonControl:SetState(BSTATE_DISABLED, true)
+    fromRightButtonControl:SetState(BSTATE_DISABLED, true)
 end
 
 local function _initShifterBoxHandlers(self)
