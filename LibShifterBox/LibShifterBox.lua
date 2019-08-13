@@ -29,7 +29,7 @@ local defaultSettings = {
 
 -- OPEN TASKS
 -- TODO: MoveEntryToRightList etc. not working properly
--- TODO: UnselectAllEntries
+-- TODO: UnselectAllEntries (NEW)
 -- TODO: GetLeftListEntries / GetRightListEntries
 -- TODO: GetEntries incl. category
 -- TODO: SetEnabled to disable buttons and unseelect all entries
@@ -589,7 +589,8 @@ end
 
 local function _clearList(list)
     list:ClearEntries()
-    list:Refresh() -- TODO: check if needed?
+    list:CommitScrollList()
+    list.buttonControl:SetState(BSTATE_DISABLED, true)
 end
 
 
