@@ -527,15 +527,15 @@ local function _removeEntryFromList(list, key)
     _removeEntriesFromList(list, keys)
 end
 
-local function _getEntries(list, onlyVisibleEntries, onlyValues)
+local function _getEntries(list, onlyVisibleEntries, withCategoryId)
     local function _addToTable(table, key, value, categoryId)
-        if onlyValues then
-            table[key] = value
-        else
+        if withCategoryId then
             table[key] = {
                 value = value,
                 categoryId = categoryId
             }
+        else
+            table[key] = value
         end
     end
 
@@ -737,12 +737,12 @@ end
 
 -- ---------------------------------------------------------------------------------------------------------------------
 
-function ShifterBox:GetLeftListEntries(onlyValues)
-    return _getEntries(self.leftList, false, onlyValues)
+function ShifterBox:GetLeftListEntries(withCategoryId)
+    return _getEntries(self.leftList, false, withCategoryId)
 end
 
-function ShifterBox:GetLeftListVisibleEntries(onlyValues)
-    return _getEntries(self.leftList, true, onlyValues)
+function ShifterBox:GetLeftListVisibleEntries(withCategoryId)
+    return _getEntries(self.leftList, true, withCategoryId)
 end
 
 function ShifterBox:AddEntryToLeftList(key, value, replace, categoryId)
@@ -767,12 +767,12 @@ end
 
 -- ---------------------------------------------------------------------------------------------------------------------
 
-function ShifterBox:GetRightListEntries(onlyValues)
-    return _getEntries(self.rightList, false, onlyValues)
+function ShifterBox:GetRightListEntries(withCategoryId)
+    return _getEntries(self.rightList, false, withCategoryId)
 end
 
-function ShifterBox:GetRightListVisibleEntries(onlyValues)
-    return _getEntries(self.rightList, true, onlyValues)
+function ShifterBox:GetRightListVisibleEntries(withCategoryId)
+    return _getEntries(self.rightList, true, withCategoryId)
 end
 
 function ShifterBox:AddEntryToRightList(key, value, replace, categoryId)

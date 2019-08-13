@@ -214,15 +214,15 @@ shifterBox:RemoveEntriesByKey(keys)
 ### LeftListBox
 
 #### ShifterBox:GetLeftListEntries
-Returns a table with **all** entries that are currently in the left listBox (including the hidden ones). If `onlyValues` is set to `true` then only key/value pairs are returned; if omitted or set to `false` the `categoryId` is also returned.
+Returns a table with **all** entries that are currently in the left listBox (including the hidden ones). If `withCategoryId` is omitted or set to `false`, only key/value pairs are returned. If set to `true` then also the `categoryId` is returned per entry.
 ```lua
-shifterBox:GetLeftListEntries(onlyValues)
+shifterBox:GetLeftListEntries(withCategoryId)
 ```
 
 #### ShifterBox:GetLeftListVisibleEntries
-Returns a table with all entries that are currently in the left listBox and that are not hidden. If `onlyValues` is set to `true` then only key/value pairs are returned; if omitted or set to `false` the `categoryId` is also returned.
+Returns a table with all entries that are currently in the left listBox and that are not hidden. If `withCategoryId` is omitted or set to `false`, only key/value pairs are returned. If set to `true` then also the `categoryId` is returned per entry.
 ```lua
-shifterBox:GetLeftListVisibleEntries(onlyValues)
+shifterBox:GetLeftListVisibleEntries(withCategoryId)
 ```
 
 #### ShifterBox:AddEntryToLeftList
@@ -263,15 +263,15 @@ shifterBox:ClearLeftList()
 ### RightListBox
 
 #### ShifterBox:GetRightListEntries
-Returns a table with **all** entries that are currently in the right listBox (including the hidden ones). If `onlyValues` is set to `true` then only key/value pairs are returned; if omitted or set to `false` the `categoryId` is also returned.
+Returns a table with **all** entries that are currently in the right listBox (including the hidden ones). If `withCategoryId` is omitted or set to `false`, only key/value pairs are returned. If set to `true` then also the `categoryId` is returned per entry.
 ```lua
-shifterBox:GetRightListEntries(onlyValues)
+shifterBox:GetRightListEntries(withCategoryId)
 ```
 
 #### ShifterBox:GetRightListVisibleEntries
-Returns a table with all entries that are currently in the right listBox and that are not hidden. If `onlyValues` is set to `true` then only key/value pairs are returned; if omitted or set to `false` the `categoryId` is also returned.
+Returns a table with all entries that are currently in the right listBox and that are not hidden. If `withCategoryId` is omitted or set to `false`, only key/value pairs are returned. If set to `true` then also the `categoryId` is returned per entry.
 ```lua
-shifterBox:GetRightListVisibleEntries(onlyValues)
+shifterBox:GetRightListVisibleEntries(withCategoryId)
 ```
 
 #### ShifterBox:AddEntryToRightList
