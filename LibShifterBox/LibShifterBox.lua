@@ -30,8 +30,6 @@ local defaultSettings = {
 -- OPEN TASKS
 -- TODO: MoveEntryToRightList etc. not working properly
 -- TODO: UnselectAllEntries (NEW)
--- TODO: GetLeftListEntries / GetRightListEntries
--- TODO: GetEntries incl. category
 -- TODO: SetEnabled to disable buttons and unseelect all entries
 
 
@@ -529,10 +527,32 @@ local function _removeEntryFromList(list, key)
     _removeEntriesFromList(list, keys)
 end
 
-local function _getEntries(list)
-    -- TODO: to be refactored!!!
-    local listEntries = list.control.entries
-    return listEntries
+local function _getEntries(list, onlyVisibleEntries, onlyValues)
+    local function _addToTable(table, key, value, categoryId)
+        if onlyValues then
+            table[key] = value
+        else
+            table[key] = {
+                value = value,
+                categoryId = categoryId
+            }
+        end
+    end
+
+    local allData = list.list.data
+    local exportData = {}
+    if onlyVisibleEntries then
+        local visibleDataKeys = list.list.visibleData
+        for _, key in ipairs(visibleDataKeys) do
+            local entry = allData[key]
+            _addToTable(exportData, entry.data.key, entry.data.value, entry.categoryId)
+        end
+    else
+        for _, entry in ipairs(allData) do
+            _addToTable(exportData, entry.data.key, entry.data.value, entry.categoryId)
+        end
+    end
+    return exportData
 end
 
 local function _addEntriesToList(list, entries, replace, otherList, categoryId)
@@ -717,8 +737,12 @@ end
 
 -- ---------------------------------------------------------------------------------------------------------------------
 
-function ShifterBox:GetLeftListEntries()
-    return _getEntries(self.leftList)
+function ShifterBox:GetLeftListEntries(onlyValues)
+    return _getEntries(self.leftList, false, onlyValues)
+end
+
+function ShifterBox:GetLeftListVisibleEntries(onlyValues)
+    return _getEntries(self.leftList, true, onlyValues)
 end
 
 function ShifterBox:AddEntryToLeftList(key, value, replace, categoryId)
@@ -743,8 +767,12 @@ end
 
 -- ---------------------------------------------------------------------------------------------------------------------
 
-function ShifterBox:GetRightListEntries()
-    return _getEntries(self.rightList)
+function ShifterBox:GetRightListEntries(onlyValues)
+    return _getEntries(self.rightList, false, onlyValues)
+end
+
+function ShifterBox:GetRightListVisibleEntries(onlyValues)
+    return _getEntries(self.rightList, true, onlyValues)
 end
 
 function ShifterBox:AddEntryToRightList(key, value, replace, categoryId)
