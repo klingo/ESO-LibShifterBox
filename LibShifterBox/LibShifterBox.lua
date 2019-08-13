@@ -28,7 +28,7 @@ local defaultSettings = {
 }
 
 -- OPEN TASKS
--- TODO: buttonCOntrol state change in "ToggleEntrySelection" to ensure buttons enable via script as well
+-- TODO: MoveEntryToRightList etc. not working properly
 -- TODO: UnselectAllEntries
 -- TODO: GetLeftListEntries / GetRightListEntries
 -- TODO: GetEntries incl. category
@@ -55,8 +55,14 @@ end
 
 function ShifterBoxList:OnSelectionChanged(previouslySelectedData, selectedData, reselectingDuringRebuild)
     d("OnSelectionChanged")
---    ZO_ScrollList_SelectData(self.list, selectedData, nil, reselectingDuringRebuild, false)
-    -- TODO: to be removed mabye?
+    local selectedMultiDataKey = self.list.selectedMultiDataKey
+    local count = 0
+    for _ in pairs(selectedMultiDataKey) do count = count + 1 end
+    if count > 0 then
+        self.buttonControl:SetState(BSTATE_NORMAL, false)
+    else
+        self.buttonControl:SetState(BSTATE_DISABLED, true)
+    end
 end
 
 function ShifterBoxList:Initialize(control, shifterBoxSettings)
@@ -71,12 +77,9 @@ function ShifterBoxList:Initialize(control, shifterBoxSettings)
     -- define the datatype for this list and enable the highlighting
     ZO_ScrollList_AddCategory(self.list, DATA_CATEGORY_DEFAULT)
     ZO_ScrollList_AddDataType(self.list, DATA_TYPE_DEFAULT, "ShifterBoxEntryTemplate", self.rowHeight, function(control, data) self:SetupRowEntry(control, data) end)
-
---    ZO_ScrollList_EnableHighlight(self.list, "ZO_ThinListHighlight")
     ZO_ScrollList_EnableSelection(self.list, "ZO_ThinListHighlight", function(...)
         d("ZO_ScrollList_EnableSelection")
         self:OnSelectionChanged(...)
-        -- TODO: to be removed mabye?
     end)
 
     -- set up sorting function and refresh all data
@@ -272,16 +275,6 @@ function ShifterBoxList:SetupRowEntry(rowControl, rowData)
         d("onRowClicked")
         local data = ZO_ScrollList_GetData(rowControl)
         self:ToggleEntrySelection(data, rowControl, RESELECTING_DURING_REBUILD, false)
-
-        local selectedMultiDataKey = self.list.selectedMultiDataKey
-        local count = 0
-        for _ in pairs(selectedMultiDataKey) do count = count + 1 end
-
-        if count > 0 then
-            self.buttonControl:SetState(BSTATE_NORMAL, false)
-        else
-            self.buttonControl:SetState(BSTATE_DISABLED, true)
-        end
     end
     -- set the value for the row entry
     local labelControl = rowControl:GetNamedChild("Label")
