@@ -27,9 +27,8 @@ local defaultSettings = {
     emptyListText = "empty",
 }
 
--- OPEN TASKS
--- TODO: UnselectAll when mouse-over causes text to become white
-
+-- KNOWN ISSUES
+-- TODO: Calling UnselectAllEntries() when mouse-over causes text to become white
 
 -- =================================================================================================================
 -- == SCROLL-LISTS == --
@@ -50,7 +49,6 @@ function ShifterBoxList:New(control, shifterBoxSettings)
 end
 
 function ShifterBoxList:OnSelectionChanged(previouslySelectedData, selectedData, reselectingDuringRebuild)
-    d("OnSelectionChanged")
     local selectedMultiData = self.list.selectedMultiData
     local count = 0
     for _ in pairs(selectedMultiData) do count = count + 1 end
@@ -74,7 +72,6 @@ function ShifterBoxList:Initialize(control, shifterBoxSettings)
     ZO_ScrollList_AddCategory(self.list, DATA_CATEGORY_DEFAULT)
     ZO_ScrollList_AddDataType(self.list, DATA_TYPE_DEFAULT, "ShifterBoxEntryTemplate", self.rowHeight, function(control, data) self:SetupRowEntry(control, data) end)
     ZO_ScrollList_EnableSelection(self.list, "ZO_ThinListHighlight", function(...)
-        d("ZO_ScrollList_EnableSelection")
         self:OnSelectionChanged(...)
     end)
 
@@ -88,19 +85,16 @@ end
 -- ZO_SortFilterList:RefreshSort()                                                      =>  SortScrollList()    =>  CommitScrollList()
 
 function ShifterBoxList:BuildMasterList()
-    d("BuildMasterList")
     -- intended to be overriden
     -- should build the master list of data that is later filtered by FilterScrollList
 end
 
 function ShifterBoxList:FilterScrollList()
-    d("FilterScrollList")
     -- intended to be overriden
     -- should take the master list data and filter it
 end
 
 function ShifterBoxList:SortScrollList()
-    d("SortScrollList)")
     -- intended to be overriden
     -- should take the filtered data and sort it
     local scrollData = ZO_ScrollList_GetDataList(self.list)
@@ -129,12 +123,10 @@ function ShifterBoxList:AddEntry(key, value, categoryId)
 end
 
 function ShifterBoxList:RemoveEntry(key)
-    d("RemoveEntry")
     local scrollData = ZO_ScrollList_GetDataList(self.list)
     for i, entry in ipairs(scrollData) do
         local categoryId = entry.categoryId
         local data = entry.data
-        df("data.key = %d    data.value = %s   categoryId = %s", data.key, data.value, tostring(categoryId))
         if data.key == key then
             if self.list.selectedMultiData then
                 self.list.selectedMultiData[data.key] = nil
@@ -206,7 +198,6 @@ end
 -- @param animateInstantly - if the selection animation is instantly or not
 -- @param deselectOnReselect - if the entry is already selected, instead of reselecting it will be deselected
 function ShifterBoxList:ToggleEntrySelection(data, control, reselectingDuringRebuild, animateInstantly, deselectOnReselect )
-    d("SelectEntry")
     if reselectingDuringRebuild == nil then
         reselectingDuringRebuild = false
     end
@@ -254,7 +245,6 @@ function ShifterBoxList:ToggleEntrySelection(data, control, reselectingDuringReb
 end
 
 function ShifterBoxList:SetupRowEntry(rowControl, rowData)
-    d("SetupRowEntry")
     local subSelf = self
     local function onRowMouseEnter(rowControl)
         local labelControl = rowControl:GetNamedChild("Label")
@@ -271,7 +261,6 @@ function ShifterBoxList:SetupRowEntry(rowControl, rowData)
         ZO_Tooltips_HideTextTooltip()
     end
     local function onRowClicked(rowControl)
-        d("onRowClicked")
         local data = ZO_ScrollList_GetData(rowControl)
         self:ToggleEntrySelection(data, rowControl, RESELECTING_DURING_REBUILD, false)
     end
