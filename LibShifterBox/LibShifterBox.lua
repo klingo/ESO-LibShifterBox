@@ -29,7 +29,7 @@ local defaultSettings = {
 
 -- OPEN TASKS
 -- TODO: MoveEntryToRightList etc. not working properly
--- TODO: SetEnabled to disable buttons and unseelect all entries
+-- TODO: UnselectAll when mouse-over causes text to become white
 
 
 -- =================================================================================================================
@@ -332,6 +332,10 @@ function ShifterBoxList:Refresh()
 end
 
 function ShifterBoxList:SetEntriesEnabled(enabled)
+    if not enabled then
+        -- unselect all entries
+        self:UnselectEntries()
+    end
     -- after unselecing all entries, change the actual state of the rowControl-buttons
     local rowControls = self.list.contents
     for childIndex = 1, rowControls:GetNumChildren() do
