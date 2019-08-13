@@ -4,8 +4,6 @@ LibShifterBox, a library add-on for '[The Elder Scrolls Online](https://www.elde
 ![alt text][shifterbox-example]
 
 
-***
-
 ## Download
 Coming soon to [esoui.com](http://www.esoui.com/) !
 
@@ -41,7 +39,7 @@ itemQualitiesShifterBox:SetAnchor(TOPLEFT, headerControl, BOTTOMLEFT, 0, 20)
 itemQualitiesShifterBox:SetDimensions(300, 200)
 
 -- finally, the previously defined entries are added to the left list
-itemQualitiesShifterBox:SetLeftListEntries(leftListEntries)
+itemQualitiesShifterBox:AddEntriesToLeftList(leftListEntries)
 ```
 ![alt text][shifterbox-example-1]
 
