@@ -104,7 +104,6 @@ function ShifterBoxList:SortScrollList()
     d("SortScrollList)")
     -- intended to be overriden
     -- should take the filtered data and sort it
-
     local scrollData = ZO_ScrollList_GetDataList(self.list)
     table.sort(scrollData, self.sortFunction)
 end
@@ -357,6 +356,12 @@ end
 local function _getDeepClonedTable(sourceTable)
     local targetTable = {}
     ZO_DeepTableCopy(sourceTable, targetTable)
+    return targetTable
+end
+
+local function _getShallowClonedTable(sourceTable)
+    local targetTable = {}
+    ZO_ShallowTableCopy(sourceTable, targetTable)
     return targetTable
 end
 
