@@ -55,9 +55,9 @@ end
 
 function ShifterBoxList:OnSelectionChanged(previouslySelectedData, selectedData, reselectingDuringRebuild)
     d("OnSelectionChanged")
-    local selectedMultiDataKey = self.list.selectedMultiDataKey
+    local selectedMultiData = self.list.selectedMultiData
     local count = 0
-    for _ in pairs(selectedMultiDataKey) do count = count + 1 end
+    for _ in pairs(selectedMultiData) do count = count + 1 end
     if count > 0 then
         self.buttonControl:SetState(BSTATE_NORMAL, false)
     else
@@ -141,9 +141,10 @@ function ShifterBoxList:RemoveEntry(key)
         local data = entry.data
         df("data.key = %d    data.value = %s   categoryId = %s", data.key, data.value, tostring(categoryId))
         if data.key == key then
+            if self.list.selectedMultiData then
+                self.list.selectedMultiData[data.key] = nil
+            end
             table.remove(scrollData, i)
-            self.list.selectedMultiData[data.key] = nil
-            self.list.selectedMultiDataKey[data.key] = nil
             return data.key, data.value, categoryId
         end
     end
@@ -228,23 +229,20 @@ function ShifterBoxList:ToggleEntrySelection(data, control, reselectingDuringReb
     end
     if self.list.selectedMultiData == nil then
         self.list.selectedMultiData = {}
-        self.list.selectedMultiDataKey = {}
     end
     if data ~= nil then
         if not control then
             control = ZO_ScrollList_GetDataControl(self.list, data)
         end
         -- check if already selected
-        if self.list.selectedMultiDataKey[dataKey] == nil then
+        if self.list.selectedMultiData[dataKey] == nil then
             -- add selected data
             self.list.selectedMultiData[dataKey] = data
-            self.list.selectedMultiDataKey[dataKey] = true
             -- and select the control (if applicable)
             if control then self:SelectControl(control, animateInstantly) end
         elseif deselectOnReselect then
             -- remove selected data
             self.list.selectedMultiData[dataKey] = nil
-            self.list.selectedMultiDataKey[dataKey] = nil
             -- and unselect the control (if applicable)
             if control then self:UnselectControl(control, animateInstantly) end
         end
@@ -289,8 +287,8 @@ function ShifterBoxList:SetupRowEntry(rowControl, rowData)
     rowControl:SetHeight(self.rowHeight)
 
     -- reselect entries (only visually) if necessary
-    local selectedMultiDataKey = self.list.selectedMultiDataKey
-    if selectedMultiDataKey and selectedMultiDataKey[rowData.key] ~= nil then
+    local selectedMultiData = self.list.selectedMultiData
+    if selectedMultiData and selectedMultiData[rowData.key] ~= nil then
         self:SelectControl(rowControl, false)
     end
 
@@ -365,7 +363,8 @@ end
 local function _assertKeyIsNotInTable(key, value, list, sideControl)
     local scrollData = ZO_ScrollList_GetDataList(list.list)
     for i, entry in ipairs(scrollData) do
-        assert(entry.key ~= key, string.format(LIB_IDENTIFIER.."_Error: Violation of UNIQUE KEY. Cannot insert duplicate key '%s' with value '%s' in control '%s'. The statement has been terminated.", tostring(key), tostring(value), sideControl:GetName()))
+        local data = entry.data
+        assert(data.key ~= key, string.format(LIB_IDENTIFIER.."_Error: Violation of UNIQUE KEY. Cannot insert duplicate key '%s' with value '%s' in control '%s'. The statement has been terminated.", tostring(key), tostring(value), sideControl:GetName()))
     end
 end
 
@@ -538,6 +537,7 @@ end
 
 local function _addEntriesToList(list, entries, replace, otherList, categoryId)
     local hasAtLeastOneAdded = false
+    local hasAtLeastOneRemoved = false
     local listControl = list.control
     local otherListControl = otherList.control
     if categoryId ~= nil then
@@ -547,8 +547,10 @@ local function _addEntriesToList(list, entries, replace, otherList, categoryId)
     end
     for key, value in pairs(entries) do
         if replace and replace == true then
-            -- if replace is set to true, make sure that a potential entry with the same key is removed from the other list
-            otherList:RemoveEntry(key)
+            -- if replace is set to true, make sure that a potential entry with the same key is removed from both lists
+            local removeKey = list:RemoveEntry(key)
+            local otherRemoveKey = otherList:RemoveEntry(key)
+            if removeKey ~= nil or otherRemoveKey ~= nil then hasAtLeastOneRemoved = true end
         else
             -- if replace is not set or set to false, then assert that key does not exist in either list
             _assertKeyIsNotInTable(key, value, list, listControl)
@@ -559,8 +561,11 @@ local function _addEntriesToList(list, entries, replace, otherList, categoryId)
         hasAtLeastOneAdded = true
     end
     if hasAtLeastOneAdded then
-        -- Afterwards unselect/refresh the visualisation of the data
-        -- TODO: something needs to be done here?
+        -- Afterwards refresh the visualisation of the data
+        list:RefreshSortAndCategories()
+        if hasAtLeastOneRemoved then
+            otherList:RefreshSortAndCategories()
+        end
     end
 end
 
