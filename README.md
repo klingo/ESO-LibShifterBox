@@ -81,6 +81,7 @@ itemQualitiesShifterBox:SetEnabled(false)
   * [ShifterBox:SetEnabled](#shifterboxsetenabled)
   * [ShifterBox:SetHidden](#shifterboxsethidden)
   * [ShifterBox:ShowCategory](#shifterboxshowcategory)
+  * [ShifterBox:ShowOnlyCategory](#shifterboxshowonlycategory)
   * [ShifterBox:ShowAllCategories](#shifterboxshowallcategories)
   * [ShifterBox:HideCategory](#shifterboxhidecategory)
   * [ShifterBox:SelectEntryByKey](#shifterboxselectentrybykey)
@@ -173,6 +174,12 @@ shifterBox:SetHidden(hidden)
 Shows all entries that have been added to the shifterBox under the provided `categoryId`.
 ```lua
 shifterBox:ShowCategory(categoryId)
+```
+
+### ShifterBox:ShowOnlyCategory
+Shows all entries that have been added to the shifterBox under the provided `categoryId`. All entries with a different `categoryId` will be hidden.
+```lua
+shifterBox:ShowOnlyCategory(categoryId)
 ```
 
 ### ShifterBox:ShowAllCategories

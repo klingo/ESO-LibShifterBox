@@ -696,6 +696,25 @@ function ShifterBox:ShowCategory(categoryId)
     ZO_ScrollList_ShowCategory(self.rightList.list, categoryId)
 end
 
+function ShifterBox:ShowOnlyCategory(categoryId)
+    local leftList = self.leftList.list
+    for currCategoryId in pairs(leftList.categories) do
+        if currCategoryId == categoryId then
+            ZO_ScrollList_ShowCategory(leftList, currCategoryId)
+        else
+            ZO_ScrollList_HideCategory(leftList, currCategoryId)
+        end
+    end
+    local rightList = self.rightList.list
+    for currCategoryId in pairs(rightList.categories) do
+        if currCategoryId == categoryId then
+            ZO_ScrollList_ShowCategory(rightList, currCategoryId)
+        else
+            ZO_ScrollList_HideCategory(rightList, currCategoryId)
+        end
+    end
+end
+
 function ShifterBox:ShowAllCategories()
     local leftList = self.leftList.list
     for categoryId in pairs(leftList.categories) do
