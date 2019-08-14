@@ -783,6 +783,14 @@ function ShifterBox:MoveEntriesToLeftList(keys)
     _moveEntriesToOtherList(self.rightList, keys, self.leftList)
 end
 
+function ShifterBox:MoveAllEntriesToLeftList()
+    local keyset = {}
+    for _, entry in pairs(self.rightList.list.data) do
+        table.insert(keyset, entry.data.key)
+    end
+    _moveEntriesToOtherList(self.rightList, keyset, self.leftList)
+end
+
 function ShifterBox:ClearLeftList()
     _clearList(self.leftList)
 end
@@ -811,6 +819,14 @@ end
 
 function ShifterBox:MoveEntriesToRightList(keys)
     _moveEntriesToOtherList(self.leftList, keys, self.rightList)
+end
+
+function ShifterBox:MoveAllEntriesToRightList()
+    local keyset = {}
+    for _, entry in pairs(self.leftList.list.data) do
+        table.insert(keyset, entry.data.key)
+    end
+    _moveEntriesToOtherList(self.leftList, keyset, self.rightList)
 end
 
 function ShifterBox:ClearRightList()

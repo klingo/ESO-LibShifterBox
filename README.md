@@ -104,6 +104,7 @@ itemQualitiesShifterBox:SetEnabled(false)
     * [ShifterBox:AddEntriesToRightList](#shifterboxaddentriestorightlist)
     * [ShifterBox:MoveEntryToRightList](#shifterboxmoveentrytorightlist)
     * [ShifterBox:MoveEntriesToRightList](#shifterboxmoveentriestorightlist)
+    * [ShifterBox:MoveAllEntriesToRightList]
     * [ShifterBox:ClearRightList](#shifterboxclearrightlist)
 
 ### Create
@@ -267,6 +268,12 @@ Moves a list of entries from the right listBox into the left listBox. The provid
 shifterBox:MoveEntriesToLeftList(keys)
 ```
 
+#### ShifterBox:MoveAllEntriesToLeftList
+Moves all entries (including hidden ones) from the right listBox into the left listBox.
+```lua
+shifterBox:MoveAllEntriesToLeftList()
+```
+
 #### ShifterBox:ClearLeftList
 Removes all entries from the left listBox.
 ```lua
@@ -314,6 +321,12 @@ shifterBox:MoveEntryToRightList(key)
 Moves a list of entries from the left listBox into the right listBox. The provided `keys` must be a table with keys such as `keys = {1, 2, 3}`.
 ```lua
 shifterBox:MoveEntriesToRightList(keys)
+```
+
+#### ShifterBox:MoveAllEntriesToRightList
+Moves all entries (including hidden ones) from the left listBox into the right listBox.
+```lua
+shifterBox:MoveAllEntriesToRightList()
 ```
 
 #### ShifterBox:ClearRightList
