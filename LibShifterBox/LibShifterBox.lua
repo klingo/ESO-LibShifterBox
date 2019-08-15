@@ -29,11 +29,13 @@ local defaultSettings = {
 
 -- KNOWN ISSUES
 -- TODO: Calling UnselectAllEntries() when mouse-over causes text to become white
+-- TODO: font color?
+-- TODO: font?
 
 -- =================================================================================================================
 -- == SCROLL-LISTS == --
 -- -----------------------------------------------------------------------------------------------------------------
--- Source: https://esoapi.uesp.net/100027/src/libraries/zo_sortfilterlist/zo_sortfilterlist.lua.html
+-- Source: https://esoapi.uesp.net/100028/src/libraries/zo_sortfilterlist/zo_sortfilterlist.lua.html
 local ShifterBoxList = ZO_SortFilterList:Subclass()
 
 ShifterBoxList.SORT_KEYS = {
@@ -66,7 +68,11 @@ function ShifterBoxList:Initialize(control, shifterBoxSettings)
     -- set a text that is displayed when there are no entries
     self:SetEmptyText(shifterBoxSettings.emptyListText)
     -- default sorting key
+    -- Source: https://esodata.uesp.net/100028/src/libraries/zo_sortheadergroup/zo_sortheadergroup.lua.html
     self.sortHeaderGroup:SelectHeaderByKey("value")
+    self.sortHeaderGroup:RegisterCallback(ZO_SortHeaderGroup.HEADER_CLICKED, function()
+        self:RefreshHiddenCategories()
+    end)
     ZO_SortHeader_OnMouseExit(self.control:GetNamedChild("Headers"):GetNamedChild("Value"))
     -- define the datatype for this list and enable the highlighting
     ZO_ScrollList_AddCategory(self.list, DATA_CATEGORY_DEFAULT)
@@ -101,16 +107,20 @@ function ShifterBoxList:SortScrollList()
     table.sort(scrollData, self.sortFunction)
 end
 
-function ShifterBoxList:RefreshSortAndCategories()
-    -- first refresh the sorting (SortScrollList & CommitScrollList)
-    self:RefreshSort()
-    -- then refresh the hidden categories
+function ShifterBoxList:RefreshHiddenCategories()
     local categories = self.list.categories
     for categoryId, category in pairs(categories) do
         if category.hidden then
             ZO_ScrollList_HideCategory(self.list, categoryId)
         end
     end
+end
+
+function ShifterBoxList:RefreshSortAndCategories()
+    -- first refresh the sorting (SortScrollList & CommitScrollList)
+    self:RefreshSort()
+    -- then refresh the hidden categories (must happen after CommitScrollList() to have the .data[] updated)
+    self:RefreshHiddenCategories()
 end
 
 function ShifterBoxList:AddEntry(key, value, categoryId)
