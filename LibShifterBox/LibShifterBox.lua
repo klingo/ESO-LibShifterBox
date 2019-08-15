@@ -29,6 +29,9 @@ local defaultSettings = {
 
 -- KNOWN ISSUES
 -- TODO: Calling UnselectAllEntries() when mouse-over causes text to become white
+-- TODO: when disabled, sometimes entries can still be selected
+-- TODO: tooltips not working on right listBox?
+-- TODO: no emptyText on left listBox?
 -- TODO: font color?
 -- TODO: font?
 
