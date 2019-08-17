@@ -21,8 +21,7 @@ local existingShifterBoxes = {}
 
 local defaultSettings = {
     sortBy = "value",
---    showLeftAllButton = false,      -- TODO: implement this setting
---    showRightAllButton = false,     -- TODO: implement this setting
+    showMoveAllButtons = true,
     rowHeight = 32,
     emptyListText = "empty",
 }
@@ -31,7 +30,7 @@ local defaultSettings = {
 -- TODO: Calling UnselectAllEntries() when mouse-over causes text to become white
 -- TODO: when disabled, sometimes entries can still be selected
 -- TODO: tooltips not working on right listBox?
--- TODO: no emptyText on left listBox?
+-- TODO: no emptyText on left listBox? --> it's because technically it is not empty due to hidden entries
 -- TODO: font color?
 -- TODO: font?
 
@@ -49,6 +48,10 @@ ShifterBoxList.SORT_KEYS = {
 function ShifterBoxList:New(control, shifterBoxSettings)
     local obj = ZO_SortFilterList.New(self, control, shifterBoxSettings)
     obj.buttonControl = control:GetNamedChild("Button")
+    obj.buttonAllControl = control:GetNamedChild("AllButton")
+    obj.buttonAllControl:SetState(BSTATE_DISABLED, true) -- init it as disabled
+    if not shifterBoxSettings.showMoveAllButtons then obj.buttonAllControl:SetHidden(true) end
+    obj.enabled = true -- TODO: to be implemented
     -- TODO: instead return obj.list ???
     return obj
 end
@@ -133,6 +136,8 @@ function ShifterBoxList:AddEntry(key, value, categoryId)
         value = value
     }
     table.insert(scrollData, ZO_ScrollList_CreateDataEntry(DATA_TYPE_DEFAULT, rowData, categoryId or DATA_CATEGORY_DEFAULT))
+    -- when an entry is added; the move-all button can be enabled
+    self.buttonAllControl:SetState(BSTATE_NORMAL, false)
 end
 
 function ShifterBoxList:RemoveEntry(key)
@@ -145,6 +150,11 @@ function ShifterBoxList:RemoveEntry(key)
                 self.list.selectedMultiData[data.key] = nil
             end
             table.remove(scrollData, i)
+            if #scrollData == 0 then
+               -- if no entries are left; disable both move buttons
+                self.buttonControl:SetState(BSTATE_DISABLED, true)
+                self.buttonAllControl:SetState(BSTATE_DISABLED, true)
+            end
             return data.key, data.value, categoryId
         end
     end
@@ -342,7 +352,15 @@ function ShifterBoxList:SetEntriesEnabled(enabled)
         local rowControl = rowControls:GetChild(childIndex)
         rowControl:SetEnabled(enabled)
     end
-    rowControls:SetAlpha(enabled and 1 or 0.4)
+    rowControls:SetAlpha(enabled and 1 or 0.3)
+    -- enable/disable the "all" button
+    if enabled then
+        self.buttonAllControl:SetState(BSTATE_NORMAL, false)
+    else
+        self.buttonAllControl:SetState(BSTATE_DISABLED, true)
+    end
+    -- finally, store the enabled state
+    self.enabled = enabled -- TODO: to be implemented
 end
 
 
@@ -432,8 +450,10 @@ local function _initShifterBoxHandlers(self)
     local control = self.shifterBoxControl
     local leftControl = control:GetNamedChild("Left")
     local fromLeftButtonControl = leftControl:GetNamedChild("Button")
+    local fromLeftAllButtonControl = leftControl:GetNamedChild("AllButton")
     local rightControl = control:GetNamedChild("Right")
     local fromRightButtonControl = rightControl:GetNamedChild("Button")
+    local fromRightAllButtonControl = rightControl:GetNamedChild("AllButton")
 
     local function toLeftButtonClicked(buttonControl)
         local rightListSelectedData = self.rightList.list.selectedMultiData
@@ -444,6 +464,12 @@ local function _initShifterBoxHandlers(self)
         self.leftList:RefreshSortAndCategories()
         self.rightList:RefreshSortAndCategories()
         -- finally disable the button itself
+        buttonControl:SetState(BSTATE_DISABLED, true)
+    end
+    local function toLeftAllButtonClicked(buttonControl)
+        -- move all entries
+        self:MoveAllEntriesToLeftList()
+        -- and disable the move-all button
         buttonControl:SetState(BSTATE_DISABLED, true)
     end
 
@@ -458,10 +484,18 @@ local function _initShifterBoxHandlers(self)
         -- finally disable the button itself
         buttonControl:SetState(BSTATE_DISABLED, true)
     end
+    local function toRightAllButtonClicked(buttonControl)
+        -- move all entries
+        self:MoveAllEntriesToRightList()
+        -- and disable the move-all button
+        buttonControl:SetState(BSTATE_DISABLED, true)
+    end
 
     -- initialize the handler when the buttons are clicked
     fromLeftButtonControl:SetHandler("OnClicked", toRightButtonClicked)
+    fromLeftAllButtonControl:SetHandler("OnClicked", toRightAllButtonClicked)
     fromRightButtonControl:SetHandler("OnClicked", toLeftButtonClicked)
+    fromRightAllButtonControl:SetHandler("OnClicked", toLeftAllButtonClicked)
 end
 
 local function _applyCustomSettings(customSettings)
@@ -481,6 +515,10 @@ local function _applyCustomSettings(customSettings)
         assert(type(customSettings.emptyListText) == "string", string.format(LIB_IDENTIFIER.."_Error: Invalid emptyListText parameter '%s' provided! Must be a string.", tostring(customSettings.emptyListText)))
         settings.emptyListText = customSettings.emptyListText
     end
+    if customSettings.showMoveAllButtons then
+        assert(type(customSettings.showMoveAllButtons) == "boolean", string.format(LIB_IDENTIFIER.."_Error: Invalid showMoveAllButtons parameter '%s' provided! Must be a boolean.", tostring(customSettings.showMoveAllButtons)))
+        settings.showMoveAllButtons = customSettings.showMoveAllButtons
+    end
     return settings
 end
 
@@ -489,17 +527,22 @@ local function _getListBoxWidthAndArrowOffset(width, height)
     if width < (3 * LIST_SPACING) then width = (3 * LIST_SPACING) end
     -- the width of a listBox is the total width minus the spacing divided by two
     local singleListWidth = (width - LIST_SPACING) / 2
-    -- height must be at least 2x the height of the arrows
-    if height < (2 * ARROW_SIZE) then height = (2 * ARROW_SIZE) end
-    -- the offset of the arrow is 1/4th of the remaining height
-    local arrowOffset = (height - (2 * ARROW_SIZE)) / 4
-    return singleListWidth, arrowOffset
+    -- get the "free height" that is not required by the arrows
+    local freeHeight = height - (4 * ARROW_SIZE)
+    -- the offset of the arrow is 2/4th of the remaining height plus the height of the arrow
+    local arrowOffset = ARROW_SIZE + (freeHeight / 5 * 2)
+    -- the offset of the all-arrow is 1/5th of the remaining height
+    local arrowAllOffset = freeHeight / 5
+    return singleListWidth, arrowOffset, arrowAllOffset
 end
 
-local function _setListBoxDimensions(list, singleListWidth, height, headerHeight, buttonAnchorOptions)
+local function _setListBoxDimensions(list, singleListWidth, height, headerHeight, buttonAnchorOptions, buttonAllAnchorOptions)
     local buttonControl = list.control:GetNamedChild("Button")
     buttonControl:ClearAnchors()
     buttonControl:SetAnchor(unpack(buttonAnchorOptions))
+    local buttonAllControl = list.control:GetNamedChild("AllButton")
+    buttonAllControl:ClearAnchors()
+    buttonAllControl:SetAnchor(unpack(buttonAllAnchorOptions))
     list:SetCustomDimensions(singleListWidth, height, headerHeight)
     list:Refresh()
 end
@@ -682,14 +725,19 @@ end
 -- @param width - the width for the whole shifterBox
 -- @param height - the height for the whole shifterBox (incl. headers if applicable)
 function ShifterBox:SetDimensions(width, height)
-    local singleListWidth, arrowOffset = _getListBoxWidthAndArrowOffset(width, height)
+    assert(type(width) == "number" and type(height) == "number", string.format(LIB_IDENTIFIER.."_Error: width and height must be numeric values!"))
+    -- height must be at least 4x the height of the arrows
+    if height < 4 * ARROW_SIZE then height = 4 * ARROW_SIZE end
+    local singleListWidth, arrowOffset, arrowAllOffset = _getListBoxWidthAndArrowOffset(width, height)
     local headerHeight = self.headerHeight
     local leftList = self.leftList
     local rightList = self.rightList
     local leftButtonAnchorOptions = {TOPLEFT, leftList.list, TOPRIGHT, 0, arrowOffset}
+    local leftButtonAllAnchorOptions = {TOPLEFT, leftList.list, TOPRIGHT, 0, arrowAllOffset}
     local rightButtonAnchorOptions = {BOTTOMRIGHT, rightList.list, BOTTOMLEFT, -2, arrowOffset * -1} -- lower arrow requires negative offset
-    _setListBoxDimensions(leftList, singleListWidth, height, self.headerHeight, leftButtonAnchorOptions)
-    _setListBoxDimensions(rightList, singleListWidth, height, self.headerHeight, rightButtonAnchorOptions)
+    local rightButtonAllAnchorOptions = {BOTTOMRIGHT, rightList.list, BOTTOMLEFT, -2, arrowAllOffset * -1} -- lower arrow requires negative offset
+    _setListBoxDimensions(leftList, singleListWidth, height, self.headerHeight, leftButtonAnchorOptions, leftButtonAllAnchorOptions)
+    _setListBoxDimensions(rightList, singleListWidth, height, self.headerHeight, rightButtonAnchorOptions, rightButtonAllAnchorOptions)
 end
 
 function ShifterBox:SetEnabled(enabled)
