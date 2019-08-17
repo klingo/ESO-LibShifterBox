@@ -30,12 +30,12 @@ local leftListEntries = {
 local customSettings = {
     rowHeight = 30,
     sortBy = "key",
-    emptyListText = "empty",
+    emptyListText = "None",
     showMoveAllButtons = true
 }
 
 -- create the shifterBox and anchor it to a headerControl; also we can change the dimensions
-local itemQualitiesShifterBox = LibShifterBox("MyNewAddon", "ItemQualities", parentControl, "Lefties", "Righties", customSettings)
+local itemQualitiesShifterBox = LibShifterBox("MyNewAddon", "ItemQualities", parentControl, "Available", "Selected", customSettings)
 itemQualitiesShifterBox:SetAnchor(TOPLEFT, headerControl, BOTTOMLEFT, 0, 20)
 itemQualitiesShifterBox:SetDimensions(300, 200)
 
