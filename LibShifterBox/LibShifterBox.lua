@@ -28,7 +28,6 @@ local defaultSettings = {
 
 -- KNOWN ISSUES
 -- TODO: Calling UnselectAllEntries() when mouse-over causes text to become white
--- TODO: when disabled, sometimes entries can still be selected
 -- TODO: tooltips not working on right listBox?
 -- TODO: no emptyText on left listBox? --> it's because technically it is not empty due to hidden entries
 -- TODO: font color?
@@ -51,7 +50,7 @@ function ShifterBoxList:New(control, shifterBoxSettings)
     obj.buttonAllControl = control:GetNamedChild("AllButton")
     obj.buttonAllControl:SetState(BSTATE_DISABLED, true) -- init it as disabled
     if shifterBoxSettings.showMoveAllButtons == false then obj.buttonAllControl:SetHidden(true) end
-    obj.enabled = true -- TODO: to be implemented
+    obj.enabled = true
     -- TODO: instead return obj.list ???
     return obj
 end
@@ -221,6 +220,7 @@ end
 -- @param animateInstantly - if the selection animation is instantly or not
 -- @param deselectOnReselect - if the entry is already selected, instead of reselecting it will be deselected
 function ShifterBoxList:ToggleEntrySelection(data, control, reselectingDuringRebuild, animateInstantly, deselectOnReselect )
+    if not self.enabled then return end -- if the listBox is not enabled; immediately exit the function
     if reselectingDuringRebuild == nil then
         reselectingDuringRebuild = false
     end
@@ -360,7 +360,7 @@ function ShifterBoxList:SetEntriesEnabled(enabled)
         self.buttonAllControl:SetState(BSTATE_DISABLED, true)
     end
     -- finally, store the enabled state
-    self.enabled = enabled -- TODO: to be implemented
+    self.enabled = enabled
 end
 
 
