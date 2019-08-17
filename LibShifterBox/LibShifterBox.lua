@@ -28,7 +28,6 @@ local defaultSettings = {
 
 -- KNOWN ISSUES
 -- TODO: Calling UnselectAllEntries() when mouse-over causes text to become white
--- TODO: tooltips not working on right listBox?
 -- TODO: no emptyText on left listBox? --> it's because technically it is not empty due to hidden entries
 -- TODO: font color?
 -- TODO: font?
@@ -68,6 +67,7 @@ end
 
 function ShifterBoxList:Initialize(control, shifterBoxSettings)
     self.rowHeight = shifterBoxSettings.rowHeight
+    self.rowWidth = 180 -- default value to init
     -- initialize the SortFilterList
     ZO_SortFilterList.Initialize(self, control)
     -- set a text that is displayed when there are no entries
@@ -298,6 +298,9 @@ function ShifterBoxList:SetupRowEntry(rowControl, rowData)
 
     -- set the height for the row
     rowControl:SetHeight(self.rowHeight)
+    -- and also set the width for the row (to ensure tooltips work properly)
+    rowControl:SetWidth(self.rowWidth)
+    labelControl:SetWidth(self.rowWidth)
 
     -- reselect entries (only visually) if necessary
     local selectedMultiData = self.list.selectedMultiData
@@ -311,6 +314,7 @@ end
 
 function ShifterBoxList:SetCustomDimensions(width, height, headerHeight)
     -- first set width/height of the listbox itself
+    self.rowWidth = width - SCROLLBAR_WIDTH
     self.list:SetDimensions(width, height)
     self.headersContainer:SetDimensions(width, headerHeight)
     -- and of the header (needed to cut down headers that are too long)
