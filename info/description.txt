@@ -22,8 +22,11 @@ shifterBox:AddEntryToRightList(4, "DDD") -- add one entry to the right list
 [*]For the most up-to-date API reference, please check the GitHub page: [B][URL="https://github.com/klingo/ESO-LibShifterBox#api-reference"]LibShifterBox API Reference[/URL][/B]
 [/LIST]
 
-[SIZE=5]Issues? Requests?[/SIZE][LIST]
-[*] In case of issues or requests, please either drop a comment here on the AddOn page, or alternatively raise an issue on the GitHub page ([URL="https://github.com/klingo/ESO-LibShifterBox/issues/new"]Link: New Issue[/URL])[/LIST]
+[SIZE=5]Known Issues[/SIZE]
+[LIST]
+[*]A ListBox does not show the "emptyListText" if there are still entries in it that belong to a hidden Category (ESO limitation)
+[*]When programmatically deselecting an entry where the mouse cursor hovers over; the font color temporarily changes to white
+[/LIST]
 
 [SIZE=5]Info[/SIZE][LIST]
 [*] Source code is on GitHub: [URL="https://github.com/klingo/ESO-LibShifterBox"]LibShifterBox[/URL][/LIST]

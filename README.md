@@ -30,7 +30,8 @@ local leftListEntries = {
 local customSettings = {
     rowHeight = 30,
     sortBy = "key",
-    emptyListText = "empty"
+    emptyListText = "empty",
+    showMoveAllButtons = true
 }
 
 -- create the shifterBox and anchor it to a headerControl; also we can change the dimensions
@@ -104,7 +105,7 @@ itemQualitiesShifterBox:SetEnabled(false)
     * [ShifterBox:AddEntriesToRightList](#shifterboxaddentriestorightlist)
     * [ShifterBox:MoveEntryToRightList](#shifterboxmoveentrytorightlist)
     * [ShifterBox:MoveEntriesToRightList](#shifterboxmoveentriestorightlist)
-    * [ShifterBox:MoveAllEntriesToRightList]
+    * [ShifterBox:MoveAllEntriesToRightList](#shifterboxmoveallentriestorightlist)
     * [ShifterBox:ClearRightList](#shifterboxclearrightlist)
 
 ### Create
@@ -123,7 +124,8 @@ Optionally custom settings can be passed on when the ShifterBox is created. The 
 customSettings = {
     sortBy = "value",           -- sort the list by value or key (allowed are: "value" or "key")
     rowHeight = 32,             -- the height of an entry row
-    emptyListText = "empty"     -- the text to be displayed when there is no row/entry in a list
+    emptyListText = "empty",    -- the text to be displayed when there is no row/entry in a list
+    showMoveAllButtons = true,  -- the >> and << buttons to move all entries can be hidden if set to false
 }
 ```
 

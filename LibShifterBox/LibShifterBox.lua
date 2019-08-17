@@ -21,9 +21,9 @@ local existingShifterBoxes = {}
 
 local defaultSettings = {
     sortBy = "value",
-    showMoveAllButtons = true,
     rowHeight = 32,
     emptyListText = "empty",
+    showMoveAllButtons = true,
 }
 
 -- KNOWN ISSUES
