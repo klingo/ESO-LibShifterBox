@@ -24,7 +24,6 @@ shifterBox:AddEntryToRightList(4, "DDD") -- add one entry to the right list
 
 [SIZE=5]Known Issues[/SIZE]
 [LIST]
-[*]A ListBox does not show the "emptyListText" if there are still entries in it that belong to a hidden Category (ESO limitation)
 [*]When programmatically deselecting an entry where the mouse cursor hovers over; the font color temporarily changes to white
 [/LIST]
 

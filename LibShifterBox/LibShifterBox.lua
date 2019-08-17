@@ -28,9 +28,24 @@ local defaultSettings = {
 
 -- KNOWN ISSUES
 -- TODO: Calling UnselectAllEntries() when mouse-over causes text to become white
--- TODO: no emptyText on left listBox? --> it's because technically it is not empty due to hidden entries
 -- TODO: font color?
 -- TODO: font?
+
+-- =================================================================================================================
+-- == PRIVATE FGUNCTIONS == --
+-- -----------------------------------------------------------------------------------------------------------------
+local function _getDeepClonedTable(sourceTable)
+    local targetTable = {}
+    ZO_DeepTableCopy(sourceTable, targetTable)
+    return targetTable
+end
+
+local function _getShallowClonedTable(sourceTable)
+    local targetTable = {}
+    ZO_ShallowTableCopy(sourceTable, targetTable)
+    return targetTable
+end
+
 
 -- =================================================================================================================
 -- == SCROLL-LISTS == --
@@ -50,18 +65,20 @@ function ShifterBoxList:New(control, shifterBoxSettings)
     obj.buttonAllControl:SetState(BSTATE_DISABLED, true) -- init it as disabled
     if shifterBoxSettings.showMoveAllButtons == false then obj.buttonAllControl:SetHidden(true) end
     obj.enabled = true
-    -- TODO: instead return obj.list ???
+    obj.masterList = {}
     return obj
 end
 
 function ShifterBoxList:OnSelectionChanged(previouslySelectedData, selectedData, reselectingDuringRebuild)
     local selectedMultiData = self.list.selectedMultiData
-    local count = 0
-    for _ in pairs(selectedMultiData) do count = count + 1 end
-    if count > 0 then
-        self.buttonControl:SetState(BSTATE_NORMAL, false)
-    else
-        self.buttonControl:SetState(BSTATE_DISABLED, true)
+    if selectedMultiData then
+        local count = 0
+        for _ in pairs(selectedMultiData) do count = count + 1 end
+        if count > 0 then
+            self.buttonControl:SetState(BSTATE_NORMAL, false)
+        else
+            self.buttonControl:SetState(BSTATE_DISABLED, true)
+        end
     end
 end
 
@@ -75,9 +92,6 @@ function ShifterBoxList:Initialize(control, shifterBoxSettings)
     -- default sorting key
     -- Source: https://esodata.uesp.net/100028/src/libraries/zo_sortheadergroup/zo_sortheadergroup.lua.html
     self.sortHeaderGroup:SelectHeaderByKey("value")
-    self.sortHeaderGroup:RegisterCallback(ZO_SortHeaderGroup.HEADER_CLICKED, function()
-        self:RefreshHiddenCategories()
-    end)
     ZO_SortHeader_OnMouseExit(self.control:GetNamedChild("Headers"):GetNamedChild("Value"))
     -- define the datatype for this list and enable the highlighting
     ZO_ScrollList_AddCategory(self.list, DATA_CATEGORY_DEFAULT)
@@ -103,6 +117,42 @@ end
 function ShifterBoxList:FilterScrollList()
     -- intended to be overriden
     -- should take the master list data and filter it
+    local hasAtLeastOneEntry = false
+    local scrollData = ZO_ScrollList_GetDataList(self.list)
+    ZO_ClearNumericallyIndexedTable(scrollData)
+    if self.masterList then
+        local categories = self.list.categories
+        for key, data in pairs(self.masterList) do
+            -- check if the categoryId is NOT existing; or NOT set to hidden
+            local category = categories[data.categoryId]
+            if category == nil or category.hidden == false then
+                local rowData = {
+                    key = key,
+                    value = data.value
+                }
+                table.insert(scrollData, ZO_ScrollList_CreateDataEntry(DATA_TYPE_DEFAULT, rowData, data.categoryId or DATA_CATEGORY_DEFAULT))
+                hasAtLeastOneEntry = true
+            else
+                -- entry will not (or will no longer) be visible
+                if self.list.selectedMultiData then
+                    self.list.selectedMultiData[key] = nil
+                end
+            end
+        end
+    end
+    if hasAtLeastOneEntry then
+        -- when there is at least one entry, the move-all button can be enabled
+        self.buttonAllControl:SetState(BSTATE_NORMAL, false)
+        self:OnSelectionChanged()
+    else
+        -- if there are no entries ; disable both move buttons
+        if self.buttonControl then
+            self.buttonControl:SetState(BSTATE_DISABLED, true)
+        end
+        if self.buttonAllControl then
+            self.buttonAllControl:SetState(BSTATE_DISABLED, true)
+        end
+    end
 end
 
 function ShifterBoxList:SortScrollList()
@@ -112,50 +162,24 @@ function ShifterBoxList:SortScrollList()
     table.sort(scrollData, self.sortFunction)
 end
 
-function ShifterBoxList:RefreshHiddenCategories()
-    local categories = self.list.categories
-    for categoryId, category in pairs(categories) do
-        if category.hidden then
-            ZO_ScrollList_HideCategory(self.list, categoryId)
-        end
-    end
-end
-
-function ShifterBoxList:RefreshSortAndCategories()
-    -- first refresh the sorting (SortScrollList & CommitScrollList)
-    self:RefreshSort()
-    -- then refresh the hidden categories (must happen after CommitScrollList() to have the .data[] updated)
-    self:RefreshHiddenCategories()
-end
-
 function ShifterBoxList:AddEntry(key, value, categoryId)
-    local scrollData = ZO_ScrollList_GetDataList(self.list)
-    local rowData = {
-        key = key,
-        value = value
+    local data = {
+        value = value,
+        categoryId = categoryId
     }
-    table.insert(scrollData, ZO_ScrollList_CreateDataEntry(DATA_TYPE_DEFAULT, rowData, categoryId or DATA_CATEGORY_DEFAULT))
-    -- when an entry is added; the move-all button can be enabled
-    self.buttonAllControl:SetState(BSTATE_NORMAL, false)
+    self.masterList[key] = data
 end
 
 function ShifterBoxList:RemoveEntry(key)
-    local scrollData = ZO_ScrollList_GetDataList(self.list)
-    for i, entry in ipairs(scrollData) do
-        local categoryId = entry.categoryId
-        local data = entry.data
-        if data.key == key then
-            if self.list.selectedMultiData then
-                self.list.selectedMultiData[data.key] = nil
-            end
-            table.remove(scrollData, i)
-            if #scrollData == 0 then
-               -- if no entries are left; disable both move buttons
-                self.buttonControl:SetState(BSTATE_DISABLED, true)
-                self.buttonAllControl:SetState(BSTATE_DISABLED, true)
-            end
-            return data.key, data.value, categoryId
+    if self.masterList[key] ~= nil then
+        local data = _getShallowClonedTable(self.masterList[key])
+        -- remove the entry from the masterList
+        self.masterList[key] = nil
+        -- and remove it from the selectedList
+        if self.list.selectedMultiData then
+            self.list.selectedMultiData[key] = nil
         end
+        return key, data.value, data.categoryId
     end
     return nil
 end
@@ -165,19 +189,9 @@ function ShifterBoxList:ClearEntries()
     ZO_ClearNumericallyIndexedTable(scrollData)
 end
 
-function ShifterBoxList:RefreshSelectedControls()
-    local selectedMultiData = self.list.selectedMultiData
-    if selectedMultiData then
-        for key, data in pairs(selectedMultiData) do
-            local control = ZO_ScrollList_GetDataControl(self, data)
-            self:SelectControl(control, false)
-        end
-    end
-end
-
 function ShifterBoxList:UnselectEntries()
     self.list.selectedMultiData = {}
-    self:RefreshSortAndCategories()
+    self:CommitScrollList()
     self.buttonControl:SetState(BSTATE_DISABLED, true)
 end
 
@@ -212,7 +226,7 @@ function ShifterBoxList:UnselectControl(control, animateInstantly)
     end
 end
 
--- Custom implementation based on: https://esoapi.uesp.net/100027/src/libraries/zo_templates/scrolltemplates.lua.html#1456
+-- Custom implementation based on: https://esoapi.uesp.net/100028/src/libraries/zo_templates/scrolltemplates.lua.html#1456
 --- this function toggles the selection of an entry and also adds/removes it to/from the selected-list
 -- @param data - the table with the data of the entry (mandatory)
 -- @param control - the control of the entry (optional - can be deferred from data)
@@ -341,8 +355,8 @@ function ShifterBoxList:Refresh()
         local rowControlLabel = rowControl:GetNamedChild("Label")
         rowControlLabel:SetWidth(rowControl:GetWidth())
     end
-    -- then refresh/sort the data (i.e. update scrollbar)
-    self:RefreshSortAndCategories()
+    -- then update the scroll list (i.e. update scrollbar)
+    self:CommitScrollList()
 end
 
 function ShifterBoxList:SetEntriesEnabled(enabled)
@@ -357,8 +371,10 @@ function ShifterBoxList:SetEntriesEnabled(enabled)
         rowControl:SetEnabled(enabled)
     end
     rowControls:SetAlpha(enabled and 1 or 0.3)
+    local scrollData = ZO_ScrollList_GetDataList(self.list)
+    local numChildren = #scrollData
     -- enable/disable the "all" button
-    if enabled then
+    if enabled and numChildren > 0 then
         self.buttonAllControl:SetState(BSTATE_NORMAL, false)
     else
         self.buttonAllControl:SetState(BSTATE_DISABLED, true)
@@ -376,18 +392,6 @@ local function _createShifterBox(uniqueAddonName, uniqueShifterBoxName, parentCo
     return CreateControlFromVirtual(shifterBoxName, parentControl, "ShifterBoxTemplate")
 end
 
-local function _getDeepClonedTable(sourceTable)
-    local targetTable = {}
-    ZO_DeepTableCopy(sourceTable, targetTable)
-    return targetTable
-end
-
-local function _getShallowClonedTable(sourceTable)
-    local targetTable = {}
-    ZO_ShallowTableCopy(sourceTable, targetTable)
-    return targetTable
-end
-
 local function _moveEntryFromTo(fromList, toList, key)
     local key, value, categoryId = fromList:RemoveEntry(key)
     if key ~= nil then
@@ -395,12 +399,9 @@ local function _moveEntryFromTo(fromList, toList, key)
     end
 end
 
-local function _assertKeyIsNotInTable(key, value, list, sideControl)
-    local scrollData = ZO_ScrollList_GetDataList(list.list)
-    for i, entry in ipairs(scrollData) do
-        local data = entry.data
-        assert(data.key ~= key, string.format(LIB_IDENTIFIER.."_Error: Violation of UNIQUE KEY. Cannot insert duplicate key '%s' with value '%s' in control '%s'. The statement has been terminated.", tostring(key), tostring(value), sideControl:GetName()))
-    end
+local function _assertKeyIsNotInTable(key, value, self, sideControl)
+    local masterList = self.masterList
+    assert(masterList[key] == nil, string.format(LIB_IDENTIFIER.."_Error: Violation of UNIQUE KEY. Cannot insert duplicate key '%s' with value '%s' in control '%s'. The statement has been terminated.", tostring(key), tostring(value), sideControl:GetName()))
 end
 
 local function _initShifterBoxControls(self, leftListTitle, rightListTitle)
@@ -465,8 +466,8 @@ local function _initShifterBoxHandlers(self)
             _moveEntryFromTo(self.rightList, self.leftList, data.key)
         end
         -- then commit the changes to the scrollList and refresh the hidden states
-        self.leftList:RefreshSortAndCategories()
-        self.rightList:RefreshSortAndCategories()
+        self.leftList:RefreshFilters()
+        self.rightList:RefreshFilters()
         -- finally disable the button itself
         buttonControl:SetState(BSTATE_DISABLED, true)
     end
@@ -483,8 +484,8 @@ local function _initShifterBoxHandlers(self)
             _moveEntryFromTo(self.leftList, self.rightList, data.key)
         end
         -- then commit the changes to the scrollList and refresh the hidden states
-        self.leftList:RefreshSortAndCategories()
-        self.rightList:RefreshSortAndCategories()
+        self.leftList:RefreshFilters()
+        self.rightList:RefreshFilters()
         -- finally disable the button itself
         buttonControl:SetState(BSTATE_DISABLED, true)
     end
@@ -553,6 +554,11 @@ end
 
 -- ---------------------------------------------------------------------------------------------------------------------
 
+local function _refreshFilters(leftList, rightList)
+    if leftList then leftList:RefreshFilters() end
+    if rightList then rightList:RefreshFilters() end
+end
+
 local function _selectEntries(list, keys)
     local visibleData = list.list.visibleData
     for _, visibleKey in ipairs(visibleData) do
@@ -580,7 +586,7 @@ local function _removeEntriesFromList(list, keys)
         if removedKey ~= nil then hasAtLeastOneRemoved = true end
     end
     if hasAtLeastOneRemoved then
-        list:RefreshSortAndCategories()
+        _refreshFilters(list)
     end
 end
 
@@ -644,9 +650,9 @@ local function _addEntriesToList(list, entries, replace, otherList, categoryId)
     end
     if hasAtLeastOneAdded then
         -- Afterwards refresh the visualisation of the data
-        list:RefreshSortAndCategories()
+        _refreshFilters(list)
         if hasAtLeastOneRemoved then
-            otherList:RefreshSortAndCategories()
+            _refreshFilters(otherList)
         end
     end
 end
@@ -661,8 +667,7 @@ local function _moveEntriesToOtherList(sourceList, keys, destList)
         _moveEntryFromTo(sourceList, destList, key)
     end
     -- refresh the display afterwards
-    sourceList:RefreshSortAndCategories()
-    destList:RefreshSortAndCategories()
+    _refreshFilters(sourceList, destList)
 end
 
 local function _moveEntryToOtherList(sourceList, key, destList)
@@ -759,6 +764,7 @@ function ShifterBox:ShowCategory(categoryId)
     assert(categoryId ~= nil, string.format(LIB_IDENTIFIER.."_Error: categoryId cannot be nil!"))
     ZO_ScrollList_ShowCategory(self.leftList.list, categoryId)
     ZO_ScrollList_ShowCategory(self.rightList.list, categoryId)
+    _refreshFilters(self.leftList, self.rightList)
 end
 
 function ShifterBox:ShowOnlyCategory(categoryId)
@@ -778,6 +784,7 @@ function ShifterBox:ShowOnlyCategory(categoryId)
             ZO_ScrollList_HideCategory(rightList, currCategoryId)
         end
     end
+    _refreshFilters(self.leftList, self.rightList)
 end
 
 function ShifterBox:ShowAllCategories()
@@ -789,12 +796,14 @@ function ShifterBox:ShowAllCategories()
     for categoryId in pairs(rightList.categories) do
         ZO_ScrollList_ShowCategory(rightList, categoryId)
     end
+    _refreshFilters(self.leftList, self.rightList)
 end
 
 function ShifterBox:HideCategory(categoryId)
     assert(categoryId ~= nil, string.format(LIB_IDENTIFIER.."_Error: categoryId cannot be nil!"))
     ZO_ScrollList_HideCategory(self.leftList.list, categoryId)
     ZO_ScrollList_HideCategory(self.rightList.list, categoryId)
+    _refreshFilters(self.leftList, self.rightList)
 end
 
 function ShifterBox:SelectEntryByKey(key)
