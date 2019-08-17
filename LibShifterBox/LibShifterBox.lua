@@ -50,7 +50,7 @@ function ShifterBoxList:New(control, shifterBoxSettings)
     obj.buttonControl = control:GetNamedChild("Button")
     obj.buttonAllControl = control:GetNamedChild("AllButton")
     obj.buttonAllControl:SetState(BSTATE_DISABLED, true) -- init it as disabled
-    if not shifterBoxSettings.showMoveAllButtons then obj.buttonAllControl:SetHidden(true) end
+    if shifterBoxSettings.showMoveAllButtons == false then obj.buttonAllControl:SetHidden(true) end
     obj.enabled = true -- TODO: to be implemented
     -- TODO: instead return obj.list ???
     return obj
@@ -515,7 +515,7 @@ local function _applyCustomSettings(customSettings)
         assert(type(customSettings.emptyListText) == "string", string.format(LIB_IDENTIFIER.."_Error: Invalid emptyListText parameter '%s' provided! Must be a string.", tostring(customSettings.emptyListText)))
         settings.emptyListText = customSettings.emptyListText
     end
-    if customSettings.showMoveAllButtons then
+    if customSettings.showMoveAllButtons ~= nil then
         assert(type(customSettings.showMoveAllButtons) == "boolean", string.format(LIB_IDENTIFIER.."_Error: Invalid showMoveAllButtons parameter '%s' provided! Must be a boolean.", tostring(customSettings.showMoveAllButtons)))
         settings.showMoveAllButtons = customSettings.showMoveAllButtons
     end
