@@ -699,7 +699,16 @@ local ShifterBox = ZO_Object:Subclass()
 -- @param leftListTitle - the title for the left listBox (can be empty)
 -- @param rightListTitle - the title for the right listBox (can be empty)
 -- @param customSettings - custom settings table (can be empty, default settings will be used then)
-function ShifterBox:New(uniqueAddonName, uniqueShifterBoxName, parentControl, leftListTitle, rightListTitle, customSettings)
+-- @param anchorPoint - anchor point (can be empty, you need to call yourShifterBox:SetAnchor on your own then)
+-- @param anchorRelativeTo - anchor relative to control (can be empty, you need to call yourShifterBox:SetAnchor on your own then)
+-- @param anchorRelPoint - anchor relative point (can be empty, you need to call yourShifterBox:SetAnchor on your own then)
+-- @param anchorOffsetX - anchor offset x (can be empty, you need to call yourShifterBox:SetAnchor on your own then)
+-- @param anchorOffsetY - anchor offset y (can be empty, you need to call yourShifterBox:SetAnchor on your own then)
+-- @param dimensionX - dimension x (can be empty, you need to call yourShifterBox:SetDimension on your own then)
+-- @param dimensionY - dimension y (can be empty, you need to call yourShifterBox:SetDimension on your own then)
+-- @param leftListEntries - the left list's entry. A table or a function returning a table (can be left entry. You need to add the entries via yourShifterBox:AddEntriesToLeftList on your own then)
+-- @param rightListEntries - the right list's entry. A table or a function returning a table (can be left entry. You need to add the entries via yourShifterBox:AddEntriesToRightList on your own then)
+function ShifterBox:New(uniqueAddonName, uniqueShifterBoxName, parentControl, leftListTitle, rightListTitle, customSettings, anchorPoint, anchorRelativeTo, anchorRelPoint, anchorOffsetX, anchorOffsetY, dimensionX, dimensionY, leftListEntries, rightListEntries)
     if existingShifterBoxes[uniqueAddonName] == nil then
         existingShifterBoxes[uniqueAddonName] = {}
     end
@@ -711,15 +720,50 @@ function ShifterBox:New(uniqueAddonName, uniqueShifterBoxName, parentControl, le
     obj.shifterBoxName = uniqueShifterBoxName
     obj.shifterBoxSettings = _applyCustomSettings(customSettings)
     obj.shifterBoxControl = _createShifterBox(uniqueAddonName, uniqueShifterBoxName, parentControl)
+    local obj_ctrl = obj.shifterBoxControl
     _initShifterBoxControls(obj, leftListTitle, rightListTitle)
     _initShifterBoxHandlers(obj)
 
     -- initialize the ShifterBoxLists
-    local leftControl = obj.shifterBoxControl:GetNamedChild("Left")
-    local rightControl = obj.shifterBoxControl:GetNamedChild("Right")
+    local leftControl = obj_ctrl:GetNamedChild("Left")
+    local rightControl = obj_ctrl:GetNamedChild("Right")
     obj.leftList = ShifterBoxList:New(leftControl, obj.shifterBoxSettings)
     obj.rightList = ShifterBoxList:New(rightControl, obj.shifterBoxSettings)
 
+    --anchor
+    if anchorPoint and anchorRelativeTo then
+        anchorOffsetX = anchorOffsetX or 0
+        anchorOffsetY = anchorOffsetY or 0
+        obj:SetAnchor(anchorPoint, anchorRelativeTo, anchorRelPoint, anchorOffsetX, anchorOffsetY)
+    end
+    --dimensions
+    if dimensionX and dimensionY then
+        obj:SetDimensions(dimensionX, dimensionY)
+    end
+    --list entries left
+    local leftListEntriesTab
+    if leftListEntries then
+        if type(leftListEntries) == "function" then
+            leftListEntriesTab = leftListEntries()
+        else
+            leftListEntriesTab = leftListEntries
+        end
+    end
+    if leftListEntriesTab then
+        obj:AddEntriesToLeftList(leftListEntriesTab)
+    end
+    --list entries right
+    local rightListEntriesTab
+    if rightListEntries then
+        if type(rightListEntries) == "function" then
+            rightListEntriesTab = rightListEntries()
+        else
+            rightListEntriesTab = rightListEntries
+        end
+    end
+    if rightListEntriesTab then
+        obj:AddEntriesToRightList(rightListEntriesTab)
+    end
     -- register the shifterBox in the internal list and return it
     addonShifterBoxes[uniqueShifterBoxName] = obj
     return addonShifterBoxes[uniqueShifterBoxName]
