@@ -30,10 +30,10 @@
                         <Button name="$(parent)AllButton" inherits="ZO_ButtonBehaviorClickSound">
                             <Dimensions x="40" y="40" />
                             <Anchor point="BOTTOM" relativeTo="$(parent)Button" relativePoint="TOP" offsetY="10" />
-                            <Textures normal="/ESO-ShifterBoxLib/LibShifterBox/bin/textures/double_large_rightarrow_up.dds"
-                                      pressed="/ESO-ShifterBoxLib/LibShifterBox/bin/textures/double_large_rightarrow_down.dds"
-                                      mouseOver="/ESO-ShifterBoxLib/LibShifterBox/bin/textures/double_large_rightarrow_over.dds"
-                                      disabled="/ESO-ShifterBoxLib/LibShifterBox/bin/textures/double_large_rightarrow_disabled.dds"/>
+                            <Textures normal="/LibShifterBox/bin/textures/double_large_rightarrow_up.dds"
+                                      pressed="/LibShifterBox/bin/textures/double_large_rightarrow_down.dds"
+                                      mouseOver="/LibShifterBox/bin/textures/double_large_rightarrow_over.dds"
+                                      disabled="/LibShifterBox/bin/textures/double_large_rightarrow_disabled.dds"/>
                         </Button>
                         <Button name="$(parent)Button" inherits="ZO_ButtonBehaviorClickSound">
                             <Dimensions x="40" y="40" />
@@ -81,10 +81,10 @@
                         <Button name="$(parent)AllButton" inherits="ZO_ButtonBehaviorClickSound">
                             <Dimensions x="40" y="40" />
                             <Anchor point="TOP" relativeTo="$(parent)Button" relativePoint="BOTTOM" offsetY="-10" />
-                            <Textures normal="/ESO-ShifterBoxLib/LibShifterBox/bin/textures/double_large_leftarrow_up.dds"
-                                      pressed="/ESO-ShifterBoxLib/LibShifterBox/bin/textures/double_large_leftarrow_down.dds"
-                                      mouseOver="/ESO-ShifterBoxLib/LibShifterBox/bin/textures/double_large_leftarrow_over.dds"
-                                      disabled="/ESO-ShifterBoxLib/LibShifterBox/bin/textures/double_large_leftarrow_disabled.dds"/>
+                            <Textures normal="/LibShifterBox/bin/textures/double_large_leftarrow_up.dds"
+                                      pressed="/LibShifterBox/bin/textures/double_large_leftarrow_down.dds"
+                                      mouseOver="/LibShifterBox/bin/textures/double_large_leftarrow_over.dds"
+                                      disabled="/LibShifterBox/bin/textures/double_large_leftarrow_disabled.dds"/>
                         </Button>
                     </Controls>
                 </Control>
