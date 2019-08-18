@@ -92,7 +92,7 @@ itemQualitiesShifterBox:SetEnabled(false)
   * [ShifterBox:RemoveEntriesByKey](#shifterboxremoveentriesbykey)
   * [LeftListBox](#leftlistbox)
     * [ShifterBox:GetLeftListEntries](#shifterboxgetleftlistentries)
-    * [ShifterBox:GetLeftListVisibleEntries](#shifterboxgetleftlistvisibleentries)
+    * [ShifterBox:GetLeftListEntriesFull](#shifterboxgetleftlistentriesfull)
     * [ShifterBox:AddEntryToLeftList](#shifterboxaddentrytoleftlist)
     * [ShifterBox:AddEntriesToLeftList](#shifterboxaddentriestoleftlist)
     * [ShifterBox:MoveEntryToLeftList](#shifterboxmoveentrytoleftlist)
@@ -100,7 +100,7 @@ itemQualitiesShifterBox:SetEnabled(false)
     * [ShifterBox:ClearLeftList](#shifterboxclearleftlist)
   * [RightListBox](#rightlistbox)
     * [ShifterBox:GetRightListEntries](#shifterboxgetrightlistentries)
-    * [ShifterBox:GetRightListVisibleEntries](#shifterboxgetrightlistvisibleentries)
+    * [ShifterBox:GetRightListEntriesFull](#shifterboxgetrightlistentriesfull)
     * [ShifterBox:AddEntryToRightList](#shifterboxaddentrytorightlist)
     * [ShifterBox:AddEntriesToRightList](#shifterboxaddentriestorightlist)
     * [ShifterBox:MoveEntryToRightList](#shifterboxmoveentrytorightlist)
@@ -231,15 +231,15 @@ shifterBox:RemoveEntriesByKey(keys)
 ### LeftListBox
 
 #### ShifterBox:GetLeftListEntries
-Returns a table with **all** entries that are currently in the left listBox (including the hidden ones). If `withCategoryId` is omitted or set to `false`, only key/value pairs are returned. If set to `true` then also the `categoryId` is returned per entry.
+Returns a table with all visible entries in the left listBox that are not part of a hidden category. If `withCategoryId` is omitted or set to `false`, only key/value pairs are returned. If set to `true` then also the `categoryId` is returned per entry.
 ```lua
 shifterBox:GetLeftListEntries(withCategoryId)
 ```
 
-#### ShifterBox:GetLeftListVisibleEntries
-Returns a table with all entries that are currently in the left listBox and that are not hidden. If `withCategoryId` is omitted or set to `false`, only key/value pairs are returned. If set to `true` then also the `categoryId` is returned per entry.
+#### ShifterBox:GetLeftListEntriesFull
+Returns a table with **all** entries in the left listBox, including ones that are part of a hidden category. If `withCategoryId` is omitted or set to `false`, only key/value pairs are returned. If set to `true` then also the `categoryId` is returned per entry.
 ```lua
-shifterBox:GetLeftListVisibleEntries(withCategoryId)
+shifterBox:GetLeftListEntriesFull(withCategoryId)
 ```
 
 #### ShifterBox:AddEntryToLeftList
@@ -286,15 +286,15 @@ shifterBox:ClearLeftList()
 ### RightListBox
 
 #### ShifterBox:GetRightListEntries
-Returns a table with **all** entries that are currently in the right listBox (including the hidden ones). If `withCategoryId` is omitted or set to `false`, only key/value pairs are returned. If set to `true` then also the `categoryId` is returned per entry.
+Returns a table with all visible entries in the right listBox that are not part of a hidden category. If `withCategoryId` is omitted or set to `false`, only key/value pairs are returned. If set to `true` then also the `categoryId` is returned per entry.
 ```lua
 shifterBox:GetRightListEntries(withCategoryId)
 ```
 
-#### ShifterBox:GetRightListVisibleEntries
-Returns a table with all entries that are currently in the right listBox and that are not hidden. If `withCategoryId` is omitted or set to `false`, only key/value pairs are returned. If set to `true` then also the `categoryId` is returned per entry.
+#### ShifterBox:GetRightListEntriesFull
+Returns a table with **all** entries in the right listBox, including ones that are part of a hidden category. If `withCategoryId` is omitted or set to `false`, only key/value pairs are returned. If set to `true` then also the `categoryId` is returned per entry.
 ```lua
-shifterBox:GetRightListVisibleEntries(withCategoryId)
+shifterBox:GetRightListEntriesFull(withCategoryId)
 ```
 
 #### ShifterBox:AddEntryToRightList

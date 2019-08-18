@@ -595,7 +595,7 @@ local function _removeEntryFromList(list, key)
     _removeEntriesFromList(list, keys)
 end
 
-local function _getEntries(list, onlyVisibleEntries, withCategoryId)
+local function _getEntries(list, includeHiddenEntries, withCategoryId)
     local function _addToTable(table, key, value, categoryId)
         if withCategoryId then
             table[key] = {
@@ -606,21 +606,27 @@ local function _getEntries(list, onlyVisibleEntries, withCategoryId)
             table[key] = value
         end
     end
-
-    local allData = list.list.data
-    local exportData = {}
-    if onlyVisibleEntries then
-        local visibleDataKeys = list.list.visibleData
-        for _, key in ipairs(visibleDataKeys) do
-            local entry = allData[key]
-            _addToTable(exportData, entry.data.key, entry.data.value, entry.categoryId)
+    local exportList = {}
+    if includeHiddenEntries then
+        local masterList = list.masterList
+        if withCategoryId then
+            exportList = _getShallowClonedTable(masterList)
+        else
+            for key, entry in pairs(masterList) do
+                exportList[key] = entry.value
+            end
         end
     else
-        for _, entry in ipairs(allData) do
-            _addToTable(exportData, entry.data.key, entry.data.value, entry.categoryId)
+        local listData = list.list.data
+        for _, entry in ipairs(listData) do
+            if withCategoryId then
+                _addToTable(exportList, entry.data.key, entry.data.value, entry.categoryId)
+            else
+                exportList[entry.data.key] = entry.data.value
+            end
         end
     end
-    return exportData
+    return exportList
 end
 
 local function _addEntriesToList(list, entries, replace, otherList, categoryId)
@@ -836,7 +842,7 @@ function ShifterBox:GetLeftListEntries(withCategoryId)
     return _getEntries(self.leftList, false, withCategoryId)
 end
 
-function ShifterBox:GetLeftListVisibleEntries(withCategoryId)
+function ShifterBox:GetLeftListEntriesFull(withCategoryId)
     return _getEntries(self.leftList, true, withCategoryId)
 end
 
@@ -874,7 +880,7 @@ function ShifterBox:GetRightListEntries(withCategoryId)
     return _getEntries(self.rightList, false, withCategoryId)
 end
 
-function ShifterBox:GetRightListVisibleEntries(withCategoryId)
+function ShifterBox:GetRightListEntriesFull(withCategoryId)
     return _getEntries(self.rightList, true, withCategoryId)
 end
 
