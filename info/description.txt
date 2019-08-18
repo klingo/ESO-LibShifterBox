@@ -20,7 +20,7 @@ Then you can create a shifterBox instance, anchor it to another control and star
 local shifterBox = LibShifterBox("MyAddon", "MyShifterBox", parentControl, "Lefties", "Righties")
 shifterBox:SetAnchor(TOPLEFT, headerControl, BOTTOMLEFT, 0, 20) -- required to correctly position/anchor it in your UI
 shifterBox:SetDimensions(300, 200) -- optionally set your own overall dimensions of the shifterBox
-shifterBox:SetLeftListEntries({[1] = "AAA", [2] = "BBB", [3] = "CCC"}) -- add three entries to the left list
+shifterBox:AddEntriesToLeftList({[1] = "AAA", [2] = "BBB", [3] = "CCC"}) -- add three entries to the left list
 shifterBox:AddEntryToRightList(4, "DDD") -- add one entry to the right list
 [/highlight]
 
