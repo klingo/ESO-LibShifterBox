@@ -28,8 +28,9 @@ local leftListEntries = {
 
 -- optionally, we can override the default settings
 local customSettings = {
-    rowHeight = 30,
+    sortEnabled = true,
     sortBy = "key",
+    rowHeight = 30,
     emptyListText = "None",
     showMoveAllButtons = true
 }
@@ -122,6 +123,7 @@ local shifterBox = LibShifterBox.Create(uniqueAddonName, uniqueShifterBoxName, p
 Optionally custom settings can be passed on when the ShifterBox is created. The following values can be set:
 ```lua
 customSettings = {
+    sortEnabled = true,         -- sorting of the entries can be disabled
     sortBy = "value",           -- sort the list by value or key (allowed are: "value" or "key")
     rowHeight = 32,             -- the height of an entry row
     emptyListText = "empty",    -- the text to be displayed when there is no row/entry in a list

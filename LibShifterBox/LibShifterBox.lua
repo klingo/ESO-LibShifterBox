@@ -20,6 +20,7 @@ local ANIMATION_FIELD_NAME = "SelectionAnimation"
 local existingShifterBoxes = {}
 
 local defaultSettings = {
+    sortEnabled = true,
     sortBy = "value",
     rowHeight = 32,
     emptyListText = "empty",
@@ -85,21 +86,28 @@ end
 function ShifterBoxList:Initialize(control, shifterBoxSettings)
     self.rowHeight = shifterBoxSettings.rowHeight
     self.rowWidth = 180 -- default value to init
+    self.shifterBoxSettings = shifterBoxSettings
     -- initialize the SortFilterList
     ZO_SortFilterList.Initialize(self, control)
     -- set a text that is displayed when there are no entries
     self:SetEmptyText(shifterBoxSettings.emptyListText)
-    -- default sorting key
-    -- Source: https://esodata.uesp.net/100028/src/libraries/zo_sortheadergroup/zo_sortheadergroup.lua.html
-    self.sortHeaderGroup:SelectHeaderByKey("value")
-    ZO_SortHeader_OnMouseExit(self.control:GetNamedChild("Headers"):GetNamedChild("Value"))
+    if  self.shifterBoxSettings.sortEnabled then
+        -- default sorting key
+        -- Source: https://esodata.uesp.net/100028/src/libraries/zo_sortheadergroup/zo_sortheadergroup.lua.html
+        self.sortHeaderGroup:SelectHeaderByKey("value")
+        ZO_SortHeader_OnMouseExit(self.control:GetNamedChild("Headers"):GetNamedChild("Value"))
+    else
+        -- disable sortHeaderGroup
+        self.sortHeaderGroup.origDisabledColor = self.sortHeaderGroup.disabledColor
+        self.sortHeaderGroup.disabledColor = self.sortHeaderGroup.normalColor
+        self.sortHeaderGroup:SetEnabled(false)
+    end
     -- define the datatype for this list and enable the highlighting
     ZO_ScrollList_AddCategory(self.list, DATA_DEFAULT_CATEGORY)
     ZO_ScrollList_AddDataType(self.list, DATA_TYPE_DEFAULT, "ShifterBoxEntryTemplate", self.rowHeight, function(control, data) self:SetupRowEntry(control, data) end)
     ZO_ScrollList_EnableSelection(self.list, "ZO_ThinListHighlight", function(...)
         self:OnSelectionChanged(...)
     end)
-
     -- set up sorting function and refresh all data
     self.sortFunction = function(listEntry1, listEntry2) return ZO_TableOrderingFunction(listEntry1.data, listEntry2.data, shifterBoxSettings.sortBy, ShifterBoxList.SORT_KEYS, self.currentSortOrder) end
     self:RefreshData()
@@ -158,8 +166,11 @@ end
 function ShifterBoxList:SortScrollList()
     -- intended to be overriden
     -- should take the filtered data and sort it
-    local scrollData = ZO_ScrollList_GetDataList(self.list)
-    table.sort(scrollData, self.sortFunction)
+    local shifterBoxSettings = self.shifterBoxSettings
+    if shifterBoxSettings.sortEnabled then
+        local scrollData = ZO_ScrollList_GetDataList(self.list)
+        table.sort(scrollData, self.sortFunction)
+    end
 end
 
 function ShifterBoxList:AddEntry(key, value, categoryId)
@@ -508,6 +519,10 @@ local function _applyCustomSettings(customSettings)
     local settings = ZO_ShallowTableCopy(defaultSettings)
     if customSettings == nil then return settings end
     -- otherwise validate them
+    if customSettings.sortEnabled ~= nil then
+        assert(type(customSettings.sortEnabled) == "boolean", string.format(LIB_IDENTIFIER.."_Error: Invalid sortEnabled parameter '%s' provided! Must be a boolean.", tostring(customSettings.sortEnabled)))
+        settings.sortEnabled = customSettings.sortEnabled
+    end
     if customSettings.sortBy then
         assert(customSettings.sortBy == "value" or customSettings.sortBy == "key", string.format(LIB_IDENTIFIER.."_Error: Invalid sortBy parameter '%s' provided! Only 'value' and 'key' are allowed.", tostring(customSettings.sortBy)))
         settings.sortBy = customSettings.sortBy
