@@ -5,7 +5,7 @@ LibShifterBox, a library add-on for '[The Elder Scrolls Online](https://www.elde
 
 
 ## Download
-Coming soon to [esoui.com](http://www.esoui.com/) !
+You can always download the latest version here: https://www.esoui.com/downloads/info2444-LibShifterBox.html
 
 
 ## Quick Start Example
