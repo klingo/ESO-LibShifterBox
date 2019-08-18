@@ -12,7 +12,7 @@ local LIST_SPACING = 40
 local ARROW_SIZE = 36
 local HEADER_HEIGHT = 32
 local DATA_TYPE_DEFAULT = 1
-local DATA_CATEGORY_DEFAULT = "LSBCatDef"
+local DATA_DEFAULT_CATEGORY = "LSBDefCat"
 local SCROLLBAR_WIDTH = ZO_SCROLL_BAR_WIDTH
 local RESELECTING_DURING_REBUILD = true
 local ANIMATION_FIELD_NAME = "SelectionAnimation"
@@ -94,7 +94,7 @@ function ShifterBoxList:Initialize(control, shifterBoxSettings)
     self.sortHeaderGroup:SelectHeaderByKey("value")
     ZO_SortHeader_OnMouseExit(self.control:GetNamedChild("Headers"):GetNamedChild("Value"))
     -- define the datatype for this list and enable the highlighting
-    ZO_ScrollList_AddCategory(self.list, DATA_CATEGORY_DEFAULT)
+    ZO_ScrollList_AddCategory(self.list, DATA_DEFAULT_CATEGORY)
     ZO_ScrollList_AddDataType(self.list, DATA_TYPE_DEFAULT, "ShifterBoxEntryTemplate", self.rowHeight, function(control, data) self:SetupRowEntry(control, data) end)
     ZO_ScrollList_EnableSelection(self.list, "ZO_ThinListHighlight", function(...)
         self:OnSelectionChanged(...)
@@ -130,7 +130,7 @@ function ShifterBoxList:FilterScrollList()
                     key = key,
                     value = data.value
                 }
-                table.insert(scrollData, ZO_ScrollList_CreateDataEntry(DATA_TYPE_DEFAULT, rowData, data.categoryId or DATA_CATEGORY_DEFAULT))
+                table.insert(scrollData, ZO_ScrollList_CreateDataEntry(DATA_TYPE_DEFAULT, rowData, data.categoryId or DATA_DEFAULT_CATEGORY))
                 hasAtLeastOneEntry = true
             else
                 -- entry will not (or will no longer) be visible
@@ -911,7 +911,7 @@ end
 -- =================================================================================================================
 -- == LIBRARY FUNCTIONS == --
 -- -----------------------------------------------------------------------------------------------------------------
-lib.DEFAULT_CATEGORY = DATA_CATEGORY_DEFAULT
+lib.DEFAULT_CATEGORY = DATA_DEFAULT_CATEGORY
 
 --- Returns an existing ShifterBox instance
 -- @param uniqueAddonName - a string identifer for the consuming addon
