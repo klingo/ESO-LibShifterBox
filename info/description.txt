@@ -1,3 +1,5 @@
+[COLOR="DarkOrange"][B]Disclaimer: [/B]LibShifterBox is currently in [B]BETA[/B] status. APIs might change again and further bugfixes are to be expected.[/COLOR]
+
 [SIZE=5]Features[/SIZE]
 [LIST]
 [*]Create ShifterBoxes (also known as Dual-Listboxes) for easier selection of multiple entries

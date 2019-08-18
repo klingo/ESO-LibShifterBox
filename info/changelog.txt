@@ -1,2 +1,2 @@
-0.1.0   (???)
+0.1.0   (August 18, 2019)
 - initial (beta) release
