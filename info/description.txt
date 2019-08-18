@@ -1,10 +1,15 @@
 [SIZE=5]Features[/SIZE]
 [LIST]
-[*]tbd
+[*]Create ShifterBoxes (also known as Dual-Listboxes) for easier selection of multiple entries
+[*]Entries can optionally be added under different categories to easily show/hide them based on other events
+[*]Define your own titles for the ListBoxes, or just leave them out
+[*]Simple access to know which entries are in which ListBox
+[*]Change Dimension, Hidden and Enabled state at any time
 [/LIST]
 
 
 [SIZE=5]Quick Start[/SIZE]
+
 Add LibShifterBox as a dependency to your add-on manifest:
 [CODE]## DependsOn: LibShifterBox[/CODE]
 
@@ -16,6 +21,9 @@ shifterBox:SetDimensions(300, 200) -- optionally set your own overall dimensions
 shifterBox:SetLeftListEntries({[1] = "AAA", [2] = "BBB", [3] = "CCC"}) -- add three entries to the left list
 shifterBox:AddEntryToRightList(4, "DDD") -- add one entry to the right list
 [/highlight]
+
+A more extensive Quick Start Example can be found [B][URL="https://github.com/klingo/ESO-LibShifterBox#quick-start-example"]here[/URL][/B]
+
 
 [SIZE=5]API Reference[/SIZE]
 [LIST]
