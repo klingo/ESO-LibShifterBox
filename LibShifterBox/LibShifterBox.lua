@@ -184,9 +184,9 @@ function ShifterBoxList:RemoveEntry(key)
     return nil
 end
 
-function ShifterBoxList:ClearEntries()
-    local scrollData = ZO_ScrollList_GetDataList(self.list)
-    ZO_ClearNumericallyIndexedTable(scrollData)
+function ShifterBoxList:ClearMasterList()
+    self.masterList = {}
+    self:RefreshFilters()
 end
 
 function ShifterBoxList:UnselectEntries()
@@ -676,8 +676,7 @@ local function _moveEntryToOtherList(sourceList, key, destList)
 end
 
 local function _clearList(list)
-    list:ClearEntries()
-    list:CommitScrollList()
+    list:ClearMasterList()
     list.buttonControl:SetState(BSTATE_DISABLED, true)
 end
 
