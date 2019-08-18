@@ -112,15 +112,17 @@ itemQualitiesShifterBox:SetEnabled(false)
 ### Create
 Returns a new instance of ShifterBox with the given control name. `leftListTitle` and `rightListTitle` are optional and if provided render headers to sort the list. If not provided the headers are not shown and the list is sorted in ascending order. `customSettings` can also optionally be provided (with individual values), otherwise the default settings are used.
 ```lua
-local shifterBox = LibShifterBox(uniqueAddonName, uniqueShifterBoxName, parentControl, leftListTitle, rightListTitle, customSettings)
+local shifterBox = LibShifterBox(uniqueAddonName, uniqueShifterBoxName, parentControl, leftListTitle, rightListTitle, customSettings, anchorOptions, dimensionOptions, leftListEntries, rightListEntries)
 ```
 or
 ```lua
-local shifterBox = LibShifterBox.Create(uniqueAddonName, uniqueShifterBoxName, parentControl, leftListTitle, rightListTitle, customSettings)
+local shifterBox = LibShifterBox.Create(uniqueAddonName, uniqueShifterBoxName, parentControl, leftListTitle, rightListTitle, customSettings, anchorOptions, dimensionOptions, leftListEntries, rightListEntries)
 ```
 
 #### CustomSettings
-Optionally custom settings can be passed on when the ShifterBox is created. The following values can be set:
+Optionally custom settings can be passed on when the ShifterBox is created.
+\
+The following values can be set:
 ```lua
 customSettings = {
     sortEnabled = true,         -- sorting of the entries can be disabled
@@ -130,6 +132,68 @@ customSettings = {
     showMoveAllButtons = true,  -- the >> and << buttons to move all entries can be hidden if set to false
 }
 ```
+
+#### anchorOptions
+Optionally anchorOptions can be passed on when the ShifterBox is created. This replaces the separate call of `shifterBox:SetAnchors()`.
+\
+The following values can be set:
+```lua
+anchorOptions = {
+    number whereOnMe,
+    object anchorTargetControl,
+    number whereOnTarget, 
+    number offsetX, 
+    number offsetY
+}
+```
+
+#### anchorOptions
+Optionally anchorOptions can be passed on when the ShifterBox is created. This replaces the separate call of `shifterBox:SetAnchors()`.
+\
+The following values can be set:
+```lua
+anchorOptions = {
+    number whereOnMe,
+    object anchorTargetControl,
+    number whereOnTarget, 
+    number offsetX, 
+    number offsetY
+}
+```
+
+#### dimensionOptions
+Optionally dimensionOptions can be passed on when the ShifterBox is created. This replaces the separate call of `shifterBox:SetDimensions()`.
+\
+The following values can be set:
+```lua
+dimensionOptions = {
+    number width
+    number height
+}
+```
+
+#### leftListEntries
+Optionally leftListEntries can be passed on when the ShifterBox is created to directly populate the left listBox. This replaces the separate call of `shifterBox:AddEntriesToLeftList()`. Note though that this way no `categoryId` can be provided for the entries.
+\
+The `leftListEntries` must either be a table with the following format, or a function return such table:
+```lua
+{
+    [key] = value,
+    [key] = value
+}
+```
+
+#### rightListEntries
+Optionally rightListEntries can be passed on when the ShifterBox is created to directly populate the right listBox. This replaces the separate call of `shifterBox:AddEntriesToRightList()`. Note though that this way no `categoryId` can be provided for the entries.
+\
+The `rightListEntries` must either be a table with the following format, or a function return such table:
+```lua
+{
+    [key] = value,
+    [key] = value
+}
+```
+
 
 ### GetShifterBox
 Returns the (first to be created) ShifterBox instance based on the `uniqueAddonName` and `uniqueShifterBoxName`.
@@ -245,7 +309,7 @@ shifterBox:GetLeftListEntriesFull(withCategoryId)
 ```
 
 #### ShifterBox:AddEntryToLeftList
-Adds one additional entry into the left listBox. If the key already exists the entry will not be added; unless if `replace` is set to `true`, then the entry with the same key in **either** listBox will be replaced.
+Adds one additional entry into the left listBox. If the key already exists in either listBox, the entry will not be added; unless if `replace` is set to `true`, then the entry with the same key in **either** listBox will be replaced.
 \
 Optionally a `categoryId` can be provided to assign the entry to a specific category. These then can be shown/hidden with `ShowCategory(categoryId)` and `HideCategory(categoryId)`. If not provided, the default categoryId is used (`LibShifterBox.DEFAULT_CATEGORY`)
 ```lua
@@ -253,7 +317,9 @@ shifterBox:AddEntryToLeftList(key, value, replace, categoryId)
 ```
 
 #### ShifterBox:AddEntriesToLeftList
-Adds a list of entries into the left listBox. If any of the keys already exists the entry will not be added; unless if `replace` is set to `true`, then the entry with the same key in **either** listBox will be replaced.
+Adds a list of entries into the left listBox. If any of the keys already exists in either listBox, the entry will not be added; unless if `replace` is set to `true`, then the entry with the same key in **either** listBox will be replaced.
+\
+The `entries` can either be a table with entries, or a function that returns a table. The format must be like: `{ [key] = value, [key] = value }`
 \
 Optionally a `categoryId` can be provided to assign the entries to a specific category. These then can be shown/hidden with `ShowCategory(categoryId)` and `HideCategory(categoryId)`. If not provided, the default categoryId is used (`LibShifterBox.DEFAULT_CATEGORY`)
 ```lua
@@ -300,7 +366,7 @@ shifterBox:GetRightListEntriesFull(withCategoryId)
 ```
 
 #### ShifterBox:AddEntryToRightList
-Adds one additional entry into the right listBox. If the key already exists the entry will not be added; unless if `replace` is set to `true`, then the entry with the same key in **either** listBox will be replaced.
+Adds one additional entry into the right listBox. If the key already exists in either listBox, the entry will not be added; unless if `replace` is set to `true`, then the entry with the same key in **either** listBox will be replaced.
 \
 Optionally a `categoryId` can be provided to assign the entry to a specific category. These then can be shown/hidden with `ShowCategory(categoryId)` and `HideCategory(categoryId)`. If not provided, the default categoryId is used (`LibShifterBox.DEFAULT_CATEGORY`)
 ```lua
@@ -308,7 +374,9 @@ shifterBox:AddEntryToRightList(key, value, replace, categoryId)
 ```
 
 #### ShifterBox:AddEntriesToRightList
-Adds a list of entries into the right listBox. If any of the keys already exists the entry will not be added; unless if `replace` is set to `true`, then the entry with the same key in **either** listBox will be replaced.
+Adds a list of entries into the right listBox. If any of the keys already exists in either listBox, the entry will not be added; unless if `replace` is set to `true`, then the entry with the same key in **either** listBox will be replaced.
+\
+The `entries` can either be a table with entries, or a function that returns a table. The format must be like: `{ [key] = value, [key] = value }`
 \
 Optionally a `categoryId` can be provided to assign the entries to a specific category. These then can be shown/hidden with `ShowCategory(categoryId)` and `HideCategory(categoryId)`. If not provided, the default categoryId is used (`LibShifterBox.DEFAULT_CATEGORY`)
 ```lua

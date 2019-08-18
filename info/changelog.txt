@@ -1,5 +1,6 @@
 0.1.1   (???)
 - add [sortEnabled] customSetting as proposed by Baertram
+- add additional shortcut parameters to .Create/:New as proposed by Baertram
 
 0.1.0   (August 18, 2019)
 - initial (beta) release

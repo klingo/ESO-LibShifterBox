@@ -654,26 +654,34 @@ local function _addEntriesToList(list, entries, replace, otherList, categoryId)
         ZO_ScrollList_AddCategory(list.list, categoryId)
         ZO_ScrollList_AddCategory(otherList.list, categoryId)
     end
-    for key, value in pairs(entries) do
-        if replace and replace == true then
-            -- if replace is set to true, make sure that a potential entry with the same key is removed from both lists
-            local removeKey = list:RemoveEntry(key)
-            local otherRemoveKey = otherList:RemoveEntry(key)
-            if removeKey ~= nil or otherRemoveKey ~= nil then hasAtLeastOneRemoved = true end
-        else
-            -- if replace is not set or set to false, then assert that key does not exist in either list
-            _assertKeyIsNotInTable(key, value, list, listControl)
-            _assertKeyIsNotInTable(key, value, otherList, otherListControl)
-        end
-        -- then add entry to the corresponding list
-        list:AddEntry(key, value, categoryId)
-        hasAtLeastOneAdded = true
+    local entriesList
+    if type(entries) == "function" then
+        entriesList = entries()
+    else
+        entriesList = entries
     end
-    if hasAtLeastOneAdded then
-        -- Afterwards refresh the visualisation of the data
-        _refreshFilters(list)
-        if hasAtLeastOneRemoved then
-            _refreshFilters(otherList)
+    if entriesList then
+        for key, value in pairs(entriesList) do
+            if replace and replace == true then
+                -- if replace is set to true, make sure that a potential entry with the same key is removed from both lists
+                local removeKey = list:RemoveEntry(key)
+                local otherRemoveKey = otherList:RemoveEntry(key)
+                if removeKey ~= nil or otherRemoveKey ~= nil then hasAtLeastOneRemoved = true end
+            else
+                -- if replace is not set or set to false, then assert that key does not exist in either list
+                _assertKeyIsNotInTable(key, value, list, listControl)
+                _assertKeyIsNotInTable(key, value, otherList, otherListControl)
+            end
+            -- then add entry to the corresponding list
+            list:AddEntry(key, value, categoryId)
+            hasAtLeastOneAdded = true
+        end
+        if hasAtLeastOneAdded then
+            -- Afterwards refresh the visualisation of the data
+            _refreshFilters(list)
+            if hasAtLeastOneRemoved then
+                _refreshFilters(otherList)
+            end
         end
     end
 end
@@ -711,10 +719,14 @@ local ShifterBox = ZO_Object:Subclass()
 -- @param uniqueAddonName - the unique name of your addon
 -- @param uniqueShifterBoxName - the unique name of this shifterBox (within your addon)
 -- @param parentControl - the control reference to which the shifterBox should be added as a child
--- @param leftListTitle - the title for the left listBox (can be empty)
--- @param rightListTitle - the title for the right listBox (can be empty)
--- @param customSettings - custom settings table (can be empty, default settings will be used then)
-function ShifterBox:New(uniqueAddonName, uniqueShifterBoxName, parentControl, leftListTitle, rightListTitle, customSettings)
+-- @param leftListTitle - OPTIONAL: the title for the left listBox
+-- @param rightListTitle - OPTIONAL: the title for the right listBox
+-- @param customSettings - OPTIONAL: custom settings table (if empty, default settings will be used)
+-- @param anchorOptions - OPTIONAL: directly provide anchorOptions instead of calling :SetAnchor afterwards (must be table with: number whereOnMe, object anchorTargetControl, number whereOnTarget, number offsetX, number offsetY)
+-- @param dimensionOptions - OPTIONAL: directly provide dimensionOptions instead of calling :SetDimensions afterwards (must be table with: number width, number height)
+-- @param leftListEntries - OPTIONAL: directly provide entries for left listBox (a table or a function returning a table)
+-- @param rightListEntries - OPTIONAL: directly provide entries for right listBox (a table or a function returning a table)
+function ShifterBox:New(uniqueAddonName, uniqueShifterBoxName, parentControl, leftListTitle, rightListTitle, customSettings, anchorOptions, dimensionOptions, leftListEntries, rightListEntries)
     if existingShifterBoxes[uniqueAddonName] == nil then
         existingShifterBoxes[uniqueAddonName] = {}
     end
@@ -728,13 +740,27 @@ function ShifterBox:New(uniqueAddonName, uniqueShifterBoxName, parentControl, le
     obj.shifterBoxControl = _createShifterBox(uniqueAddonName, uniqueShifterBoxName, parentControl)
     _initShifterBoxControls(obj, leftListTitle, rightListTitle)
     _initShifterBoxHandlers(obj)
-
     -- initialize the ShifterBoxLists
     local leftControl = obj.shifterBoxControl:GetNamedChild("Left")
     local rightControl = obj.shifterBoxControl:GetNamedChild("Right")
     obj.leftList = ShifterBoxList:New(leftControl, obj.shifterBoxSettings)
     obj.rightList = ShifterBoxList:New(rightControl, obj.shifterBoxSettings)
-
+    -- anchorOptions; if provided
+    if anchorOptions then
+        obj:SetAnchor(unpack(anchorOptions))
+    end
+    -- dimensionOptions; if provided
+    if dimensionOptions then
+        obj:SetDimensions(unpack(dimensionOptions))
+    end
+    -- leftListEntries; if provided
+    if leftListEntries then
+        obj:AddEntriesToLeftList(leftListEntries)
+    end
+    -- rightListEntries; if provided
+    if rightListEntries then
+        obj:AddEntriesToRightList(rightListEntries)
+    end
     -- register the shifterBox in the internal list and return it
     addonShifterBoxes[uniqueShifterBoxName] = obj
     return addonShifterBoxes[uniqueShifterBoxName]
