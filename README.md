@@ -110,7 +110,7 @@ itemQualitiesShifterBox:SetEnabled(false)
     * [ShifterBox:ClearRightList](#shifterboxclearrightlist)
 
 ### Create
-Returns a new instance of ShifterBox with the given control name. `leftListTitle` and `rightListTitle` are optional and if provided render headers to sort the list. If not provided the headers are not shown and the list is sorted in ascending order. `customSettings` can also optionally be provided (with individual values), otherwise the default settings are used.
+Returns a new instance of ShifterBox with the given control name. `leftListTitle` and `rightListTitle` are optional and if provided render headers to sort the list. If not provided the headers are not shown and the list is sorted in ascending order. `customSettings` can also optionally be provided (with individual values), otherwise the default settings are used. Furthermore the optional `anchorOptions`, `dimensionOptions`, `leftListEntries`, and `rightListEntries` can shortcut the separate calling of `shifterBox:SetAnchor`, `shifterBox:SetDimensions`, `shifterBox:AddEntriesToLeftList` and `shifterBox:AddEntriesToRightList`.
 ```lua
 local shifterBox = LibShifterBox(uniqueAddonName, uniqueShifterBoxName, parentControl, leftListTitle, rightListTitle, customSettings, anchorOptions, dimensionOptions, leftListEntries, rightListEntries)
 ```
@@ -130,20 +130,6 @@ customSettings = {
     rowHeight = 32,             -- the height of an entry row
     emptyListText = "empty",    -- the text to be displayed when there is no row/entry in a list
     showMoveAllButtons = true,  -- the >> and << buttons to move all entries can be hidden if set to false
-}
-```
-
-#### anchorOptions
-Optionally anchorOptions can be passed on when the ShifterBox is created. This replaces the separate call of `shifterBox:SetAnchors()`.
-\
-The following values can be set:
-```lua
-anchorOptions = {
-    number whereOnMe,
-    object anchorTargetControl,
-    number whereOnTarget, 
-    number offsetX, 
-    number offsetY
 }
 ```
 
