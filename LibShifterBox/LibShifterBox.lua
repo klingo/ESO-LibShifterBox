@@ -23,12 +23,13 @@ local defaultSettings = {
     sortEnabled = true,
     sortBy = "value",
     rowHeight = 32,
-    emptyListText = "empty",
+    emptyListText = GetString(LIBSHIFTERBOX_EMPTY),
     showMoveAllButtons = true,
 }
 
 -- KNOWN ISSUES
 -- TODO: Calling UnselectAllEntries() when mouse-over causes text to become white
+-- TODO: callbacks for when entries are moved
 -- TODO: font color?
 -- TODO: font?
 

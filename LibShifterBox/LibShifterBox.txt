@@ -12,6 +12,9 @@
 ## APIVersion: 100028
 ## IsLibrary: true
 
-ShifterBox\ShifterBoxTemplate.xml
+localization/en.lua
+localization/$(language).lua
+
+ShifterBox/ShifterBoxTemplate.xml
 
 LibShifterBox.lua
