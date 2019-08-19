@@ -1,5 +1,9 @@
 <GuiXml>
+    <Font name="MyFontGame16" font="$(MEDIUM_FONT)|$(KB_16)|soft-shadow-thin" />
+    <Font name="MyFontGame18" font="$(MEDIUM_FONT)|$(KB_18)|soft-shadow-thin" />
+    <Font name="MyFontGame20" font="$(MEDIUM_FONT)|$(KB_20)|soft-shadow-thin" />
     <Controls>
+        <!-- Virtual control for the ShifterBox -->
         <Control name="ShifterBoxTemplate" resizeToFitDescendents="true" virtual="true">
             <Controls>
                 <Control name="$(parent)Left">
@@ -90,14 +94,40 @@
                 </Control>
             </Controls>
         </Control>
-        <Button name="ShifterBoxEntryTemplate" verticalAlignment="CENTER" horizontalAlignment="LEFT" virtual="true">
+        <!-- Virtual labels -->
+        <Label name="ShifterBoxRowLabel16" color="FFFFFF" font="MyFontGame16" wrapMode="ELLIPSIS" horizontalAlignment="LEFT" verticalAlignment="CENTER" virtual="true" > </Label>
+        <Label name="ShifterBoxRowLabel18" color="FFFFFF" font="MyFontGame18" wrapMode="ELLIPSIS" horizontalAlignment="LEFT" verticalAlignment="CENTER" virtual="true" > </Label>
+        <Label name="ShifterBoxRowLabel20" color="FFFFFF" font="MyFontGame20" wrapMode="ELLIPSIS" horizontalAlignment="LEFT" verticalAlignment="CENTER" virtual="true" > </Label>
+        <!-- Virtual controls - Row of the lists -->
+        <Control name="ShifterBoxEntryTemplate16" verticalAlignment="CENTER" horizontalAlignment="LEFT" mouseEnabled="true" virtual="true">
             <Dimensions x="180" y="32" />
             <Controls>
-                <Label name="$(parent)Label" font="ZoFontGame" verticalAlignment="CENTER" horizontalAlignment="LEFT">
+                <!--<Texture name="$(parent)BG" inherits="ZO_ThinListBgStrip" />-->
+                <Label name="$(parent)Label" inherits="ShifterBoxRowLabel16">
                     <Anchor point="LEFT" offsetX="10"/>
                     <Dimensions x="180" y="32" />
                 </Label>
             </Controls>
-        </Button>
+        </Control>
+        <Control name="ShifterBoxEntryTemplate18" verticalAlignment="CENTER" horizontalAlignment="LEFT" mouseEnabled="true" virtual="true">
+            <Dimensions x="180" y="32" />
+            <Controls>
+                <!--<Texture name="$(parent)BG" inherits="ZO_ThinListBgStrip" />-->
+                <Label name="$(parent)Label" inherits="ShifterBoxRowLabel18">
+                    <Anchor point="LEFT" offsetX="10"/>
+                    <Dimensions x="180" y="32" />
+                </Label>
+            </Controls>
+        </Control>
+        <Control name="ShifterBoxEntryTemplate20" verticalAlignment="CENTER" horizontalAlignment="LEFT" mouseEnabled="true" virtual="true">
+            <Dimensions x="180" y="32" />
+            <Controls>
+                <!--<Texture name="$(parent)BG" inherits="ZO_ThinListBgStrip" />-->
+                <Label name="$(parent)Label" inherits="ShifterBoxRowLabel20">
+                    <Anchor point="LEFT" offsetX="10"/>
+                    <Dimensions x="180" y="32" />
+                </Label>
+            </Controls>
+        </Control>
     </Controls>
 </GuiXml>

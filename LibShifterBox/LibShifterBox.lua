@@ -23,7 +23,7 @@ local defaultSettings = {
     sortEnabled = true,
     sortBy = "value",
     rowHeight = 32,
-    emptyListText = "empty",
+    emptyListText = GetString(LIBSHIFTERBOX_EMPTY),
     showMoveAllButtons = true,
 }
 
@@ -371,9 +371,9 @@ ShifterBoxList.SORT_KEYS = {
     ["key"] = {tiebreaker="value"}
 }
 
-function ShifterBoxList:New(control, shifterBoxObj, isLeftList)
+function ShifterBoxList:New(control, shifterBoxObj, isLeftList, rowTemplateName)
     local shifterBoxSettings = shifterBoxObj.shifterBoxSettings
-    local obj = ZO_SortFilterList.New(self, control, shifterBoxObj, isLeftList)
+    local obj = ZO_SortFilterList.New(self, control, shifterBoxObj, isLeftList, rowTemplateName)
     obj.buttonControl = control:GetNamedChild("Button")
     obj.buttonAllControl = control:GetNamedChild("AllButton")
     obj.buttonAllControl:SetState(BSTATE_DISABLED, true) -- init it as disabled
@@ -398,7 +398,7 @@ function ShifterBoxList:OnSelectionChanged(previouslySelectedData, selectedData,
     end
 end
 
-function ShifterBoxList:Initialize(control, shifterBoxObj, isLeftList)
+function ShifterBoxList:Initialize(control, shifterBoxObj, isLeftList, rowTemplateName)
     local shifterBoxSettings = shifterBoxObj.shifterBoxSettings
     self.rowHeight = shifterBoxSettings.rowHeight
     self.rowWidth = 180 -- default value to init
@@ -420,9 +420,11 @@ function ShifterBoxList:Initialize(control, shifterBoxObj, isLeftList)
         self.sortHeaderGroup.disabledColor = self.sortHeaderGroup.normalColor
         self.sortHeaderGroup:SetEnabled(false)
     end
+    --Get the template name for the row
+    rowTemplateName = rowTemplateName or "ShifterBoxEntryTemplate18"
     -- define the datatype for this list and enable the highlighting
     ZO_ScrollList_AddCategory(self.list, DATA_DEFAULT_CATEGORY)
-    ZO_ScrollList_AddDataType(self.list, DATA_TYPE_DEFAULT, "ShifterBoxEntryTemplate", self.rowHeight, function(control, data) self:SetupRowEntry(control, data) end)
+    ZO_ScrollList_AddDataType(self.list, DATA_TYPE_DEFAULT, rowTemplateName, self.rowHeight, function(control, data) self:SetupRowEntry(control, data) end)
     ZO_ScrollList_EnableSelection(self.list, "ZO_ThinListHighlight", function(...)
         self:OnSelectionChanged(...)
     end)
@@ -438,10 +440,6 @@ function ShifterBoxList:Initialize(control, shifterBoxObj, isLeftList)
                 local dragData = lib.currentDragData
                 if dragData then
                     local sourceListControl = dragData._dragStartList
-G_LSB = {}
-G_LSB.sourceListControl = sourceListControl
-G_LSB.draggedControl = dragData._draggedControl
-
                     if sourceListControl and sourceListControl ~= draggedOntoControl then
                         local sourceListSelectedData, srcList, destList
                         sourceListSelectedData = sourceListControl.selectedMultiData
@@ -453,7 +451,6 @@ G_LSB.draggedControl = dragData._draggedControl
                                 sourceListControl.selectedMultiData = sourceListSelectedData
                             end
                         end
-G_LSB.sourceListSelectedData = sourceListSelectedData
                         destList = self
                         if self.isLeftList then
                             srcList = self.shifterBox.rightList
@@ -615,12 +612,8 @@ end
 -- @param deselectOnReselect - if the entry is already selected, instead of reselecting it will be deselected
 function ShifterBoxList:ToggleEntrySelection(data, control, reselectingDuringRebuild, animateInstantly, deselectOnReselect )
     if not self.enabled then return end -- if the listBox is not enabled; immediately exit the function
-    if reselectingDuringRebuild == nil then
-        reselectingDuringRebuild = false
-    end
-    if animateInstantly == nil then
-        animateInstantly = false
-    end
+    reselectingDuringRebuild = reselectingDuringRebuild or false
+    animateInstantly = animateInstantly or false
     if deselectOnReselect  == nil then
         deselectOnReselect  = true
     end
@@ -667,7 +660,7 @@ function ShifterBoxList:SetupRowEntry(rowControl, rowData)
         local textWidth = labelControl:GetTextWidth()
         local desiredWidth = labelControl:GetDesiredWidth()
         -- only show tooltip if the text/label was truncated or if the text is wider than the desiredWidth minus the scrollbar width
-        local wasTruncated = rowControl:GetNamedChild("Label"):WasTruncated()
+        local wasTruncated = labelControl:WasTruncated()
         if wasTruncated or (textWidth + SCROLLBAR_WIDTH) > desiredWidth then
             local data = ZO_ScrollList_GetData(rowControl)
             ZO_Tooltips_ShowTextTooltip(rowControl, TOP, data.value)
@@ -675,14 +668,19 @@ function ShifterBoxList:SetupRowEntry(rowControl, rowData)
     end
     local function onRowMouseExit(rowControl)
         ZO_Tooltips_HideTextTooltip()
+        local labelControl = rowControl:GetNamedChild("Label")
     end
-    local function onRowClicked(rowControl)
-        local data = ZO_ScrollList_GetData(rowControl)
-        self:ToggleEntrySelection(data, rowControl, RESELECTING_DURING_REBUILD, false)
+    local function onRowMouseUp(rowControl, mouseButton, isInside, ctrl, alt, shift, command)
+        if mouseButton == MOUSE_BUTTON_INDEX_LEFT and isInside then
+            local labelControl = rowControl:GetNamedChild("Label")
+            local data = ZO_ScrollList_GetData(rowControl)
+            self:ToggleEntrySelection(data, rowControl, RESELECTING_DURING_REBUILD, false)
+        end
     end
     local function onDragStart(rowControl, mouseButton)
         lib.currentDragData = nil
         if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
+            local labelControl = rowControl:GetNamedChild("Label")
             WINDOW_MANAGER:SetMouseCursor(MOUSE_CURSOR_UI_HAND)
             local dragData = ZO_ScrollList_GetData(rowControl)
             dragData._dragStartList = rowControl:GetParent():GetParent()
@@ -699,7 +697,7 @@ function ShifterBoxList:SetupRowEntry(rowControl, rowData)
     rowControl:SetHandler("OnMouseEnter", onRowMouseEnter)
     rowControl:SetHandler("OnMouseExit", onRowMouseExit)
     -- handle single clicks to mark entry
-    rowControl:SetHandler("OnClicked", onRowClicked)
+    rowControl:SetHandler("OnMouseUp", onRowMouseUp)
     -- handle drag (drag start)
     rowControl:SetHandler("OnDragStart", onDragStart)
 
@@ -797,7 +795,9 @@ local ShifterBox = ZO_Object:Subclass()
 -- @param dimensionY - dimension y (can be empty, you need to call yourShifterBox:SetDimension on your own then)
 -- @param leftListEntries - the left list's entry. A table or a function returning a table (can be left entry. You need to add the entries via yourShifterBox:AddEntriesToLeftList on your own then)
 -- @param rightListEntries - the right list's entry. A table or a function returning a table (can be left entry. You need to add the entries via yourShifterBox:AddEntriesToRightList on your own then)
-function ShifterBox:New(uniqueAddonName, uniqueShifterBoxName, parentControl, leftListTitle, rightListTitle, customSettings, anchorPoint, anchorRelativeTo, anchorRelPoint, anchorOffsetX, anchorOffsetY, dimensionX, dimensionY, leftListEntries, rightListEntries)
+-- @param rowTemplateNameLeft - the left list's row XML template. Standard is "ShifterBoxEntryTemplate16" with normal ZO_Game font in size 18 (See file ShifterBox/ShifterBoxTemplate.xml)
+-- @param rowTemplateNameRight - the right list's row XML template. Standard is "ShifterBoxEntryTemplate16" with normal ZO_Game font in size 18 (See file ShifterBox/ShifterBoxTemplate.xml)
+function ShifterBox:New(uniqueAddonName, uniqueShifterBoxName, parentControl, leftListTitle, rightListTitle, customSettings, anchorPoint, anchorRelativeTo, anchorRelPoint, anchorOffsetX, anchorOffsetY, dimensionX, dimensionY, leftListEntries, rightListEntries, rowTemplateNameLeft, rowTemplateNameRight)
     if existingShifterBoxes[uniqueAddonName] == nil then
         existingShifterBoxes[uniqueAddonName] = {}
     end
@@ -816,8 +816,8 @@ function ShifterBox:New(uniqueAddonName, uniqueShifterBoxName, parentControl, le
     -- initialize the ShifterBoxLists
     local leftControl = obj_ctrl:GetNamedChild("Left")
     local rightControl = obj_ctrl:GetNamedChild("Right")
-    obj.leftList = ShifterBoxList:New(leftControl, obj, true)
-    obj.rightList = ShifterBoxList:New(rightControl, obj, false)
+    obj.leftList = ShifterBoxList:New(leftControl, obj, true, rowTemplateNameLeft)
+    obj.rightList = ShifterBoxList:New(rightControl, obj, false, rowTemplateNameRight)
 
     --anchor
     if anchorPoint and anchorRelativeTo then
