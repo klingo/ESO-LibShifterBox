@@ -19,22 +19,30 @@ local ANIMATION_FIELD_NAME = "SelectionAnimation"
 
 local existingShifterBoxes = {}
 
+local defaultListSettings = {
+    title = "",
+    rowHeight = 32,
+    rowTemplateName = "ShifterBoxEntryTemplate",
+    emptyListText = GetString(LIBSHIFTERBOX_EMPTY),
+    fontSize = 18,              -- TODO: to be implemented
+    fontName = "ZoFontGame",    -- TODO: to be implemented
+}
+
 local defaultSettings = {
+    showMoveAllButtons = true,
+    dragDropEnabled = true,
     sortEnabled = true,
     sortBy = "value",
-    rowHeight = 32,
-    emptyListText = GetString(LIBSHIFTERBOX_EMPTY),
-    showMoveAllButtons = true,
+    leftList = defaultListSettings,
+    rightList = defaultListSettings
 }
 
 -- KNOWN ISSUES
 -- TODO: Calling UnselectAllEntries() when mouse-over causes text to become white
 -- TODO: callbacks for when entries are moved
--- TODO: font color?
--- TODO: font?
 
 -- =================================================================================================================
--- == PRIVATE FGUNCTIONS == --
+-- == SHIFTERBOX PRIVATE FUNCTIONS == --
 -- -----------------------------------------------------------------------------------------------------------------
 local function _getDeepClonedTable(sourceTable)
     local targetTable = {}
@@ -46,6 +54,351 @@ local function _getShallowClonedTable(sourceTable)
     local targetTable = {}
     ZO_ShallowTableCopy(sourceTable, targetTable)
     return targetTable
+end
+
+-- ---------------------------------------------------------------------------------------------------------------------
+
+local function _createShifterBox(uniqueAddonName, uniqueShifterBoxName, parentControl)
+    local shifterBoxName = table.concat({uniqueAddonName, "_", uniqueShifterBoxName})
+    return CreateControlFromVirtual(shifterBoxName, parentControl, "ShifterBoxTemplate")
+end
+
+local function _moveEntryFromTo(fromList, toList, key)
+    local key, value, categoryId = fromList:RemoveEntry(key)
+    if key ~= nil then
+        toList:AddEntry(key, value, categoryId)
+    end
+end
+
+local function _assertKeyIsNotInTable(key, value, self, sideControl)
+    local masterList = self.masterList
+    assert(masterList[key] == nil, string.format(LIB_IDENTIFIER.."_Error: Violation of UNIQUE KEY. Cannot insert duplicate key '%s' with value '%s' in control '%s'. The statement has been terminated.", tostring(key), tostring(value), sideControl:GetName()))
+end
+
+local function _initShifterBoxControls(self)
+    local control = self.shifterBoxControl
+    local shifterBoxSettings = self.shifterBoxSettings
+    local leftControl = control:GetNamedChild("Left")
+    local rightControl = control:GetNamedChild("Right")
+    local fromLeftButtonControl = leftControl:GetNamedChild("Button")
+    local fromRightButtonControl = rightControl:GetNamedChild("Button")
+    local rightListControl = rightControl:GetNamedChild("List")
+    local leftListControl = leftControl:GetNamedChild("List")
+
+    local function initListFrames(parentListControl)
+        local listFrameControl = parentListControl:GetNamedChild("Frame")
+        listFrameControl:SetCenterColor(0, 0, 0, 1)
+        listFrameControl:SetEdgeTexture(nil, 1, 1, 1)
+    end
+
+    local function initHeaders(self, leftListTitle, rightListTitle)
+        if leftListTitle ~= nil or rightListTitle ~= nil then
+            self.headerHeight = HEADER_HEIGHT
+            -- show the headers (default = hidden)
+            local leftHeaders = leftControl:GetNamedChild("Headers")
+            local leftHeadersTitle = leftHeaders:GetNamedChild("Value"):GetNamedChild("Name")
+            leftHeaders:SetHeight(self.headerHeight)
+            leftHeaders:SetHidden(false)
+            leftHeadersTitle:SetText(leftListTitle or "")
+
+            local rightHeaders = rightControl:GetNamedChild("Headers")
+            local rightHeadersTitle = rightHeaders:GetNamedChild("Value"):GetNamedChild("Name")
+            rightHeaders:SetHeight(self.headerHeight)
+            rightHeaders:SetHidden(false)
+            rightHeadersTitle:SetText(rightListTitle or "")
+        else
+            self.headerHeight = 0
+        end
+    end
+
+    -- initialise the headers
+    local leftListSettings = shifterBoxSettings.leftList
+    local rightListSettings = shifterBoxSettings.rightList
+    initHeaders(self, leftListSettings.title, rightListSettings.title)
+
+    -- initialize the frame/border around the listBoxes
+    initListFrames(leftListControl)
+    initListFrames(rightListControl)
+
+    -- initialize the buttons in disabled state
+    fromLeftButtonControl:SetState(BSTATE_DISABLED, true)
+    fromRightButtonControl:SetState(BSTATE_DISABLED, true)
+end
+
+local function _initShifterBoxHandlers(self)
+    local control = self.shifterBoxControl
+    local leftControl = control:GetNamedChild("Left")
+    local fromLeftButtonControl = leftControl:GetNamedChild("Button")
+    local fromLeftAllButtonControl = leftControl:GetNamedChild("AllButton")
+    local rightControl = control:GetNamedChild("Right")
+    local fromRightButtonControl = rightControl:GetNamedChild("Button")
+    local fromRightAllButtonControl = rightControl:GetNamedChild("AllButton")
+
+    local function toLeftButtonClicked(buttonControl)
+        local rightListSelectedData = self.rightList.list.selectedMultiData
+        for key, data in pairs(rightListSelectedData) do
+            _moveEntryFromTo(self.rightList, self.leftList, data.key)
+        end
+        -- then commit the changes to the scrollList and refresh the hidden states
+        self.leftList:RefreshFilters()
+        self.rightList:RefreshFilters()
+        -- finally disable the button itself
+        buttonControl:SetState(BSTATE_DISABLED, true)
+    end
+    local function toLeftAllButtonClicked(buttonControl)
+        -- move all entries
+        self:MoveAllEntriesToLeftList()
+        -- and disable the move-all button
+        buttonControl:SetState(BSTATE_DISABLED, true)
+    end
+
+    local function toRightButtonClicked(buttonControl)
+        local leftListSelectedData = self.leftList.list.selectedMultiData
+        for key, data in pairs(leftListSelectedData) do
+            _moveEntryFromTo(self.leftList, self.rightList, data.key)
+        end
+        -- then commit the changes to the scrollList and refresh the hidden states
+        self.leftList:RefreshFilters()
+        self.rightList:RefreshFilters()
+        -- finally disable the button itself
+        buttonControl:SetState(BSTATE_DISABLED, true)
+    end
+    local function toRightAllButtonClicked(buttonControl)
+        -- move all entries
+        self:MoveAllEntriesToRightList()
+        -- and disable the move-all button
+        buttonControl:SetState(BSTATE_DISABLED, true)
+    end
+
+    -- initialize the handler when the buttons are clicked
+    fromLeftButtonControl:SetHandler("OnClicked", toRightButtonClicked)
+    fromLeftAllButtonControl:SetHandler("OnClicked", toRightAllButtonClicked)
+    fromRightButtonControl:SetHandler("OnClicked", toLeftButtonClicked)
+    fromRightAllButtonControl:SetHandler("OnClicked", toLeftAllButtonClicked)
+end
+
+local function _applyCustomSettings(customSettings)
+    -- if no custom settings provided, use the default ones
+    local settings = _getDeepClonedTable(defaultSettings)
+    if customSettings == nil then return settings end
+    -- validation functions
+    local function _assertPositiveNumber(customSettingsTbl, parameterName, settingsTbl)
+        local customValue = customSettingsTbl[parameterName]
+        if customValue ~= nil then
+            assert(type(customValue) == "number" and customValue > 0, string.format(LIB_IDENTIFIER.."_Error: Invalid %s parameter '%s' provided! Must be a numeric and positive.", parameterName, tostring(customValue)))
+            settingsTbl[parameterName] = customValue
+        end
+    end
+    local function _assertBoolean(customSettingsTbl, parameterName, settingsTbl)
+        local customValue = customSettingsTbl[parameterName]
+        if customValue ~= nil then
+            assert(type(customValue) == "boolean", string.format(LIB_IDENTIFIER.."_Error: Invalid %s parameter '%s' provided! Must be a boolean.", parameterName, tostring(customValue)))
+            settingsTbl[parameterName] = customValue
+        end
+    end
+    local function _assertString(customSettingsTbl, parameterName, settingsTbl)
+        local customValue = customSettingsTbl[parameterName]
+        if customValue ~= nil then
+            assert(type(customValue) == "string", string.format(LIB_IDENTIFIER.."_Error: Invalid %s parameter '%s' provided! Must be a string.", parameterName, tostring(customValue)))
+            settingsTbl[parameterName] = customValue
+        end
+    end
+    local function _assertStringValueKey(customSettingsTbl, parameterName, settingsTbl)
+        local customValue = customSettingsTbl[parameterName]
+        if customValue ~= nil then
+            assert(type(customValue) == "string" and (customValue == "value" or customValue == "key"), string.format(LIB_IDENTIFIER.."_Error: Invalid %s parameter '%s' provided! Must be either 'value' or 'key'.", parameterName, tostring(customValue)))
+            settingsTbl[parameterName] = customValue
+        end
+    end
+    -- validate the individual customSettings
+    _assertBoolean(customSettings, "showMoveAllButtons", settings)
+    _assertBoolean(customSettings, "dragDropEnabled", settings)
+    _assertBoolean(customSettings, "sortEnabled", settings)
+    _assertStringValueKey(customSettings, "sortBy", settings)
+    -- validate leftList settings
+    _assertString(customSettings.leftList, "title", settings.leftList)
+    _assertString(customSettings.leftList, "rowTemplateName", settings.leftList)
+    _assertString(customSettings.leftList, "fontName", settings.leftList)
+    _assertPositiveNumber(customSettings.leftList, "rowHeight", settings.leftList)
+    _assertPositiveNumber(customSettings.leftList, "fontSize", settings.leftList)
+    -- validate rightList settings
+    _assertString(customSettings.rightList, "title", settings.rightList)
+    _assertString(customSettings.rightList, "rowTemplateName", settings.rightList)
+    _assertString(customSettings.rightList, "fontName", settings.rightList)
+    _assertPositiveNumber(customSettings.rightList, "rowHeight", settings.rightList)
+    _assertPositiveNumber(customSettings.rightList, "fontSize", settings.rightList)
+    return settings
+end
+
+local function _getListBoxWidthAndArrowOffset(width, height)
+    -- widh must be at least three times the space between the listBoxes
+    if width < (3 * LIST_SPACING) then width = (3 * LIST_SPACING) end
+    -- the width of a listBox is the total width minus the spacing divided by two
+    local singleListWidth = (width - LIST_SPACING) / 2
+    -- get the "free height" that is not required by the arrows
+    local freeHeight = height - (4 * ARROW_SIZE)
+    -- the offset of the arrow is 2/4th of the remaining height plus the height of the arrow
+    local arrowOffset = ARROW_SIZE + (freeHeight / 5 * 2)
+    -- the offset of the all-arrow is 1/5th of the remaining height
+    local arrowAllOffset = freeHeight / 5
+    return singleListWidth, arrowOffset, arrowAllOffset
+end
+
+local function _setListBoxDimensions(list, singleListWidth, height, headerHeight, buttonAnchorOptions, buttonAllAnchorOptions)
+    local buttonControl = list.control:GetNamedChild("Button")
+    buttonControl:ClearAnchors()
+    buttonControl:SetAnchor(unpack(buttonAnchorOptions))
+    local buttonAllControl = list.control:GetNamedChild("AllButton")
+    buttonAllControl:ClearAnchors()
+    buttonAllControl:SetAnchor(unpack(buttonAllAnchorOptions))
+    list:SetCustomDimensions(singleListWidth, height, headerHeight)
+    list:Refresh()
+end
+
+-- ---------------------------------------------------------------------------------------------------------------------
+
+local function _refreshFilters(leftList, rightList)
+    if leftList then leftList:RefreshFilters() end
+    if rightList then rightList:RefreshFilters() end
+end
+
+local function _selectEntries(list, keys)
+    local visibleData = list.list.visibleData
+    for _, visibleKey in ipairs(visibleData) do
+        local dataEntry = list.list.data[visibleKey]
+        local data = dataEntry.data
+        for _, key in pairs(keys) do
+            if data.key == key then
+                local control = dataEntry.control -- can be nil if control is out-of-scroll-view
+                list:ToggleEntrySelection(data, control, nil, nil, false)
+                break
+            end
+        end
+    end
+end
+
+local function _selectEntry(list, key)
+    local keys = { key }
+    _selectEntries(list, keys)
+end
+
+local function _removeEntriesFromList(list, keys)
+    local hasAtLeastOneRemoved = false
+    for _, key in pairs(keys) do
+        local removedKey = list:RemoveEntry(key)
+        if removedKey ~= nil then hasAtLeastOneRemoved = true end
+    end
+    if hasAtLeastOneRemoved then
+        _refreshFilters(list)
+    end
+end
+
+local function _removeEntryFromList(list, key)
+    local keys = { key }
+    _removeEntriesFromList(list, keys)
+end
+
+local function _getEntries(list, includeHiddenEntries, withCategoryId)
+    local function _addToTable(table, key, value, categoryId)
+        if withCategoryId then
+            table[key] = {
+                value = value,
+                categoryId = categoryId
+            }
+        else
+            table[key] = value
+        end
+    end
+    local exportList = {}
+    if includeHiddenEntries then
+        local masterList = list.masterList
+        if withCategoryId then
+            exportList = _getShallowClonedTable(masterList)
+        else
+            for key, entry in pairs(masterList) do
+                exportList[key] = entry.value
+            end
+        end
+    else
+        local listData = list.list.data
+        for _, entry in ipairs(listData) do
+            if withCategoryId then
+                _addToTable(exportList, entry.data.key, entry.data.value, entry.categoryId)
+            else
+                exportList[entry.data.key] = entry.data.value
+            end
+        end
+    end
+    return exportList
+end
+
+local function _addEntriesToList(list, entries, replace, otherList, categoryId)
+    local hasAtLeastOneAdded = false
+    local hasAtLeastOneRemoved = false
+    local listControl = list.control
+    local otherListControl = otherList.control
+    if categoryId ~= nil then
+        -- if a category is provided, ensure that it definitely is registered to the scrollist
+        ZO_ScrollList_AddCategory(list.list, categoryId)
+        ZO_ScrollList_AddCategory(otherList.list, categoryId)
+    end
+    local entriesList
+    if type(entries) == "function" then
+        entriesList = entries()
+    else
+        entriesList = entries
+    end
+    if entriesList then
+        for key, value in pairs(entriesList) do
+            if replace and replace == true then
+                -- if replace is set to true, make sure that a potential entry with the same key is removed from both lists
+                local removeKey = list:RemoveEntry(key)
+                local otherRemoveKey = otherList:RemoveEntry(key)
+                if removeKey ~= nil or otherRemoveKey ~= nil then hasAtLeastOneRemoved = true end
+            else
+                -- if replace is not set or set to false, then assert that key does not exist in either list
+                _assertKeyIsNotInTable(key, value, list, listControl)
+                _assertKeyIsNotInTable(key, value, otherList, otherListControl)
+            end
+            -- then add entry to the corresponding list
+            list:AddEntry(key, value, categoryId)
+            hasAtLeastOneAdded = true
+        end
+        if hasAtLeastOneAdded then
+            -- Afterwards refresh the visualisation of the data
+            _refreshFilters(list)
+            if hasAtLeastOneRemoved then
+                _refreshFilters(otherList)
+            end
+        end
+    end
+end
+
+local function _addEntryToList(list, key, value, replace, otherList, categoryId)
+    local entries = { [key] = value }
+    _addEntriesToList(list, entries, replace, otherList, categoryId)
+end
+
+local function _moveEntriesToOtherList(sourceList, keys, destList)
+    for _, key in pairs(keys) do
+        _moveEntryFromTo(sourceList, destList, key)
+    end
+    -- refresh the display afterwards
+    _refreshFilters(sourceList, destList)
+end
+
+local function _moveEntryToOtherList(sourceList, key, destList)
+    local keys = { key }
+    _moveEntriesToOtherList(sourceList, keys, destList)
+end
+
+local function _clearList(list)
+    list:ClearMasterList()
+    list.buttonControl:SetState(BSTATE_DISABLED, true)
+end
+
+local function _hasSameShifterBoxParent(aListBox, otherListBox)
+    return aListBox.shifterBox.shifterBoxControl == otherListBox.shifterBox.shifterBoxControl
 end
 
 
@@ -60,14 +413,16 @@ ShifterBoxList.SORT_KEYS = {
     ["key"] = {tiebreaker="value"}
 }
 
-function ShifterBoxList:New(control, shifterBoxSettings)
-    local obj = ZO_SortFilterList.New(self, control, shifterBoxSettings)
+function ShifterBoxList:New(shifterBox, control, isLeftList)
+    local shifterBoxSettings = shifterBox.shifterBoxSettings
+    local obj = ZO_SortFilterList.New(self, control, shifterBoxSettings, isLeftList)
     obj.buttonControl = control:GetNamedChild("Button")
     obj.buttonAllControl = control:GetNamedChild("AllButton")
     obj.buttonAllControl:SetState(BSTATE_DISABLED, true) -- init it as disabled
     if shifterBoxSettings.showMoveAllButtons == false then obj.buttonAllControl:SetHidden(true) end
     obj.enabled = true
     obj.masterList = {}
+    obj.shifterBox = shifterBox -- keep a reference to the "parent" ShifterBox
     return obj
 end
 
@@ -84,14 +439,19 @@ function ShifterBoxList:OnSelectionChanged(previouslySelectedData, selectedData,
     end
 end
 
-function ShifterBoxList:Initialize(control, shifterBoxSettings)
-    self.rowHeight = shifterBoxSettings.rowHeight
-    self.rowWidth = 180 -- default value to init
+function ShifterBoxList:Initialize(control, shifterBoxSettings, isLeftList)
     self.shifterBoxSettings = shifterBoxSettings
+    if isLeftList then
+        self.listBoxSettings = shifterBoxSettings.leftList
+    else
+        self.listBoxSettings = shifterBoxSettings.rightList
+    end
+    self.isLeftList = isLeftList
+    self.rowWidth = 180 -- default value to init
     -- initialize the SortFilterList
     ZO_SortFilterList.Initialize(self, control)
     -- set a text that is displayed when there are no entries
-    self:SetEmptyText(shifterBoxSettings.emptyListText)
+    self:SetEmptyText(self.listBoxSettings.emptyListText)
     if  self.shifterBoxSettings.sortEnabled then
         -- default sorting key
         -- Source: https://esodata.uesp.net/100028/src/libraries/zo_sortheadergroup/zo_sortheadergroup.lua.html
@@ -105,13 +465,51 @@ function ShifterBoxList:Initialize(control, shifterBoxSettings)
     end
     -- define the datatype for this list and enable the highlighting
     ZO_ScrollList_AddCategory(self.list, DATA_DEFAULT_CATEGORY)
-    ZO_ScrollList_AddDataType(self.list, DATA_TYPE_DEFAULT, "ShifterBoxEntryTemplate", self.rowHeight, function(control, data) self:SetupRowEntry(control, data) end)
+    ZO_ScrollList_AddDataType(self.list, DATA_TYPE_DEFAULT, self.listBoxSettings.rowTemplateName, self.listBoxSettings.rowHeight, function(control, data) self:SetupRowEntry(control, data) end)
     ZO_ScrollList_EnableSelection(self.list, "ZO_ThinListHighlight", function(...)
         self:OnSelectionChanged(...)
     end)
     -- set up sorting function and refresh all data
-    self.sortFunction = function(listEntry1, listEntry2) return ZO_TableOrderingFunction(listEntry1.data, listEntry2.data, shifterBoxSettings.sortBy, ShifterBoxList.SORT_KEYS, self.currentSortOrder) end
+    self.sortFunction = function(listEntry1, listEntry2) return ZO_TableOrderingFunction(listEntry1.data, listEntry2.data, self.shifterBoxSettings.sortBy, ShifterBoxList.SORT_KEYS, self.currentSortOrder) end
     self:RefreshData()
+    -- handle stop draging
+    if self.shifterBoxSettings.dragDropEnabled then
+        local function onReceiveDrag(draggedOntoControl, mouseButton)
+            WINDOW_MANAGER:SetMouseCursor(MOUSE_CURSOR_DEFAULT_CURSOR)
+            if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
+                -- ensure we do not drag any item or skill
+                if GetCursorContentType() == MOUSE_CONTENT_EMPTY then
+                    local dragData = lib.currentDragData
+                    if dragData then
+                        -- make sure the sourceListBox and "this" listBox belong to the same shifterBox
+                        local sourceListControl = dragData._sourceListControl
+                        if _hasSameShifterBoxParent(self, sourceListControl) then
+                            local sourceList
+                            local destList = self
+                            if self.isLeftList then
+                                sourceList = self.shifterBox.rightList
+                            else
+                                sourceList = self.shifterBox.leftList
+                            end
+                            local isDragDataSelected = dragData._isSelected
+                            if isDragDataSelected and self.isLeftList ~= dragData._isFromLeftList then
+                                -- if the draged data was selected (and is not from the same list), then move all selected entries (by "clicking" the button)
+                                local buttonControl = sourceListControl.buttonControl
+                                local buttonOnClickedFunction = buttonControl:GetHandler("OnClicked")
+                                buttonOnClickedFunction(buttonControl)
+                            else
+                                -- if the draged data was NOT selected, then only move that single entry
+                                _moveEntryToOtherList(sourceList, dragData.key, destList)
+                            end
+                        end
+                    end
+                    lib.currentDragData  = nil
+                end
+            end
+        end
+        self.list:SetHandler("OnReceiveDrag", onReceiveDrag)
+        self.list:SetMouseEnabled(true)
+    end
 end
 
 -- ZO_SortFilterList:RefreshData()      =>  BuildMasterList()   =>  FilterScrollList()  =>  SortScrollList()    =>  CommitScrollList()
@@ -294,7 +692,6 @@ function ShifterBoxList:ToggleEntrySelection(data, control, reselectingDuringReb
 end
 
 function ShifterBoxList:SetupRowEntry(rowControl, rowData)
-    local subSelf = self
     local function onRowMouseEnter(rowControl)
         local labelControl = rowControl:GetNamedChild("Label")
         local textWidth = labelControl:GetTextWidth()
@@ -309,9 +706,23 @@ function ShifterBoxList:SetupRowEntry(rowControl, rowData)
     local function onRowMouseExit(rowControl)
         ZO_Tooltips_HideTextTooltip()
     end
-    local function onRowClicked(rowControl)
-        local data = ZO_ScrollList_GetData(rowControl)
-        self:ToggleEntrySelection(data, rowControl, RESELECTING_DURING_REBUILD, false)
+    local function onRowMouseUp(rowControl, mouseButton, isInside)
+        if mouseButton == MOUSE_BUTTON_INDEX_LEFT and isInside then
+            local data = ZO_ScrollList_GetData(rowControl)
+            self:ToggleEntrySelection(data, rowControl, RESELECTING_DURING_REBUILD, false)
+        end
+    end
+    local function onDragStart(rowControl, mouseButton)
+        if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
+            WINDOW_MANAGER:SetMouseCursor(MOUSE_CURSOR_UI_HAND)
+            local currentDragData = ZO_ScrollList_GetData(rowControl)
+            currentDragData._sourceListControl = self
+            currentDragData._isSelected = self.list.selectedMultiData and self.list.selectedMultiData[currentDragData.key] ~= nil
+            currentDragData._isFromLeftList = self.isLeftList
+            lib.currentDragData  = currentDragData
+        else
+            WINDOW_MANAGER:SetMouseCursor(MOUSE_CURSOR_DEFAULT_CURSOR)
+        end
     end
     -- set the value for the row entry
     local labelControl = rowControl:GetNamedChild("Label")
@@ -320,10 +731,14 @@ function ShifterBoxList:SetupRowEntry(rowControl, rowData)
     rowControl:SetHandler("OnMouseEnter", onRowMouseEnter)
     rowControl:SetHandler("OnMouseExit", onRowMouseExit)
     -- handle single clicks to mark entry
-    rowControl:SetHandler("OnClicked", onRowClicked)
+    rowControl:SetHandler("OnMouseUp", onRowMouseUp)
+    -- handle start draging
+    if self.shifterBoxSettings.dragDropEnabled then
+        rowControl:SetHandler("OnDragStart", onDragStart)
+    end
 
     -- set the height for the row
-    rowControl:SetHeight(self.rowHeight)
+    rowControl:SetHeight(self.listBoxSettings.rowHeight)
     -- and also set the width for the row (to ensure tooltips work properly)
     rowControl:SetWidth(self.rowWidth)
     labelControl:SetWidth(self.rowWidth)
@@ -380,7 +795,7 @@ function ShifterBoxList:SetEntriesEnabled(enabled)
     local rowControls = self.list.contents
     for childIndex = 1, rowControls:GetNumChildren() do
         local rowControl = rowControls:GetChild(childIndex)
-        rowControl:SetEnabled(enabled)
+        rowControl:SetMouseEnabled(enabled)
     end
     rowControls:SetAlpha(enabled and 1 or 0.3)
     local scrollData = ZO_ScrollList_GetDataList(self.list)
@@ -397,321 +812,6 @@ end
 
 
 -- =================================================================================================================
--- == SHIFTERBOX PRIVATE FUNCTIONS == --
--- -----------------------------------------------------------------------------------------------------------------
-local function _createShifterBox(uniqueAddonName, uniqueShifterBoxName, parentControl)
-    local shifterBoxName = table.concat({uniqueAddonName, "_", uniqueShifterBoxName})
-    return CreateControlFromVirtual(shifterBoxName, parentControl, "ShifterBoxTemplate")
-end
-
-local function _moveEntryFromTo(fromList, toList, key)
-    local key, value, categoryId = fromList:RemoveEntry(key)
-    if key ~= nil then
-        toList:AddEntry(key, value, categoryId)
-    end
-end
-
-local function _assertKeyIsNotInTable(key, value, self, sideControl)
-    local masterList = self.masterList
-    assert(masterList[key] == nil, string.format(LIB_IDENTIFIER.."_Error: Violation of UNIQUE KEY. Cannot insert duplicate key '%s' with value '%s' in control '%s'. The statement has been terminated.", tostring(key), tostring(value), sideControl:GetName()))
-end
-
-local function _initShifterBoxControls(self, leftListTitle, rightListTitle)
-    local control = self.shifterBoxControl
-    local leftControl = control:GetNamedChild("Left")
-    local rightControl = control:GetNamedChild("Right")
-    local fromLeftButtonControl = leftControl:GetNamedChild("Button")
-    local fromRightButtonControl = rightControl:GetNamedChild("Button")
-    local rightListControl = rightControl:GetNamedChild("List")
-    local leftListControl = leftControl:GetNamedChild("List")
-
-    local function initListFrames(parentListControl)
-        local listFrameControl = parentListControl:GetNamedChild("Frame")
-        listFrameControl:SetCenterColor(0, 0, 0, 1)
-        listFrameControl:SetEdgeTexture(nil, 1, 1, 1)
-    end
-
-    local function initHeaders(self, leftListTitle, rightListTitle)
-        if leftListTitle ~= nil or rightListTitle ~= nil then
-            self.headerHeight = HEADER_HEIGHT
-            -- show the headers (default = hidden)
-            local leftHeaders = leftControl:GetNamedChild("Headers")
-            local leftHeadersTitle = leftHeaders:GetNamedChild("Value"):GetNamedChild("Name")
-            leftHeaders:SetHeight(self.headerHeight)
-            leftHeaders:SetHidden(false)
-            leftHeadersTitle:SetText(leftListTitle or "")
-
-            local rightHeaders = rightControl:GetNamedChild("Headers")
-            local rightHeadersTitle = rightHeaders:GetNamedChild("Value"):GetNamedChild("Name")
-            rightHeaders:SetHeight(self.headerHeight)
-            rightHeaders:SetHidden(false)
-            rightHeadersTitle:SetText(rightListTitle or "")
-        else
-            self.headerHeight = 0
-        end
-    end
-
-    -- initialise the headers
-    initHeaders(self, leftListTitle, rightListTitle)
-
-    -- initialize the frame/border around the listBoxes
-    initListFrames(leftListControl)
-    initListFrames(rightListControl)
-
-    -- initialize the buttons in disabled state
-    fromLeftButtonControl:SetState(BSTATE_DISABLED, true)
-    fromRightButtonControl:SetState(BSTATE_DISABLED, true)
-end
-
-local function _initShifterBoxHandlers(self)
-    local control = self.shifterBoxControl
-    local leftControl = control:GetNamedChild("Left")
-    local fromLeftButtonControl = leftControl:GetNamedChild("Button")
-    local fromLeftAllButtonControl = leftControl:GetNamedChild("AllButton")
-    local rightControl = control:GetNamedChild("Right")
-    local fromRightButtonControl = rightControl:GetNamedChild("Button")
-    local fromRightAllButtonControl = rightControl:GetNamedChild("AllButton")
-
-    local function toLeftButtonClicked(buttonControl)
-        local rightListSelectedData = self.rightList.list.selectedMultiData
-        for key, data in pairs(rightListSelectedData) do
-            _moveEntryFromTo(self.rightList, self.leftList, data.key)
-        end
-        -- then commit the changes to the scrollList and refresh the hidden states
-        self.leftList:RefreshFilters()
-        self.rightList:RefreshFilters()
-        -- finally disable the button itself
-        buttonControl:SetState(BSTATE_DISABLED, true)
-    end
-    local function toLeftAllButtonClicked(buttonControl)
-        -- move all entries
-        self:MoveAllEntriesToLeftList()
-        -- and disable the move-all button
-        buttonControl:SetState(BSTATE_DISABLED, true)
-    end
-
-    local function toRightButtonClicked(buttonControl)
-        local leftListSelectedData = self.leftList.list.selectedMultiData
-        for key, data in pairs(leftListSelectedData) do
-            _moveEntryFromTo(self.leftList, self.rightList, data.key)
-        end
-        -- then commit the changes to the scrollList and refresh the hidden states
-        self.leftList:RefreshFilters()
-        self.rightList:RefreshFilters()
-        -- finally disable the button itself
-        buttonControl:SetState(BSTATE_DISABLED, true)
-    end
-    local function toRightAllButtonClicked(buttonControl)
-        -- move all entries
-        self:MoveAllEntriesToRightList()
-        -- and disable the move-all button
-        buttonControl:SetState(BSTATE_DISABLED, true)
-    end
-
-    -- initialize the handler when the buttons are clicked
-    fromLeftButtonControl:SetHandler("OnClicked", toRightButtonClicked)
-    fromLeftAllButtonControl:SetHandler("OnClicked", toRightAllButtonClicked)
-    fromRightButtonControl:SetHandler("OnClicked", toLeftButtonClicked)
-    fromRightAllButtonControl:SetHandler("OnClicked", toLeftAllButtonClicked)
-end
-
-local function _applyCustomSettings(customSettings)
-    -- if no custom settings provided, use the default ones
-    local settings = ZO_ShallowTableCopy(defaultSettings)
-    if customSettings == nil then return settings end
-    -- otherwise validate them
-    if customSettings.sortEnabled ~= nil then
-        assert(type(customSettings.sortEnabled) == "boolean", string.format(LIB_IDENTIFIER.."_Error: Invalid sortEnabled parameter '%s' provided! Must be a boolean.", tostring(customSettings.sortEnabled)))
-        settings.sortEnabled = customSettings.sortEnabled
-    end
-    if customSettings.sortBy then
-        assert(customSettings.sortBy == "value" or customSettings.sortBy == "key", string.format(LIB_IDENTIFIER.."_Error: Invalid sortBy parameter '%s' provided! Only 'value' and 'key' are allowed.", tostring(customSettings.sortBy)))
-        settings.sortBy = customSettings.sortBy
-    end
-    if customSettings.rowHeight then
-        assert(type(customSettings.rowHeight) == "number" and customSettings.rowHeight > 0, string.format(LIB_IDENTIFIER.."_Error: Invalid rowHeight parameter '%s' provided! Must be a numeric and positive.", tostring(customSettings.rowHeight)))
-        settings.rowHeight = customSettings.rowHeight
-    end
-    if customSettings.emptyListText then
-        assert(type(customSettings.emptyListText) == "string", string.format(LIB_IDENTIFIER.."_Error: Invalid emptyListText parameter '%s' provided! Must be a string.", tostring(customSettings.emptyListText)))
-        settings.emptyListText = customSettings.emptyListText
-    end
-    if customSettings.showMoveAllButtons ~= nil then
-        assert(type(customSettings.showMoveAllButtons) == "boolean", string.format(LIB_IDENTIFIER.."_Error: Invalid showMoveAllButtons parameter '%s' provided! Must be a boolean.", tostring(customSettings.showMoveAllButtons)))
-        settings.showMoveAllButtons = customSettings.showMoveAllButtons
-    end
-    return settings
-end
-
-local function _getListBoxWidthAndArrowOffset(width, height)
-    -- widh must be at least three times the space between the listBoxes
-    if width < (3 * LIST_SPACING) then width = (3 * LIST_SPACING) end
-    -- the width of a listBox is the total width minus the spacing divided by two
-    local singleListWidth = (width - LIST_SPACING) / 2
-    -- get the "free height" that is not required by the arrows
-    local freeHeight = height - (4 * ARROW_SIZE)
-    -- the offset of the arrow is 2/4th of the remaining height plus the height of the arrow
-    local arrowOffset = ARROW_SIZE + (freeHeight / 5 * 2)
-    -- the offset of the all-arrow is 1/5th of the remaining height
-    local arrowAllOffset = freeHeight / 5
-    return singleListWidth, arrowOffset, arrowAllOffset
-end
-
-local function _setListBoxDimensions(list, singleListWidth, height, headerHeight, buttonAnchorOptions, buttonAllAnchorOptions)
-    local buttonControl = list.control:GetNamedChild("Button")
-    buttonControl:ClearAnchors()
-    buttonControl:SetAnchor(unpack(buttonAnchorOptions))
-    local buttonAllControl = list.control:GetNamedChild("AllButton")
-    buttonAllControl:ClearAnchors()
-    buttonAllControl:SetAnchor(unpack(buttonAllAnchorOptions))
-    list:SetCustomDimensions(singleListWidth, height, headerHeight)
-    list:Refresh()
-end
-
--- ---------------------------------------------------------------------------------------------------------------------
-
-local function _refreshFilters(leftList, rightList)
-    if leftList then leftList:RefreshFilters() end
-    if rightList then rightList:RefreshFilters() end
-end
-
-local function _selectEntries(list, keys)
-    local visibleData = list.list.visibleData
-    for _, visibleKey in ipairs(visibleData) do
-        local dataEntry = list.list.data[visibleKey]
-        local data = dataEntry.data
-        for _, key in pairs(keys) do
-            if data.key == key then
-                local control = dataEntry.control -- can be nil if control is out-of-scroll-view
-                list:ToggleEntrySelection(data, control, nil, nil, false)
-                break
-            end
-        end
-    end
-end
-
-local function _selectEntry(list, key)
-    local keys = { key }
-    _selectEntries(list, keys)
-end
-
-local function _removeEntriesFromList(list, keys)
-    local hasAtLeastOneRemoved = false
-    for _, key in pairs(keys) do
-        local removedKey = list:RemoveEntry(key)
-        if removedKey ~= nil then hasAtLeastOneRemoved = true end
-    end
-    if hasAtLeastOneRemoved then
-        _refreshFilters(list)
-    end
-end
-
-local function _removeEntryFromList(list, key)
-    local keys = { key }
-    _removeEntriesFromList(list, keys)
-end
-
-local function _getEntries(list, includeHiddenEntries, withCategoryId)
-    local function _addToTable(table, key, value, categoryId)
-        if withCategoryId then
-            table[key] = {
-                value = value,
-                categoryId = categoryId
-            }
-        else
-            table[key] = value
-        end
-    end
-    local exportList = {}
-    if includeHiddenEntries then
-        local masterList = list.masterList
-        if withCategoryId then
-            exportList = _getShallowClonedTable(masterList)
-        else
-            for key, entry in pairs(masterList) do
-                exportList[key] = entry.value
-            end
-        end
-    else
-        local listData = list.list.data
-        for _, entry in ipairs(listData) do
-            if withCategoryId then
-                _addToTable(exportList, entry.data.key, entry.data.value, entry.categoryId)
-            else
-                exportList[entry.data.key] = entry.data.value
-            end
-        end
-    end
-    return exportList
-end
-
-local function _addEntriesToList(list, entries, replace, otherList, categoryId)
-    local hasAtLeastOneAdded = false
-    local hasAtLeastOneRemoved = false
-    local listControl = list.control
-    local otherListControl = otherList.control
-    if categoryId ~= nil then
-        -- if a category is provided, ensure that it definitely is registered to the scrollist
-        ZO_ScrollList_AddCategory(list.list, categoryId)
-        ZO_ScrollList_AddCategory(otherList.list, categoryId)
-    end
-    local entriesList
-    if type(entries) == "function" then
-        entriesList = entries()
-    else
-        entriesList = entries
-    end
-    if entriesList then
-        for key, value in pairs(entriesList) do
-            if replace and replace == true then
-                -- if replace is set to true, make sure that a potential entry with the same key is removed from both lists
-                local removeKey = list:RemoveEntry(key)
-                local otherRemoveKey = otherList:RemoveEntry(key)
-                if removeKey ~= nil or otherRemoveKey ~= nil then hasAtLeastOneRemoved = true end
-            else
-                -- if replace is not set or set to false, then assert that key does not exist in either list
-                _assertKeyIsNotInTable(key, value, list, listControl)
-                _assertKeyIsNotInTable(key, value, otherList, otherListControl)
-            end
-            -- then add entry to the corresponding list
-            list:AddEntry(key, value, categoryId)
-            hasAtLeastOneAdded = true
-        end
-        if hasAtLeastOneAdded then
-            -- Afterwards refresh the visualisation of the data
-            _refreshFilters(list)
-            if hasAtLeastOneRemoved then
-                _refreshFilters(otherList)
-            end
-        end
-    end
-end
-
-local function _addEntryToList(list, key, value, replace, otherList, categoryId)
-    local entries = { [key] = value }
-    _addEntriesToList(list, entries, replace, otherList, categoryId)
-end
-
-local function _moveEntriesToOtherList(sourceList, keys, destList)
-    for _, key in pairs(keys) do
-        _moveEntryFromTo(sourceList, destList, key)
-    end
-    -- refresh the display afterwards
-    _refreshFilters(sourceList, destList)
-end
-
-local function _moveEntryToOtherList(sourceList, key, destList)
-    local keys = { key }
-    _moveEntriesToOtherList(sourceList, keys, destList)
-end
-
-local function _clearList(list)
-    list:ClearMasterList()
-    list.buttonControl:SetState(BSTATE_DISABLED, true)
-end
-
-
--- =================================================================================================================
 -- == SHIFTERBOX PUBLIC FUNCTIONS == --
 -- -----------------------------------------------------------------------------------------------------------------
 local ShifterBox = ZO_Object:Subclass()
@@ -720,32 +820,29 @@ local ShifterBox = ZO_Object:Subclass()
 -- @param uniqueAddonName - the unique name of your addon
 -- @param uniqueShifterBoxName - the unique name of this shifterBox (within your addon)
 -- @param parentControl - the control reference to which the shifterBox should be added as a child
--- @param leftListTitle - OPTIONAL: the title for the left listBox
--- @param rightListTitle - OPTIONAL: the title for the right listBox
--- @param customSettings - OPTIONAL: custom settings table (if empty, default settings will be used)
--- @param anchorOptions - OPTIONAL: directly provide anchorOptions instead of calling :SetAnchor afterwards (must be table with: number whereOnMe, object anchorTargetControl, number whereOnTarget, number offsetX, number offsetY)
+-- @param customSettings - OPTIONAL: override the default settings
 -- @param dimensionOptions - OPTIONAL: directly provide dimensionOptions instead of calling :SetDimensions afterwards (must be table with: number width, number height)
+-- @param anchorOptions - OPTIONAL: directly provide anchorOptions instead of calling :SetAnchor afterwards (must be table with: number whereOnMe, object anchorTargetControl, number whereOnTarget, number offsetX, number offsetY)
 -- @param leftListEntries - OPTIONAL: directly provide entries for left listBox (a table or a function returning a table)
 -- @param rightListEntries - OPTIONAL: directly provide entries for right listBox (a table or a function returning a table)
-function ShifterBox:New(uniqueAddonName, uniqueShifterBoxName, parentControl, leftListTitle, rightListTitle, customSettings, anchorOptions, dimensionOptions, leftListEntries, rightListEntries)
+function ShifterBox:New(uniqueAddonName, uniqueShifterBoxName, parentControl, customSettings, anchorOptions, dimensionOptions, leftListEntries, rightListEntries)
     if existingShifterBoxes[uniqueAddonName] == nil then
         existingShifterBoxes[uniqueAddonName] = {}
     end
     local addonShifterBoxes = existingShifterBoxes[uniqueAddonName]
     assert(addonShifterBoxes[uniqueShifterBoxName] == nil, string.format(LIB_IDENTIFIER.."_Error: ShifterBox with the unique identifier '%s' is already registered for the addon '%s'!", tostring(uniqueShifterBoxName), tostring(uniqueAddonName)))
-
     local obj = ZO_Object.New(self)
     obj.addonName = uniqueAddonName
     obj.shifterBoxName = uniqueShifterBoxName
-    obj.shifterBoxSettings = _applyCustomSettings(customSettings)
     obj.shifterBoxControl = _createShifterBox(uniqueAddonName, uniqueShifterBoxName, parentControl)
-    _initShifterBoxControls(obj, leftListTitle, rightListTitle)
+    obj.shifterBoxSettings = _applyCustomSettings(customSettings)
+    _initShifterBoxControls(obj)
     _initShifterBoxHandlers(obj)
     -- initialize the ShifterBoxLists
     local leftControl = obj.shifterBoxControl:GetNamedChild("Left")
     local rightControl = obj.shifterBoxControl:GetNamedChild("Right")
-    obj.leftList = ShifterBoxList:New(leftControl, obj.shifterBoxSettings)
-    obj.rightList = ShifterBoxList:New(rightControl, obj.shifterBoxSettings)
+    obj.leftList = ShifterBoxList:New(obj, leftControl, true)
+    obj.rightList = ShifterBoxList:New(obj, rightControl, false)
     -- anchorOptions; if provided
     if anchorOptions then
         obj:SetAnchor(unpack(anchorOptions))

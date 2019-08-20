@@ -28,11 +28,15 @@ local leftListEntries = {
 
 -- optionally, we can override the default settings
 local customSettings = {
-    sortEnabled = true,
     sortBy = "key",
-    rowHeight = 30,
-    emptyListText = "None",
-    showMoveAllButtons = true
+    leftList = {
+        title = "Lefties",
+        emptyListText = "None"
+    },
+    rightList = {
+        title = "Righties",
+        emptyListText = "None"
+    }
 }
 
 -- create the shifterBox and anchor it to a headerControl; also we can change the dimensions
@@ -110,26 +114,45 @@ itemQualitiesShifterBox:SetEnabled(false)
     * [ShifterBox:ClearRightList](#shifterboxclearrightlist)
 
 ### Create
-Returns a new instance of ShifterBox with the given control name. `leftListTitle` and `rightListTitle` are optional and if provided render headers to sort the list. If not provided the headers are not shown and the list is sorted in ascending order. `customSettings` can also optionally be provided (with individual values), otherwise the default settings are used. Furthermore the optional `anchorOptions`, `dimensionOptions`, `leftListEntries`, and `rightListEntries` can shortcut the separate calling of `shifterBox:SetAnchor`, `shifterBox:SetDimensions`, `shifterBox:AddEntriesToLeftList` and `shifterBox:AddEntriesToRightList`.
+Returns a new instance of ShifterBox with the given control name. `customSettings` can optionally be provided (with individual values), otherwise the default settings are used. Furthermore the optional `anchorOptions`, `dimensionOptions`, `leftListEntries`, and `rightListEntries` can shortcut the separate calling of `shifterBox:SetAnchor`, `shifterBox:SetDimensions`, `shifterBox:AddEntriesToLeftList` and `shifterBox:AddEntriesToRightList` respectively.
 ```lua
-local shifterBox = LibShifterBox(uniqueAddonName, uniqueShifterBoxName, parentControl, leftListTitle, rightListTitle, customSettings, anchorOptions, dimensionOptions, leftListEntries, rightListEntries)
+local shifterBox = LibShifterBox(uniqueAddonName, uniqueShifterBoxName, parentControl, customSettings, anchorOptions, dimensionOptions, leftListEntries, rightListEntries)
 ```
 or
 ```lua
-local shifterBox = LibShifterBox.Create(uniqueAddonName, uniqueShifterBoxName, parentControl, leftListTitle, rightListTitle, customSettings, anchorOptions, dimensionOptions, leftListEntries, rightListEntries)
+local shifterBox = LibShifterBox.Create(uniqueAddonName, uniqueShifterBoxName, parentControl, customSettings, anchorOptions, dimensionOptions, leftListEntries, rightListEntries)
+```
+is the same as:
+```lua
+local shifterBox = LibShifterBox.Create(uniqueAddonName, uniqueShifterBoxName, parentControl, customSettings)
+shifterBox:SetAnchor(unpack(anchorOptions))
+shifterBox:SetDimensions(unpack(dimensionOptions))
+shifterBox:AddEntriesToLeftList(leftListEntries)
+shifterBox:AddEntriesToRightList(rightListEntries)
 ```
 
-#### CustomSettings
+#### customSettings
 Optionally custom settings can be passed on when the ShifterBox is created.
 \
 The following values can be set:
 ```lua
 customSettings = {
+    showMoveAllButtons = true,  -- the >> and << buttons to move all entries can be hidden if set to false
+    dragDropEnabled = true,     -- entries can be moved between lsit with drag-and-drop
     sortEnabled = true,         -- sorting of the entries can be disabled
     sortBy = "value",           -- sort the list by value or key (allowed are: "value" or "key")
-    rowHeight = 32,             -- the height of an entry row
-    emptyListText = "empty",    -- the text to be displayed when there is no row/entry in a list
-    showMoveAllButtons = true,  -- the >> and << buttons to move all entries can be hidden if set to false
+    leftList = {                -- list-specific settings that apply to the LEFT list
+        title = "",                                     -- the title/header of the list
+        rowHeight = 32,                                 -- the height of an individual row/entry
+        rowTemplateName = "ShifterBoxEntryTemplate",    -- an individual XML (cirtual) control can be provided for the rows/entries
+        emptyListText = GetString(LIBSHIFTERBOX_EMPTY)  -- the text to be displayed if there are no entries left in the list
+    },
+    rightList = {               -- list-specific settings that apply to the RIGHT list
+        title = "",                                     -- the title/header of the list
+        rowHeight = 32,                                 -- the height of an individual row/entry
+        rowTemplateName = "ShifterBoxEntryTemplate",    -- an individual XML (cirtual) control can be provided for the rows/entries
+        emptyListText = GetString(LIBSHIFTERBOX_EMPTY)  -- the text to be displayed if there are no entries left in the list
+    }    
 }
 ```
 

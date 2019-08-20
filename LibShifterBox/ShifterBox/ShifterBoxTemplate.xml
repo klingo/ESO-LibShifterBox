@@ -90,7 +90,7 @@
                 </Control>
             </Controls>
         </Control>
-        <Button name="ShifterBoxEntryTemplate" verticalAlignment="CENTER" horizontalAlignment="LEFT" virtual="true">
+        <Control  name="ShifterBoxEntryTemplate" verticalAlignment="CENTER" horizontalAlignment="LEFT" mouseEnabled="true" virtual="true">
             <Dimensions x="180" y="32" />
             <Controls>
                 <Label name="$(parent)Label" font="ZoFontGame" verticalAlignment="CENTER" horizontalAlignment="LEFT">
@@ -98,6 +98,6 @@
                     <Dimensions x="180" y="32" />
                 </Label>
             </Controls>
-        </Button>
+        </Control>
     </Controls>
 </GuiXml>
