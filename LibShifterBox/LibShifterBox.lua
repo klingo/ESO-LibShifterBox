@@ -16,6 +16,8 @@ local DATA_DEFAULT_CATEGORY = "LSBDefCat"
 local SCROLLBAR_WIDTH = ZO_SCROLL_BAR_WIDTH
 local RESELECTING_DURING_REBUILD = true
 local ANIMATION_FIELD_NAME = "SelectionAnimation"
+local FONT_STYLE = "MEDIUM_FONT"
+local FONT_WEIGHT = "soft-shadow-thin"
 
 local existingShifterBoxes = {}
 
@@ -24,8 +26,7 @@ local defaultListSettings = {
     rowHeight = 32,
     rowTemplateName = "ShifterBoxEntryTemplate",
     emptyListText = GetString(LIBSHIFTERBOX_EMPTY),
-    fontSize = 18,              -- TODO: to be implemented
-    fontName = "ZoFontGame",    -- TODO: to be implemented
+    fontSize = 18
 }
 
 local defaultSettings = {
@@ -737,11 +738,16 @@ function ShifterBoxList:SetupRowEntry(rowControl, rowData)
         rowControl:SetHandler("OnDragStart", onDragStart)
     end
 
+    local listBoxSettings = self.listBoxSettings
     -- set the height for the row
-    rowControl:SetHeight(self.listBoxSettings.rowHeight)
+    rowControl:SetHeight(listBoxSettings.rowHeight)
     -- and also set the width for the row (to ensure tooltips work properly)
     rowControl:SetWidth(self.rowWidth)
     labelControl:SetWidth(self.rowWidth)
+
+    -- set the font
+    local customFont = string.format("$(%s)|$(KB_%s)|%s", FONT_STYLE, listBoxSettings.fontSize, FONT_WEIGHT)
+    labelControl:SetFont(customFont)
 
     -- reselect entries (only visually) if necessary
     local selectedMultiData = self.list.selectedMultiData

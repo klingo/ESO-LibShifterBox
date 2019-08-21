@@ -31,11 +31,15 @@ local customSettings = {
     sortBy = "key",
     leftList = {
         title = "Lefties",
-        emptyListText = "None"
+        emptyListText = "None",
+        rowHeight = 48,
+        fontSize = 24
     },
     rightList = {
         title = "Righties",
-        emptyListText = "None"
+        emptyListText = "None",
+        rowHeight = 28,
+        fontSize = 14
     }
 }
 
@@ -145,13 +149,15 @@ customSettings = {
         title = "",                                     -- the title/header of the list
         rowHeight = 32,                                 -- the height of an individual row/entry
         rowTemplateName = "ShifterBoxEntryTemplate",    -- an individual XML (cirtual) control can be provided for the rows/entries
-        emptyListText = GetString(LIBSHIFTERBOX_EMPTY)  -- the text to be displayed if there are no entries left in the list
+        emptyListText = GetString(LIBSHIFTERBOX_EMPTY), -- the text to be displayed if there are no entries left in the list
+        fontSize = 18,                                  -- size of the font
     },
     rightList = {               -- list-specific settings that apply to the RIGHT list
         title = "",                                     -- the title/header of the list
         rowHeight = 32,                                 -- the height of an individual row/entry
         rowTemplateName = "ShifterBoxEntryTemplate",    -- an individual XML (cirtual) control can be provided for the rows/entries
-        emptyListText = GetString(LIBSHIFTERBOX_EMPTY)  -- the text to be displayed if there are no entries left in the list
+        emptyListText = GetString(LIBSHIFTERBOX_EMPTY), -- the text to be displayed if there are no entries left in the list
+        fontSize = 18,                                  -- size of the font
     }    
 }
 ```

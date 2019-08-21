@@ -3,10 +3,12 @@
 [SIZE=5]Features[/SIZE]
 [LIST]
 [*]Create ShifterBoxes (also known as Dual-Listboxes) for easier selection of multiple entries
+[*]Shift items with the [<] and [>] buttons, or just use drag-and-drop
 [*]Entries can optionally be added under different categories to easily show/hide them based on other events
 [*]Define your own titles for the ListBoxes, or just leave them out
 [*]Simple access to know which entries are in which ListBox
 [*]Change Dimension, Hidden and Enabled state at any time
+[*]Provide your own XML Templates to be used for the individual rows
 [/LIST]
 
 
