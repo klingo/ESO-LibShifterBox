@@ -40,7 +40,8 @@ local defaultSettings = {
 
 -- KNOWN ISSUES
 -- TODO: Calling UnselectAllEntries() when mouse-over causes text to become white
--- TODO: callbacks for when entries are moved
+-- TODO: Indicate the drag-and-drop on the mouse-cursor
+-- TODO: Allow registering callbacks for when entries are moved (e.g. so that other controls can react when something different is "selected")
 
 -- =================================================================================================================
 -- == SHIFTERBOX PRIVATE FUNCTIONS == --
@@ -476,7 +477,7 @@ function ShifterBoxList:Initialize(control, shifterBoxSettings, isLeftList)
     -- handle stop draging
     if self.shifterBoxSettings.dragDropEnabled then
         local function onReceiveDrag(draggedOntoControl, mouseButton)
-            WINDOW_MANAGER:SetMouseCursor(MOUSE_CURSOR_DEFAULT_CURSOR)
+--            WINDOW_MANAGER:SetMouseCursor(MOUSE_CURSOR_DEFAULT_CURSOR)
             if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
                 -- ensure we do not drag any item or skill
                 if GetCursorContentType() == MOUSE_CONTENT_EMPTY then
@@ -715,14 +716,14 @@ function ShifterBoxList:SetupRowEntry(rowControl, rowData)
     end
     local function onDragStart(rowControl, mouseButton)
         if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
-            WINDOW_MANAGER:SetMouseCursor(MOUSE_CURSOR_UI_HAND)
+--            WINDOW_MANAGER:SetMouseCursor(MOUSE_CURSOR_UI_HAND)
             local currentDragData = ZO_ScrollList_GetData(rowControl)
             currentDragData._sourceListControl = self
             currentDragData._isSelected = self.list.selectedMultiData and self.list.selectedMultiData[currentDragData.key] ~= nil
             currentDragData._isFromLeftList = self.isLeftList
             lib.currentDragData  = currentDragData
         else
-            WINDOW_MANAGER:SetMouseCursor(MOUSE_CURSOR_DEFAULT_CURSOR)
+--            WINDOW_MANAGER:SetMouseCursor(MOUSE_CURSOR_DEFAULT_CURSOR)
         end
     end
     -- set the value for the row entry
