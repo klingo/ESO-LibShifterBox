@@ -19,7 +19,15 @@ Add LibShifterBox as a dependency to your add-on manifest:
 
 Then you can create a shifterBox instance, anchor it to another control and start adding entries like this:
 [highlight="Lua"]
-local shifterBox = LibShifterBox("MyAddon", "MyShifterBox", parentControl, "Lefties", "Righties")
+local customSettings = {
+    leftList = {
+        title = "Lefties",
+    },
+    rightList = {
+        title = "Righties",
+    }
+}
+local shifterBox = LibShifterBox("MyAddon", "MyShifterBox", parentControl, customSettings)
 shifterBox:SetAnchor(TOPLEFT, headerControl, BOTTOMLEFT, 0, 20) -- required to correctly position/anchor it in your UI
 shifterBox:SetDimensions(300, 200) -- optionally set your own overall dimensions of the shifterBox
 shifterBox:AddEntriesToLeftList({[1] = "AAA", [2] = "BBB", [3] = "CCC"}) -- add three entries to the left list
