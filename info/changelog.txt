@@ -1,3 +1,9 @@
+0.2.0   (August 21, 2019)
+- restructured customSettings (breaking change!)
+- add [dragDropEnabled] setting to control the drag-and-drop feature (by Baertram)
+- add [fontSize] setting to change the font of the entries
+- add localization for default empty text
+
 0.1.1   (August 18, 2019)
 - add [sortEnabled] customSetting as proposed by Baertram
 - add additional shortcut parameters to .Create/:New as proposed by Baertram
