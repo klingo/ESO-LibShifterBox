@@ -99,6 +99,8 @@ itemQualitiesShifterBox:SetEnabled(false)
   * [ShifterBox:UnselectAllEntries](#shifterboxunselectallentries)
   * [ShifterBox:RemoveEntryByKey](#shifterboxremoveentrybykey)
   * [ShifterBox:RemoveEntriesByKey](#shifterboxremoveentriesbykey)
+  * [ShifterBox:RegisterCallback](#shifterboxregistercallback)
+  * [ShifterBox:UnregisterCallback](#shifterboxunregistercallback)
   * [LeftListBox](#leftlistbox)
     * [ShifterBox:GetLeftListEntries](#shifterboxgetleftlistentries)
     * [ShifterBox:GetLeftListEntriesFull](#shifterboxgetleftlistentriesfull)
@@ -306,6 +308,33 @@ shifterBox:RemoveEntryByKey(key)
 Removes a list of entries on either listBox. The provided `keys` must be a table with keys such as `keys = {1, 2, 3}`.
 ```lua
 shifterBox:RemoveEntriesByKey(keys)
+```
+
+### ShifterBox:RegisterCallback
+Register your own `callbackFunction` that is executed upon various shifterBox events.  The following values for `shifterBoxEvent` are supported:
+- `LibShifterBox.EVENT_ENTRY_HIGHLIGHTED` - triggered when an entry is highlighted
+- `LibShifterBox.EVENT_ENTRY_UNHIGHLIGHTED` - triggered when an entry is un-highlighted
+- `LibShifterBox.EVENT_ENTRY_MOVED` - triggered when an entry is moved from one list to another
+```lua
+shifterBox:RegisterCallback(shifterBoxEvent, callbackFunction)
+```
+Example:
+```lua
+local function myEntryMovedFunction(key, value, categoryId)
+    -- do something
+end
+
+shifterBox:RegisterCallback(LibShifterBox.EVENT_ENTRY_MOVED, myEntryMovedFunction)
+```
+
+### ShifterBox:UnregisterCallback
+Unregisters the before set `callbackFunction` for the given `shifterBoxEvent`. The same events as for `RegisterCallback` are valid.
+```lua
+shifterBox:UnregisterCallback(shifterBoxEvent, callbackFunction)
+```
+Example:
+```lua
+shifterBox:UnregisterCallback(LibShifterBox.EVENT_ENTRY_MOVED, myEntryMovedCallbackFunction)
 ```
 
 

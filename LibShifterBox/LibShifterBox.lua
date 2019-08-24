@@ -18,6 +18,9 @@ local RESELECTING_DURING_REBUILD = true
 local ANIMATION_FIELD_NAME = "SelectionAnimation"
 local FONT_STYLE = "MEDIUM_FONT"
 local FONT_WEIGHT = "soft-shadow-thin"
+local EVENT_ENTRY_HIGHLIGHTED = 1
+local EVENT_ENTRY_UNHIGHLIGHTED = 2
+local EVENT_ENTRY_MOVED = 3
 
 local existingShifterBoxes = {}
 
@@ -41,7 +44,6 @@ local defaultSettings = {
 -- KNOWN ISSUES
 -- TODO: Calling UnselectAllEntries() when mouse-over causes text to become white
 -- TODO: Indicate the drag-and-drop on the mouse-cursor
--- TODO: Allow registering callbacks for when entries are moved (e.g. so that other controls can react when something different is "selected")
 
 -- =================================================================================================================
 -- == SHIFTERBOX PRIVATE FUNCTIONS == --
@@ -65,11 +67,23 @@ local function _createShifterBox(uniqueAddonName, uniqueShifterBoxName, parentCo
     return CreateControlFromVirtual(shifterBoxName, parentControl, "ShifterBoxTemplate")
 end
 
-local function _moveEntryFromTo(fromList, toList, key)
+local function _getUniqueShifterBoxEventName(shifterBox, eventId)
+    if shifterBox == nil then return nil end
+    return table.concat({LIB_IDENTIFIER, "_", shifterBox.addonName, "_", shifterBox.shifterBoxName, "_", eventId})
+end
+
+local function _moveEntryFromTo(fromList, toList, key, shifterBox)
     local key, value, categoryId = fromList:RemoveEntry(key)
     if key ~= nil then
         toList:AddEntry(key, value, categoryId)
+        -- then trigger the callback if present
+        local callbackIdentifier = _getUniqueShifterBoxEventName(shifterBox, EVENT_ENTRY_MOVED)
+        CALLBACK_MANAGER:FireCallbacks(callbackIdentifier, key, value, categoryId)
     end
+end
+
+local function _assertValidShifterBoxEvent(shifterBoxEvent)
+    assert(shifterBoxEvent == EVENT_ENTRY_HIGHLIGHTED or shifterBoxEvent == EVENT_ENTRY_UNHIGHLIGHTED or shifterBoxEvent == EVENT_ENTRY_MOVED, string.format(LIB_IDENTIFIER.."_Error: Invalid shifterBoxEvent parameter provided! Must be 'EVENT_ENTRY_HIGHLIGHTED', 'EVENT_ENTRY_UNHIGHLIGHTED', or 'EVENT_ENTRY_MOVED'."))
 end
 
 local function _assertKeyIsNotInTable(key, value, self, sideControl)
@@ -139,7 +153,7 @@ local function _initShifterBoxHandlers(self)
     local function toLeftButtonClicked(buttonControl)
         local rightListSelectedData = self.rightList.list.selectedMultiData
         for key, data in pairs(rightListSelectedData) do
-            _moveEntryFromTo(self.rightList, self.leftList, data.key)
+            _moveEntryFromTo(self.rightList, self.leftList, data.key, self)
         end
         -- then commit the changes to the scrollList and refresh the hidden states
         self.leftList:RefreshFilters()
@@ -157,7 +171,7 @@ local function _initShifterBoxHandlers(self)
     local function toRightButtonClicked(buttonControl)
         local leftListSelectedData = self.leftList.list.selectedMultiData
         for key, data in pairs(leftListSelectedData) do
-            _moveEntryFromTo(self.leftList, self.rightList, data.key)
+            _moveEntryFromTo(self.leftList, self.rightList, data.key, self)
         end
         -- then commit the changes to the scrollList and refresh the hidden states
         self.leftList:RefreshFilters()
@@ -381,17 +395,17 @@ local function _addEntryToList(list, key, value, replace, otherList, categoryId)
     _addEntriesToList(list, entries, replace, otherList, categoryId)
 end
 
-local function _moveEntriesToOtherList(sourceList, keys, destList)
+local function _moveEntriesToOtherList(sourceList, keys, destList, shifterBox)
     for _, key in pairs(keys) do
-        _moveEntryFromTo(sourceList, destList, key)
+        _moveEntryFromTo(sourceList, destList, key, shifterBox)
     end
     -- refresh the display afterwards
     _refreshFilters(sourceList, destList)
 end
 
-local function _moveEntryToOtherList(sourceList, key, destList)
+local function _moveEntryToOtherList(sourceList, key, destList, shifterBox)
     local keys = { key }
-    _moveEntriesToOtherList(sourceList, keys, destList)
+    _moveEntriesToOtherList(sourceList, keys, destList, shifterBox)
 end
 
 local function _clearList(list)
@@ -501,7 +515,7 @@ function ShifterBoxList:Initialize(control, shifterBoxSettings, isLeftList)
                                 buttonOnClickedFunction(buttonControl)
                             else
                                 -- if the draged data was NOT selected, then only move that single entry
-                                _moveEntryToOtherList(sourceList, dragData.key, destList)
+                                _moveEntryToOtherList(sourceList, dragData.key, destList, self.shifterBox)
                             end
                         end
                     end
@@ -681,11 +695,17 @@ function ShifterBoxList:ToggleEntrySelection(data, control, reselectingDuringReb
             self.list.selectedMultiData[dataKey] = data
             -- and select the control (if applicable)
             if control then self:SelectControl(control, animateInstantly) end
+            -- then trigger the callback if present
+            local callbackIdentifier = _getUniqueShifterBoxEventName(self.shifterBox, EVENT_ENTRY_HIGHLIGHTED)
+            CALLBACK_MANAGER:FireCallbacks(callbackIdentifier, dataKey, data.value, data.categoryId)
         elseif deselectOnReselect then
             -- remove selected data
             self.list.selectedMultiData[dataKey] = nil
             -- and unselect the control (if applicable)
             if control then self:UnselectControl(control, animateInstantly) end
+            -- then trigger the callback if present
+            local callbackIdentifier = _getUniqueShifterBoxEventName(self.shifterBox, EVENT_ENTRY_UNHIGHLIGHTED)
+            CALLBACK_MANAGER:FireCallbacks(callbackIdentifier, dataKey, data.value, data.categoryId)
         end
     end
     if self.list.selectionCallback then
@@ -984,6 +1004,22 @@ end
 
 -- ---------------------------------------------------------------------------------------------------------------------
 
+function ShifterBox:RegisterCallback(shifterBoxEvent, callbackFunction)
+    _assertValidShifterBoxEvent(shifterBoxEvent)
+    assert(type(callbackFunction) == "function", string.format(LIB_IDENTIFIER.."_Error: Invalid callbackFunction parameter of type '%s' provided! Must be of type 'function'.", type(callbackFunction)))
+    -- register the callback with ESO
+    local callbackIdentifier = _getUniqueShifterBoxEventName(self, shifterBoxEvent)
+    CALLBACK_MANAGER:RegisterCallback(callbackIdentifier, callbackFunction)
+end
+
+function ShifterBox:UnregisterCallback(shifterBoxEvent, callbackFunction)
+    _assertValidShifterBoxEvent(shifterBoxEvent)
+    local callbackIdentifier = _getUniqueShifterBoxEventName(self, shifterBoxEvent)
+    CALLBACK_MANAGER:RegisterCallback(callbackIdentifier, callbackFunction)
+end
+
+-- ---------------------------------------------------------------------------------------------------------------------
+
 function ShifterBox:GetLeftListEntries(withCategoryId)
     return _getEntries(self.leftList, false, withCategoryId)
 end
@@ -1001,11 +1037,11 @@ function ShifterBox:AddEntriesToLeftList(entries, replace, categoryId)
 end
 
 function ShifterBox:MoveEntryToLeftList(key)
-    _moveEntryToOtherList(self.rightList, key, self.leftList)
+    _moveEntryToOtherList(self.rightList, key, self.leftList, self)
 end
 
 function ShifterBox:MoveEntriesToLeftList(keys)
-    _moveEntriesToOtherList(self.rightList, keys, self.leftList)
+    _moveEntriesToOtherList(self.rightList, keys, self.leftList, self)
 end
 
 function ShifterBox:MoveAllEntriesToLeftList()
@@ -1013,7 +1049,7 @@ function ShifterBox:MoveAllEntriesToLeftList()
     for _, entry in pairs(self.rightList.list.data) do
         table.insert(keyset, entry.data.key)
     end
-    _moveEntriesToOtherList(self.rightList, keyset, self.leftList)
+    _moveEntriesToOtherList(self.rightList, keyset, self.leftList, self)
 end
 
 function ShifterBox:ClearLeftList()
@@ -1039,11 +1075,11 @@ function ShifterBox:AddEntriesToRightList(entries, replace, categoryId)
 end
 
 function ShifterBox:MoveEntryToRightList(key)
-    _moveEntryToOtherList(self.leftList, key, self.rightList)
+    _moveEntryToOtherList(self.leftList, key, self.rightList, self)
 end
 
 function ShifterBox:MoveEntriesToRightList(keys)
-    _moveEntriesToOtherList(self.leftList, keys, self.rightList)
+    _moveEntriesToOtherList(self.leftList, keys, self.rightList, self)
 end
 
 function ShifterBox:MoveAllEntriesToRightList()
@@ -1051,7 +1087,7 @@ function ShifterBox:MoveAllEntriesToRightList()
     for _, entry in pairs(self.leftList.list.data) do
         table.insert(keyset, entry.data.key)
     end
-    _moveEntriesToOtherList(self.leftList, keyset, self.rightList)
+    _moveEntriesToOtherList(self.leftList, keyset, self.rightList, self)
 end
 
 function ShifterBox:ClearRightList()
@@ -1063,6 +1099,9 @@ end
 -- == LIBRARY FUNCTIONS == --
 -- -----------------------------------------------------------------------------------------------------------------
 lib.DEFAULT_CATEGORY = DATA_DEFAULT_CATEGORY
+lib.EVENT_ENTRY_HIGHLIGHTED = EVENT_ENTRY_HIGHLIGHTED
+lib.EVENT_ENTRY_UNHIGHLIGHTED = EVENT_ENTRY_UNHIGHLIGHTED
+lib.EVENT_ENTRY_MOVED = EVENT_ENTRY_MOVED
 
 --- Returns an existing ShifterBox instance
 -- @param uniqueAddonName - a string identifer for the consuming addon
