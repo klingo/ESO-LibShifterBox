@@ -1,3 +1,6 @@
+0.3.0   (tbd)
+- add two new library functions: [RegisterCallback] and [UnregisterCallback]
+
 0.2.0   (August 21, 2019)
 - restructured customSettings (breaking change!)
 - add [dragDropEnabled] setting to control the drag-and-drop feature (by Baertram)
