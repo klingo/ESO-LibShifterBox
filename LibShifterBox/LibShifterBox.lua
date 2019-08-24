@@ -315,19 +315,9 @@ local function _removeEntryFromList(list, key)
 end
 
 local function _getEntries(list, includeHiddenEntries, withCategoryId)
-    local function _addToTable(table, key, value, categoryId)
-        if withCategoryId then
-            table[key] = {
-                value = value,
-                categoryId = categoryId
-            }
-        else
-            table[key] = value
-        end
-    end
     local exportList = {}
+    local masterList = list.masterList
     if includeHiddenEntries then
-        local masterList = list.masterList
         if withCategoryId then
             exportList = _getShallowClonedTable(masterList)
         else
@@ -336,12 +326,19 @@ local function _getEntries(list, includeHiddenEntries, withCategoryId)
             end
         end
     else
-        local listData = list.list.data
-        for _, entry in ipairs(listData) do
-            if withCategoryId then
-                _addToTable(exportList, entry.data.key, entry.data.value, entry.categoryId)
-            else
-                exportList[entry.data.key] = entry.data.value
+        local categories = list.list.categories
+        for key, entry in pairs(masterList) do
+            local categoryId = entry.categoryId
+            if categoryId == nil or categories[categoryId] == nil or categories[categoryId].hidden == false then
+                -- add if entry has no category, category is unknown, or category is known but not hidden
+                if withCategoryId then
+                    exportList[key] = {
+                        value = entry.value,
+                        categoryId = entry.categoryId
+                    }
+                else
+                    exportList[key] = entry.value
+                end
             end
         end
     end
