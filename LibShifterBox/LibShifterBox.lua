@@ -78,7 +78,7 @@ local function _moveEntryFromTo(fromList, toList, key, shifterBox)
         toList:AddEntry(key, value, categoryId)
         -- then trigger the callback if present
         local callbackIdentifier = _getUniqueShifterBoxEventName(shifterBox, EVENT_ENTRY_MOVED)
-        CALLBACK_MANAGER:FireCallbacks(callbackIdentifier, key, value, categoryId)
+        CALLBACK_MANAGER:FireCallbacks(callbackIdentifier, shifterBox, key, value, categoryId, toList.isLeftList)
     end
 end
 
@@ -694,7 +694,7 @@ function ShifterBoxList:ToggleEntrySelection(data, control, reselectingDuringReb
             if control then self:SelectControl(control, animateInstantly) end
             -- then trigger the callback if present
             local callbackIdentifier = _getUniqueShifterBoxEventName(self.shifterBox, EVENT_ENTRY_HIGHLIGHTED)
-            CALLBACK_MANAGER:FireCallbacks(callbackIdentifier, dataKey, data.value, data.categoryId)
+            CALLBACK_MANAGER:FireCallbacks(callbackIdentifier, self.shifterBox, dataKey, data.value, data.categoryId, self.isLeftList)
         elseif deselectOnReselect then
             -- remove selected data
             self.list.selectedMultiData[dataKey] = nil
@@ -702,7 +702,7 @@ function ShifterBoxList:ToggleEntrySelection(data, control, reselectingDuringReb
             if control then self:UnselectControl(control, animateInstantly) end
             -- then trigger the callback if present
             local callbackIdentifier = _getUniqueShifterBoxEventName(self.shifterBox, EVENT_ENTRY_UNHIGHLIGHTED)
-            CALLBACK_MANAGER:FireCallbacks(callbackIdentifier, dataKey, data.value, data.categoryId)
+            CALLBACK_MANAGER:FireCallbacks(callbackIdentifier, self.shifterBox, dataKey, data.value, data.categoryId, self.isLeftList)
         end
     end
     if self.list.selectionCallback then

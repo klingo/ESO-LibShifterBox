@@ -311,19 +311,51 @@ shifterBox:RemoveEntriesByKey(keys)
 ```
 
 ### ShifterBox:RegisterCallback
-Register your own `callbackFunction` that is executed upon various shifterBox events.  The following values for `shifterBoxEvent` are supported:
-- `LibShifterBox.EVENT_ENTRY_HIGHLIGHTED` - triggered when an entry is highlighted
-- `LibShifterBox.EVENT_ENTRY_UNHIGHLIGHTED` - triggered when an entry is un-highlighted
-- `LibShifterBox.EVENT_ENTRY_MOVED` - triggered when an entry is moved from one list to another
+Register your own `callbackFunction` that is executed upon various shifterBox events.
 ```lua
 shifterBox:RegisterCallback(shifterBoxEvent, callbackFunction)
 ```
-Example:
+The following values for `shifterBoxEvent` are currently supported:
+
+#### LibShifterBox.EVENT_ENTRY_HIGHLIGHTED
+This event is triggered when an entry is highlighted (i.e. clicked on with the mouse, or by calling `ShifterBox:SelectEntryByKey` and `ShifterBox:SelectEntriesByKey`).
 ```lua
-local function myEntryMovedFunction(key, value, categoryId)
+-- @param shifterBox object referencing the shifterBox that triggered this event
+-- @param key string with the key of the highlighted entry
+-- @param value string with the (displayed) value of the highlighted entry
+-- @categoryId string with the category of the highlighted entry (can be nil)
+-- @isLeftList boolean whether the highlighted entry is in the left listBox
+local function myEntryHighlightedFunction(shifterBox, key, value, categoryId, isLeftList)
     -- do something
 end
+shifterBox:RegisterCallback(LibShifterBox.EVENT_ENTRY_HIGHLIGHTED, myEntryHighlightedFunction)
+```
 
+#### LibShifterBox.EVENT_ENTRY_UNHIGHLIGHTED
+This event is triggered when an entry is un-highlighted (i.e. clicked on a highlighted entry wit the mouse)
+```lua
+-- @param shifterBox object referencing the shifterBox that triggered this event
+-- @param key string with the key of the highlighted entry
+-- @param value string with the (displayed) value of the un-highlighted entry
+-- @categoryId string with the category of the un-highlighted entry (can be nil)
+-- @isLeftList boolean whether the un-highlighted entry is in the left listBox
+local function myEntryUnhighlightedFunction(shifterBox, key, value, categoryId, isLeftList)
+    -- do something
+end
+shifterBox:RegisterCallback(LibShifterBox.EVENT_ENTRY_UNHIGHLIGHTED, myEntryUnhighlightedFunction)
+```
+
+#### LibShifterBox.EVENT_ENTRY_MOVED
+This event is triggered when an entry is moved from one list to another, either with the [<] and [>] buttons, by drag-and-drop or with any of the library functions.
+```lua
+-- @param shifterBox object referencing the shifterBox that triggered this event
+-- @param key string with the key of the movedentry
+-- @param value string with the (displayed) value of the moved entry
+-- @categoryId string with the category of the moved entry (can be nil)
+-- @isDestListLeftList boolean whether the entry is is moved to the left listBox
+local function myEntryMovedFunction(shifterBox, key, value, categoryId, isDestListLeftList)
+    -- do something
+end
 shifterBox:RegisterCallback(LibShifterBox.EVENT_ENTRY_MOVED, myEntryMovedFunction)
 ```
 
@@ -331,10 +363,6 @@ shifterBox:RegisterCallback(LibShifterBox.EVENT_ENTRY_MOVED, myEntryMovedFunctio
 Unregisters the before set `callbackFunction` for the given `shifterBoxEvent`. The same events as for `RegisterCallback` are valid.
 ```lua
 shifterBox:UnregisterCallback(shifterBoxEvent, callbackFunction)
-```
-Example:
-```lua
-shifterBox:UnregisterCallback(LibShifterBox.EVENT_ENTRY_MOVED, myEntryMovedCallbackFunction)
 ```
 
 
