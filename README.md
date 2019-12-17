@@ -320,12 +320,13 @@ The following values for `shifterBoxEvent` are currently supported:
 #### LibShifterBox.EVENT_ENTRY_HIGHLIGHTED
 This event is triggered when an entry is highlighted (i.e. clicked on with the mouse, or by calling `ShifterBox:SelectEntryByKey` and `ShifterBox:SelectEntriesByKey`).
 ```lua
+-- @param control object referencing the entry/row that has been highlighted
 -- @param shifterBox object referencing the shifterBox that triggered this event
 -- @param key string with the key of the highlighted entry
 -- @param value string with the (displayed) value of the highlighted entry
 -- @categoryId string with the category of the highlighted entry (can be nil)
 -- @isLeftList boolean whether the highlighted entry is in the left listBox
-local function myEntryHighlightedFunction(shifterBox, key, value, categoryId, isLeftList)
+local function myEntryHighlightedFunction(control, shifterBox, key, value, categoryId, isLeftList)
     -- do something
 end
 shifterBox:RegisterCallback(LibShifterBox.EVENT_ENTRY_HIGHLIGHTED, myEntryHighlightedFunction)
@@ -334,12 +335,13 @@ shifterBox:RegisterCallback(LibShifterBox.EVENT_ENTRY_HIGHLIGHTED, myEntryHighli
 #### LibShifterBox.EVENT_ENTRY_UNHIGHLIGHTED
 This event is triggered when an entry is un-highlighted (i.e. clicked on a highlighted entry wit the mouse)
 ```lua
+-- @param control object referencing the entry/row that has been un-highlighted
 -- @param shifterBox object referencing the shifterBox that triggered this event
 -- @param key string with the key of the highlighted entry
 -- @param value string with the (displayed) value of the un-highlighted entry
 -- @categoryId string with the category of the un-highlighted entry (can be nil)
 -- @isLeftList boolean whether the un-highlighted entry is in the left listBox
-local function myEntryUnhighlightedFunction(shifterBox, key, value, categoryId, isLeftList)
+local function myEntryUnhighlightedFunction(control, shifterBox, key, value, categoryId, isLeftList)
     -- do something
 end
 shifterBox:RegisterCallback(LibShifterBox.EVENT_ENTRY_UNHIGHLIGHTED, myEntryUnhighlightedFunction)
