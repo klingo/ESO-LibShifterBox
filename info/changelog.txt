@@ -1,5 +1,6 @@
 0.3.0   (tbd)
 - add two new library functions: [RegisterCallback] and [UnregisterCallback]
+- updated to APIVersion 100029 (Dragonhold)
 
 0.2.0   (August 21, 2019)
 - restructured customSettings (breaking change!)
