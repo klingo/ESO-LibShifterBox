@@ -1,4 +1,4 @@
-0.3.0   (tbd)
+0.3.0   (December 17, 2019)
 - add two new library functions: [RegisterCallback] and [UnregisterCallback]
 - updated to APIVersion 100029 (Dragonhold)
 
