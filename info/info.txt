@@ -1,3 +1,3 @@
 title: LibShifterBox
-version: 0.3.2
-compatibility: 5.3.4 6.0.0
+version: 0.3.3
+compatibility: 6.1.5
