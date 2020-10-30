@@ -1,8 +1,7 @@
 # LibShifterBox
+<a href="https://www.buymeacoffee.com/klingo" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-yellow.png" alt="Buy Me A Coffee"></a>
+
 LibShifterBox, a library add-on for '[The Elder Scrolls Online](https://www.elderscrollsonline.com/ "Home - The Elder Scrolls Online")'
-
-![alt text][shifterbox-example]
-
 
 ## Download
 You can always download the latest version here: https://www.esoui.com/downloads/info2444-LibShifterBox.html
@@ -10,6 +9,7 @@ You can always download the latest version here: https://www.esoui.com/downloads
 
 ## Quick Start Example
 This is a full example of how to use the LibShifterBox.
+![alt text][shifterbox-example]
 \
 \
 First the initial setup of the ShifterBox needs to be done:
