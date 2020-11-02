@@ -494,6 +494,11 @@ shifterBox:ClearRightList()
 
 ***
 
+## Addons using LibShifterBox
+Here you can find an (incomplete) list of [Addons using LibShifterBox](https://github.com/klingo/ESO-LibShifterBox/wiki/Addons-using-LibShifterBox).
+
+***
+
 ## Disclaimer
 
 **Disclaimer:**
