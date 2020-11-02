@@ -1,3 +1,7 @@
+0.3.4   (November 03, 2020)
+- updated to APIVersion 100033 (Markarth) ([URL="https://github.com/klingo/ESO-LibShifterBox/pull/11"]#11[/URL])
+- fixed an issue where non-EN localization was not applied ([URL="https://github.com/klingo/ESO-LibShifterBox/pull/10"]#10[/URL])
+
 0.3.3   (September 05, 2020)
 - updated to APIVersion 100032 (Stonethorn)
 
