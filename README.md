@@ -12,7 +12,17 @@ This is a full example of how to use the LibShifterBox.
 ![alt text][shifterbox-example]
 \
 \
-First the initial setup of the ShifterBox needs to be done:
+In your `MyAddon.txt` file, make sure you defined LibShifterBox as a dependency:
+```
+## DependsOn: LibShifterBox
+```
+Optionally, you can also define a specific min-version:
+```
+## DependsOn: LibShifterBox>=14
+```
+\
+\
+Then the initial setup of the ShifterBox needs to be done:
 
 ```lua
 -- prepare the list of entries; in this case a list of item qualities in matching colour
@@ -333,7 +343,7 @@ shifterBox:RegisterCallback(LibShifterBox.EVENT_ENTRY_HIGHLIGHTED, myEntryHighli
 ```
 
 #### LibShifterBox.EVENT_ENTRY_UNHIGHLIGHTED
-This event is triggered when an entry is un-highlighted (i.e. clicked on a highlighted entry wit the mouse)
+This event is triggered when an entry is un-highlighted (i.e. clicked on a highlighted entry with the mouse)
 ```lua
 -- @param control object referencing the entry/row that has been un-highlighted
 -- @param shifterBox object referencing the shifterBox that triggered this event
@@ -481,6 +491,11 @@ Removes all entries from the right listBox.
 shifterBox:ClearRightList()
 ```
 
+
+***
+
+## Addons using LibShifterBox
+Here you can find an (incomplete) list of [Addons using LibShifterBox](https://github.com/klingo/ESO-LibShifterBox/wiki/Addons-using-LibShifterBox).
 
 ***
 
