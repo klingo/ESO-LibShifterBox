@@ -343,7 +343,7 @@ shifterBox:RegisterCallback(LibShifterBox.EVENT_ENTRY_HIGHLIGHTED, myEntryHighli
 ```
 
 #### LibShifterBox.EVENT_ENTRY_UNHIGHLIGHTED
-This event is triggered when an entry is un-highlighted (i.e. clicked on a highlighted entry wit the mouse)
+This event is triggered when an entry is un-highlighted (i.e. clicked on a highlighted entry with the mouse)
 ```lua
 -- @param control object referencing the entry/row that has been un-highlighted
 -- @param shifterBox object referencing the shifterBox that triggered this event
