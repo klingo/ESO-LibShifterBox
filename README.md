@@ -12,7 +12,17 @@ You can always download the latest version here: https://www.esoui.com/downloads
 This is a full example of how to use the LibShifterBox.
 \
 \
-First the initial setup of the ShifterBox needs to be done:
+In your `MyAddon.txt` file, make sure you defined LibShifterBox as a dependency:
+```
+## DependsOn: LibShifterBox
+```
+Optionally, you can also define a specific min-version:
+```
+## DependsOn: LibShifterBox>=14
+```
+\
+\
+Then the initial setup of the ShifterBox needs to be done:
 
 ```lua
 -- prepare the list of entries; in this case a list of item qualities in matching colour
