@@ -54,7 +54,7 @@ local customSettings = {
 }
 
 -- create the shifterBox and anchor it to a headerControl; also we can change the dimensions
-local itemQualitiesShifterBox = LibShifterBox("MyNewAddon", "ItemQualities", parentControl, "Available", "Selected", customSettings)
+local itemQualitiesShifterBox = LibShifterBox("MyNewAddon", "ItemQualities", parentControl, customSettings)
 itemQualitiesShifterBox:SetAnchor(TOPLEFT, headerControl, BOTTOMLEFT, 0, 20)
 itemQualitiesShifterBox:SetDimensions(300, 200)
 
