@@ -1,8 +1,5 @@
 local _addonName = "ShifterBoxExample"
 
-
-
-
 local function initShifterBoxExample()
     -- prepare the list of entries; in this case a list of item qualities in matching colour
     local leftListEntries = {
@@ -41,10 +38,44 @@ local function initShifterBoxExample()
     itemQualitiesShifterBox:AddEntriesToLeftList(leftListEntries)
 
 
-    local function myEntryMovedFunction(shifterBox, key, value, categoryId, isDestListLeftList)
-        shifterBox:AddEntryToLeftList("allo", "test", true)
+
+    -- --------------------------------------------------------
+
+    local clearLeftListButton = ShifterBoxExampleMainWindow:GetNamedChild("ClearLeftList")
+    clearLeftListButton:SetHandler("OnClicked", function(self)
+        itemQualitiesShifterBox:ClearLeftList()
+    end)
+
+    local clearRightListButton = ShifterBoxExampleMainWindow:GetNamedChild("ClearRightList")
+    clearRightListButton:SetHandler("OnClicked", function(self)
+        itemQualitiesShifterBox:ClearRightList()
+    end)
+
+    local addEntryToLeftButton = ShifterBoxExampleMainWindow:GetNamedChild("AddEntryToLeft")
+    local addEntryToLeftListIndexCounter = 99
+    addEntryToLeftButton:SetHandler("OnClicked", function(self)
+        itemQualitiesShifterBox:AddEntryToLeftList(addEntryToLeftListIndexCounter, "entry_" .. tostring(addEntryToLeftListIndexCounter), true)
+        addEntryToLeftListIndexCounter = addEntryToLeftListIndexCounter + 1
+    end)
+
+
+
+    -- --------------------------------------------------------
+
+    local function myLeftListClearedFunction(shifterBox, hasStillHiddenEntries)
+        df("myLEFTListClearedFunction | hasStillHiddenEntries = %s", tostring(hasStillHiddenEntries))
     end
-    itemQualitiesShifterBox:RegisterCallback(LibShifterBox.EVENT_ENTRY_MOVED, myEntryMovedFunction)
+    itemQualitiesShifterBox:RegisterCallback(LibShifterBox.EVENT_LEFT_LIST_CLEARED, myLeftListClearedFunction)
+
+    local function myRightListClearedFunction(shifterBox, hasStillHiddenEntries)
+        df("myRIGHTListClearedFunction | hasStillHiddenEntries = %s", tostring(hasStillHiddenEntries))
+    end
+    itemQualitiesShifterBox:RegisterCallback(LibShifterBox.EVENT_RIGHT_LIST_CLEARED, myRightListClearedFunction)
+
+    --    local function myEntryMovedFunction(shifterBox, key, value, categoryId, isDestListLeftList)
+    --        shifterBox:AddEntryToLeftList("allo", "test", true)
+    --    end
+    --    itemQualitiesShifterBox:RegisterCallback(LibShifterBox.EVENT_ENTRY_MOVED, myEntryMovedFunction)
 end
 
 local function initAddon(_, addOnName)
