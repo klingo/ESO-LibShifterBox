@@ -371,6 +371,28 @@ end
 shifterBox:RegisterCallback(LibShifterBox.EVENT_ENTRY_MOVED, myEntryMovedFunction)
 ```
 
+#### LibShifterBox.EVENT_LEFT_LIST_CLEARED
+This event is triggered when the left list has been cleared from all (shown) entries, i.e. the entries have been moved to the right list, or got deleted from it. \
+It does not check for entries that are part of a category that is currently hidden, only entries from shown categories are considered when evaluating if the left list is cleared or not. The event however can be triggered when `ShifterBox:HideCategory` or `ShifterBox:ShowOnlyCategory` are called and the left list does not have any entries left.
+```lua
+-- @param shifterBox object referencing the shifterBox that triggered this event
+local function myLeftListClearedFunction(shifterBox)
+    -- do something
+end
+shifterBox:RegisterCallback(LibShifterBox.EVENT_LEFT_LIST_CLEARED, myLeftListClearedFunction)
+```
+
+#### LibShifterBox.EVENT_RIGHT_LIST_CLEARED
+This event is triggered when the right list has been cleared from all (shown) entries, i.e. the entries have been moved to the left list, or got deleted from it. \
+It does not check for entries that are part of a category that is currently hidden, only entries from shown categories are considered when evaluating if the right list is cleared or not. The event however can be triggered when `ShifterBox:HideCategory` or `ShifterBox:ShowOnlyCategory` are called and the right list does not have any entries left.
+```lua
+-- @param shifterBox object referencing the shifterBox that triggered this event
+local function myLeftListClearedFunction(shifterBox)
+    -- do something
+end
+shifterBox:RegisterCallback(LibShifterBox.EVENT_LEFT_LIST_CLEARED, myLeftListClearedFunction)
+```
+
 ### ShifterBox:UnregisterCallback
 Unregisters the before set `callbackFunction` for the given `shifterBoxEvent`. The same events as for `RegisterCallback` are valid.
 ```lua

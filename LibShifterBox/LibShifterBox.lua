@@ -21,6 +21,8 @@ local FONT_WEIGHT = "soft-shadow-thin"
 local EVENT_ENTRY_HIGHLIGHTED = 1
 local EVENT_ENTRY_UNHIGHLIGHTED = 2
 local EVENT_ENTRY_MOVED = 3
+local EVENT_LEFT_LIST_CLEARED = 4
+local EVENT_RIGHT_LIST_CLEARED = 5
 
 local existingShifterBoxes = {}
 
@@ -64,14 +66,32 @@ end
 
 -- ---------------------------------------------------------------------------------------------------------------------
 
-local function _createShifterBox(uniqueAddonName, uniqueShifterBoxName, parentControl)
-    local shifterBoxName = table.concat({uniqueAddonName, "_", uniqueShifterBoxName})
-    return CreateControlFromVirtual(shifterBoxName, parentControl, "ShifterBoxTemplate")
-end
-
 local function _getUniqueShifterBoxEventName(shifterBox, eventId)
     if shifterBox == nil then return nil end
     return table.concat({LIB_IDENTIFIER, "_", shifterBox.addonName, "_", shifterBox.shifterBoxName, "_", eventId})
+end
+
+local function _refreshFilter(list, checkForClearTrigger)
+    list:RefreshFilters()
+    if checkForClearTrigger and next(list.list.data) == nil then
+        local callbackIdentifier
+        if list.isLeftList then
+            callbackIdentifier = _getUniqueShifterBoxEventName(list.shifterBox, EVENT_LEFT_LIST_CLEARED)
+        else
+            callbackIdentifier = _getUniqueShifterBoxEventName(list.shifterBox, EVENT_RIGHT_LIST_CLEARED)
+        end
+        CALLBACK_MANAGER:FireCallbacks(callbackIdentifier, list.shifterBox)
+    end
+end
+
+local function _refreshFilters(list, anotherList, checkForClearTrigger)
+    if list then _refreshFilter(list, checkForClearTrigger) end
+    if anotherList then _refreshFilter(anotherList, checkForClearTrigger) end
+end
+
+local function _createShifterBox(uniqueAddonName, uniqueShifterBoxName, parentControl)
+    local shifterBoxName = table.concat({uniqueAddonName, "_", uniqueShifterBoxName})
+    return CreateControlFromVirtual(shifterBoxName, parentControl, "ShifterBoxTemplate")
 end
 
 local function _moveEntryFromTo(fromList, toList, key, shifterBox)
@@ -85,7 +105,9 @@ local function _moveEntryFromTo(fromList, toList, key, shifterBox)
 end
 
 local function _assertValidShifterBoxEvent(shifterBoxEvent)
-    assert(shifterBoxEvent == EVENT_ENTRY_HIGHLIGHTED or shifterBoxEvent == EVENT_ENTRY_UNHIGHLIGHTED or shifterBoxEvent == EVENT_ENTRY_MOVED, string.format(LIB_IDENTIFIER.."_Error: Invalid shifterBoxEvent parameter provided! Must be 'EVENT_ENTRY_HIGHLIGHTED', 'EVENT_ENTRY_UNHIGHLIGHTED', or 'EVENT_ENTRY_MOVED'."))
+    assert(shifterBoxEvent == EVENT_ENTRY_HIGHLIGHTED or shifterBoxEvent == EVENT_ENTRY_UNHIGHLIGHTED or shifterBoxEvent == EVENT_ENTRY_MOVED
+        or shifterBoxEvent == EVENT_LEFT_LIST_CLEARED or shifterBoxEvent == EVENT_RIGHT_LIST_CLEARED,
+        string.format(LIB_IDENTIFIER.."_Error: Invalid shifterBoxEvent parameter provided! Must be 'EVENT_ENTRY_HIGHLIGHTED', 'EVENT_ENTRY_UNHIGHLIGHTED', 'EVENT_ENTRY_MOVED', 'EVENT_LEFT_LIST_CLEARED', or 'EVENT_RIGHT_LIST_CLEARED'."))
 end
 
 local function _assertKeyIsNotInTable(key, value, self, sideControl)
@@ -158,8 +180,8 @@ local function _initShifterBoxHandlers(self)
             _moveEntryFromTo(self.rightList, self.leftList, data.key, self)
         end
         -- then commit the changes to the scrollList and refresh the hidden states
-        self.leftList:RefreshFilters()
-        self.rightList:RefreshFilters()
+        _refreshFilter(self.leftList)
+        _refreshFilter(self.rightList, true)
         -- finally disable the button itself
         buttonControl:SetState(BSTATE_DISABLED, true)
     end
@@ -174,8 +196,8 @@ local function _initShifterBoxHandlers(self)
             _moveEntryFromTo(self.leftList, self.rightList, data.key, self)
         end
         -- then commit the changes to the scrollList and refresh the hidden states
-        self.leftList:RefreshFilters()
-        self.rightList:RefreshFilters()
+        _refreshFilter(self.leftList, true)
+        _refreshFilter(self.rightList)
         -- finally disable the button itself
         buttonControl:SetState(BSTATE_DISABLED, true)
     end
@@ -273,11 +295,6 @@ end
 
 -- ---------------------------------------------------------------------------------------------------------------------
 
-local function _refreshFilters(leftList, rightList)
-    if leftList then leftList:RefreshFilters() end
-    if rightList then rightList:RefreshFilters() end
-end
-
 local function _selectEntries(list, keys)
     local visibleData = list.list.visibleData
     for _, visibleKey in ipairs(visibleData) do
@@ -305,7 +322,7 @@ local function _removeEntriesFromList(list, keys)
         if removedKey ~= nil then hasAtLeastOneRemoved = true end
     end
     if hasAtLeastOneRemoved then
-        _refreshFilters(list)
+        _refreshFilter(list, true)
     end
 end
 
@@ -379,9 +396,9 @@ local function _addEntriesToList(list, entries, replace, otherList, categoryId)
         end
         if hasAtLeastOneAdded then
             -- Afterwards refresh the visualisation of the data
-            _refreshFilters(list)
+            _refreshFilter(list)
             if hasAtLeastOneRemoved then
-                _refreshFilters(otherList)
+                _refreshFilter(otherList, true)
             end
         end
     end
@@ -397,7 +414,8 @@ local function _moveEntriesToOtherList(sourceList, keys, destList, shifterBox)
         _moveEntryFromTo(sourceList, destList, key, shifterBox)
     end
     -- refresh the display afterwards
-    _refreshFilters(sourceList, destList)
+    _refreshFilter(sourceList, true)
+    _refreshFilter(destList)
 end
 
 local function _moveEntryToOtherList(sourceList, key, destList, shifterBox)
@@ -609,7 +627,7 @@ end
 
 function ShifterBoxList:ClearMasterList()
     self.masterList = {}
-    self:RefreshFilters()
+    _refreshFilter(self, true)
 end
 
 function ShifterBoxList:UnselectEntries()
@@ -952,7 +970,7 @@ function ShifterBox:ShowOnlyCategory(categoryId)
             ZO_ScrollList_HideCategory(rightList, currCategoryId)
         end
     end
-    _refreshFilters(self.leftList, self.rightList)
+    _refreshFilters(self.leftList, self.rightList, true)
 end
 
 function ShifterBox:ShowAllCategories()
@@ -971,7 +989,7 @@ function ShifterBox:HideCategory(categoryId)
     assert(categoryId ~= nil, string.format(LIB_IDENTIFIER.."_Error: categoryId cannot be nil!"))
     ZO_ScrollList_HideCategory(self.leftList.list, categoryId)
     ZO_ScrollList_HideCategory(self.rightList.list, categoryId)
-    _refreshFilters(self.leftList, self.rightList)
+    _refreshFilters(self.leftList, self.rightList, true)
 end
 
 function ShifterBox:SelectEntryByKey(key)
@@ -1099,6 +1117,8 @@ lib.DEFAULT_CATEGORY = DATA_DEFAULT_CATEGORY
 lib.EVENT_ENTRY_HIGHLIGHTED = EVENT_ENTRY_HIGHLIGHTED
 lib.EVENT_ENTRY_UNHIGHLIGHTED = EVENT_ENTRY_UNHIGHLIGHTED
 lib.EVENT_ENTRY_MOVED = EVENT_ENTRY_MOVED
+lib.EVENT_LEFT_LIST_CLEARED = EVENT_LEFT_LIST_CLEARED
+lib.EVENT_RIGHT_LIST_CLEARED = EVENT_RIGHT_LIST_CLEARED
 
 --- Returns an existing ShifterBox instance
 -- @param uniqueAddonName - a string identifer for the consuming addon
