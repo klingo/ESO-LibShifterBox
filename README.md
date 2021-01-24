@@ -194,7 +194,7 @@ Optionally dimensionOptions can be passed on when the ShifterBox is created. Thi
 The following values can be set:
 ```lua
 dimensionOptions = {
-    number width
+    number width,
     number height
 }
 ```
@@ -358,10 +358,11 @@ shifterBox:RegisterCallback(LibShifterBox.EVENT_ENTRY_UNHIGHLIGHTED, myEntryUnhi
 ```
 
 #### LibShifterBox.EVENT_ENTRY_MOVED
-This event is triggered when an entry is moved from one list to another, either with the [<] and [>] buttons, by drag-and-drop or with any of the library functions.
+This event is triggered when an entry is moved from one list to another, either with the [<] and [>] buttons, by drag-and-drop or with any of the library functions. \
+Note that when you move multiple entries, this event is also triggered multiple times (once per moved entry).
 ```lua
 -- @param shifterBox object referencing the shifterBox that triggered this event
--- @param key string with the key of the movedentry
+-- @param key string with the key of the moved entry
 -- @param value string with the (displayed) value of the moved entry
 -- @categoryId string with the category of the moved entry (can be nil)
 -- @isDestListLeftList boolean whether the entry is is moved to the left listBox
