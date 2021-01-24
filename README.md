@@ -54,7 +54,7 @@ local customSettings = {
 }
 
 -- create the shifterBox and anchor it to a headerControl; also we can change the dimensions
-local itemQualitiesShifterBox = LibShifterBox("MyNewAddon", "ItemQualities", parentControl, "Available", "Selected", customSettings)
+local itemQualitiesShifterBox = LibShifterBox("MyNewAddon", "ItemQualities", parentControl, customSettings)
 itemQualitiesShifterBox:SetAnchor(TOPLEFT, headerControl, BOTTOMLEFT, 0, 20)
 itemQualitiesShifterBox:SetDimensions(300, 200)
 
@@ -194,7 +194,7 @@ Optionally dimensionOptions can be passed on when the ShifterBox is created. Thi
 The following values can be set:
 ```lua
 dimensionOptions = {
-    number width
+    number width,
     number height
 }
 ```
@@ -358,10 +358,11 @@ shifterBox:RegisterCallback(LibShifterBox.EVENT_ENTRY_UNHIGHLIGHTED, myEntryUnhi
 ```
 
 #### LibShifterBox.EVENT_ENTRY_MOVED
-This event is triggered when an entry is moved from one list to another, either with the [<] and [>] buttons, by drag-and-drop or with any of the library functions.
+This event is triggered when an entry is moved from one list to another, either with the [<] and [>] buttons, by drag-and-drop or with any of the library functions. \
+Note that when you move multiple entries, this event is also triggered multiple times (once per moved entry).
 ```lua
 -- @param shifterBox object referencing the shifterBox that triggered this event
--- @param key string with the key of the movedentry
+-- @param key string with the key of the moved entry
 -- @param value string with the (displayed) value of the moved entry
 -- @categoryId string with the category of the moved entry (can be nil)
 -- @isDestListLeftList boolean whether the entry is is moved to the left listBox
@@ -369,6 +370,28 @@ local function myEntryMovedFunction(shifterBox, key, value, categoryId, isDestLi
     -- do something
 end
 shifterBox:RegisterCallback(LibShifterBox.EVENT_ENTRY_MOVED, myEntryMovedFunction)
+```
+
+#### LibShifterBox.EVENT_LEFT_LIST_CLEARED
+This event is triggered when the left list has been cleared from all (shown) entries, i.e. the entries have been moved to the right list, or got deleted from it. \
+It does not check for entries that are part of a category that is currently hidden, only entries from shown categories are considered when evaluating if the left list is cleared or not. The event however can be triggered when `ShifterBox:HideCategory` or `ShifterBox:ShowOnlyCategory` are called and the left list does not have any entries left.
+```lua
+-- @param shifterBox object referencing the shifterBox that triggered this event
+local function myLeftListClearedFunction(shifterBox)
+    -- do something
+end
+shifterBox:RegisterCallback(LibShifterBox.EVENT_LEFT_LIST_CLEARED, myLeftListClearedFunction)
+```
+
+#### LibShifterBox.EVENT_RIGHT_LIST_CLEARED
+This event is triggered when the right list has been cleared from all (shown) entries, i.e. the entries have been moved to the left list, or got deleted from it. \
+It does not check for entries that are part of a category that is currently hidden, only entries from shown categories are considered when evaluating if the right list is cleared or not. The event however can be triggered when `ShifterBox:HideCategory` or `ShifterBox:ShowOnlyCategory` are called and the right list does not have any entries left.
+```lua
+-- @param shifterBox object referencing the shifterBox that triggered this event
+local function myLeftListClearedFunction(shifterBox)
+    -- do something
+end
+shifterBox:RegisterCallback(LibShifterBox.EVENT_LEFT_LIST_CLEARED, myLeftListClearedFunction)
 ```
 
 ### ShifterBox:UnregisterCallback
