@@ -151,7 +151,7 @@ local function _initShifterBoxHandlers(self)
     local fromRightAllButtonControl = rightControl:GetNamedChild("AllButton")
 
     local function toLeftButtonClicked(buttonControl)
-        local rightListSelectedData = self.rightList.list.selectedMultiData
+        local rightListSelectedData = _getShallowClonedTable(self.rightList.list.selectedMultiData)
         for key, data in pairs(rightListSelectedData) do
             _moveEntryFromTo(self.rightList, self.leftList, data.key, self)
         end
@@ -169,7 +169,7 @@ local function _initShifterBoxHandlers(self)
     end
 
     local function toRightButtonClicked(buttonControl)
-        local leftListSelectedData = self.leftList.list.selectedMultiData
+        local leftListSelectedData = _getShallowClonedTable(self.leftList.list.selectedMultiData)
         for key, data in pairs(leftListSelectedData) do
             _moveEntryFromTo(self.leftList, self.rightList, data.key, self)
         end
@@ -442,7 +442,7 @@ function ShifterBoxList:New(shifterBox, control, isLeftList)
 end
 
 function ShifterBoxList:OnSelectionChanged(previouslySelectedData, selectedData, reselectingDuringRebuild)
-    local selectedMultiData = self.list.selectedMultiData
+    local selectedMultiData = _getShallowClonedTable(self.list.selectedMultiData)
     if selectedMultiData then
         local count = 0
         for _ in pairs(selectedMultiData) do count = count + 1 end
@@ -770,7 +770,7 @@ function ShifterBoxList:SetupRowEntry(rowControl, rowData)
     labelControl:SetFont(customFont)
 
     -- reselect entries (only visually) if necessary
-    local selectedMultiData = self.list.selectedMultiData
+    local selectedMultiData = _getShallowClonedTable(self.list.selectedMultiData)
     if selectedMultiData and selectedMultiData[rowData.key] ~= nil then
         self:SelectControl(rowControl, false)
     end
