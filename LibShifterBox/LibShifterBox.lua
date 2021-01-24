@@ -49,12 +49,14 @@ local defaultSettings = {
 -- == SHIFTERBOX PRIVATE FUNCTIONS == --
 -- -----------------------------------------------------------------------------------------------------------------
 local function _getDeepClonedTable(sourceTable)
+    if sourceTable == nil then return end
     local targetTable = {}
     ZO_DeepTableCopy(sourceTable, targetTable)
     return targetTable
 end
 
 local function _getShallowClonedTable(sourceTable)
+    if sourceTable == nil then return end
     local targetTable = {}
     ZO_ShallowTableCopy(sourceTable, targetTable)
     return targetTable
