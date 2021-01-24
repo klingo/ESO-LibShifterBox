@@ -164,8 +164,6 @@ local function _initShifterBoxHandlers(self)
     local function toLeftAllButtonClicked(buttonControl)
         -- move all entries
         self:MoveAllEntriesToLeftList()
-        -- and disable the move-all button
-        buttonControl:SetState(BSTATE_DISABLED, true)
     end
 
     local function toRightButtonClicked(buttonControl)
@@ -182,8 +180,6 @@ local function _initShifterBoxHandlers(self)
     local function toRightAllButtonClicked(buttonControl)
         -- move all entries
         self:MoveAllEntriesToRightList()
-        -- and disable the move-all button
-        buttonControl:SetState(BSTATE_DISABLED, true)
     end
 
     -- initialize the handler when the buttons are clicked
