@@ -11,6 +11,7 @@
 ## Author: Klingo
 ## APIVersion: 100033
 ## IsLibrary: true
+## OptionalDependsOn: LibAddonMenu-2.0>=31
 
 localization\en.lua
 localization\$(language).lua
@@ -18,3 +19,5 @@ localization\$(language).lua
 ShifterBox\ShifterBoxTemplate.xml
 
 LibShifterBox.lua
+
+ShifterBox\lam-shifterbox-widget.lua
