@@ -1,3 +1,8 @@
+0.4.0   (January 24, 2021)
+- added two new events: EVENT_LEFT_LIST_CLEARED, EVENT_RIGHT_LIST_CLEARED ([URL="https://github.com/klingo/ESO-LibShifterBox/pull/19"]#19[/URL])
+- fixed an issue where the << and >> buttons were not enabled again after adding a new entry ([URL="https://github.com/klingo/ESO-LibShifterBox/pull/16"]#16[/URL])
+- fixed an issue with moving selected entries when a new entry is added in between ([URL="https://github.com/klingo/ESO-LibShifterBox/pull/17"]#17[/URL] / [URL="https://github.com/klingo/ESO-LibShifterBox/pull/18"]#18[/URL])
+
 0.3.4   (November 03, 2020)
 - updated to APIVersion 100033 (Markarth) ([URL="https://github.com/klingo/ESO-LibShifterBox/pull/11"]#11[/URL])
 - fixed an issue where non-EN localization was not applied ([URL="https://github.com/klingo/ESO-LibShifterBox/pull/10"]#10[/URL])
