@@ -489,10 +489,9 @@ function ShifterBoxList:Initialize(control, shifterBoxSettings, isLeftList)
         self.sortHeaderGroup:SelectHeaderByKey("value")
         ZO_SortHeader_OnMouseExit(self.control:GetNamedChild("Headers"):GetNamedChild("Value"))
     else
-        -- disable sortHeaderGroup
-        self.sortHeaderGroup.origDisabledColor = self.sortHeaderGroup.disabledColor
-        self.sortHeaderGroup.disabledColor = self.sortHeaderGroup.normalColor
-        self.sortHeaderGroup:SetEnabled(false)
+        -- disable sortHeaderGroup by hiding the Arrow and disable the mouse on the text
+        self.sortHeaderGroup.headerContainer:GetNamedChild("Arrow"):SetHidden(true)
+        self.sortHeaderGroup.headerContainer:GetNamedChild("Value"):SetMouseEnabled(false)
     end
     -- define the datatype for this list and enable the highlighting
     ZO_ScrollList_AddCategory(self.list, DATA_DEFAULT_CATEGORY)
@@ -597,7 +596,7 @@ function ShifterBoxList:SortScrollList()
     -- intended to be overridden
     -- should take the filtered data and sort it
     local shifterBoxSettings = self.shifterBoxSettings
-    if shifterBoxSettings.sortEnabled and self.enabled then
+    if shifterBoxSettings.sortEnabled then
         local scrollData = ZO_ScrollList_GetDataList(self.list)
         table.sort(scrollData, self.sortFunction)
     end
@@ -847,6 +846,13 @@ function ShifterBoxList:SetEntriesEnabled(enabled)
         self.buttonAllControl:SetState(BSTATE_NORMAL, false)
     else
         self.buttonAllControl:SetState(BSTATE_DISABLED, true)
+    end
+    -- disable sortHeaderGroup
+    self.sortHeaderGroup:SetEnabled(enabled)
+    if enabled then
+        self.sortHeaderGroup.headerContainer:GetNamedChild("Arrow"):SetAlpha(1)
+    else
+        self.sortHeaderGroup.headerContainer:GetNamedChild("Arrow"):SetAlpha(0.5)
     end
     -- finally, store the enabled state
     self.enabled = enabled
