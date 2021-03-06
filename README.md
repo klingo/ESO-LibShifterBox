@@ -18,7 +18,7 @@ In your `MyAddon.txt` file, make sure you defined LibShifterBox as a dependency:
 ```
 Optionally, you can also define a specific min-version:
 ```
-## DependsOn: LibShifterBox>=16
+## DependsOn: LibShifterBox>=17
 ```
 \
 \

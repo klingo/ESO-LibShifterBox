@@ -1,3 +1,7 @@
+0.4.1   (March 06, 2021)
+- updated to APIVersion 100034 (Flames of Ambition)) ([URL="https://github.com/klingo/ESO-LibShifterBox/pull/21"]#21[/URL])
+- fixed an issue where the (sorting) headers dit not get properly disabled ([URL="https://github.com/klingo/ESO-LibShifterBox/pull/22"]#22[/URL])
+
 0.4.0   (January 24, 2021)
 - added two new events: EVENT_LEFT_LIST_CLEARED, EVENT_RIGHT_LIST_CLEARED ([URL="https://github.com/klingo/ESO-LibShifterBox/pull/19"]#19[/URL])
 - fixed an issue where the << and >> buttons were not enabled again after adding a new entry ([URL="https://github.com/klingo/ESO-LibShifterBox/pull/16"]#16[/URL])
