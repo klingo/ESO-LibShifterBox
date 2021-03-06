@@ -594,10 +594,10 @@ function ShifterBoxList:FilterScrollList()
 end
 
 function ShifterBoxList:SortScrollList()
-    -- intended to be overriden
+    -- intended to be overridden
     -- should take the filtered data and sort it
     local shifterBoxSettings = self.shifterBoxSettings
-    if shifterBoxSettings.sortEnabled then
+    if shifterBoxSettings.sortEnabled and self.enabled then
         local scrollData = ZO_ScrollList_GetDataList(self.list)
         table.sort(scrollData, self.sortFunction)
     end
