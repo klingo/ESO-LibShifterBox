@@ -27,7 +27,6 @@ if not LAM:RegisterWidget("shifterbox", widgetVersion) then return end
 
 local MIN_HEIGHT = 220
 local MAX_HEIGHT = MIN_HEIGHT * 2
-local shifterBox
 
 local function UpdateDisabled(control)
     local disable
@@ -36,7 +35,7 @@ local function UpdateDisabled(control)
     else
         disable = control.data.disabled
     end
-    shifterBox:SetEnabled(not disable)
+    control.shifterBox:SetEnabled(not disable)
 end
 
 local function UpdateValue(control)
@@ -52,7 +51,7 @@ local function UpdateLeftList(control, entries)
     elseif type(entries) == "table" then
         leftListEntries = entries
     end
-    shifterBox:AddEntriesToLeftList(leftListEntries)
+    control.shifterBox:AddEntriesToLeftList(leftListEntries)
 end
 
 local function UpdateRightList(control, entries)
@@ -62,7 +61,7 @@ local function UpdateRightList(control, entries)
     elseif type(entries) == "table" then
         rightListEntries = entries
     end
-    shifterBox:AddEntriesToRightList(rightListEntries)
+    control.shifterBox:AddEntriesToRightList(rightListEntries)
 end
 
 function LAMCreateControl.shifterbox(parent, shifterBoxData, controlName)
@@ -88,13 +87,17 @@ function LAMCreateControl.shifterbox(parent, shifterBoxData, controlName)
     end
 
     -- create the actual shifterBox
-    shifterBox = LSB.Create(control.data.uniqueAddonName, control.data.uniqueShifterBoxName, control, control.data.shifterBoxCustomSettings)
-    shifterBox:SetAnchor(TOPLEFT, control, TOPLEFT, 0, 0)
-    shifterBox:SetDimensions(isHalfWidth and width / 2 or width, height)
+    control.shifterBox = LSB.Create(control.data.uniqueAddonName, control.data.uniqueShifterBoxName, control, control.data.shifterBoxCustomSettings)
+    control.shifterBox:SetAnchor(TOPLEFT, control, TOPLEFT, 0, 0)
+    control.shifterBox:SetDimensions(isHalfWidth and width / 2 or width, height)
 
     -- TODO: check if to be removed
     control.UpdateValue = UpdateValue
-    control.UpdateDisabled = UpdateDisabled
+
+    if shifterBoxData.disabled ~= nil then
+        control.UpdateDisabled = UpdateDisabled
+        control:UpdateDisabled()
+    end
 
     control.UpdateLeftList = UpdateLeftList
     control:UpdateLeftList(shifterBoxData.leftListEntries)
