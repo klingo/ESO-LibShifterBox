@@ -10,7 +10,7 @@ local function _errorText(textTemplate, ...)
     return errorTextStr
 end
 
-assert(not _G[LIB_IDENTIFIER], errorText(GetString(LIBSHIFTERBOX_ALLREADY_LOADED)))
+assert(not _G[LIB_IDENTIFIER], _errorText(GetString(LIBSHIFTERBOX_ALLREADY_LOADED)))
 
 local lib = {}
 _G[LIB_IDENTIFIER] = lib
