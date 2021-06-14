@@ -257,49 +257,47 @@ local function _applyCustomSettings(customSettings)
     -- if no custom settings provided, use the default ones
     local settings = _getDeepClonedTable(defaultSettings)
     if customSettings == nil then return settings end
+
     -- validation functions
-    local function _assertPositiveNumber(customSettingsTbl, parameterName, settingsTbl)
+    local function _validateType(customSettingsTbl, parameterName, settingsTbl, typeText)
         local customValue = customSettingsTbl[parameterName]
         if customValue ~= nil then
-            assert(type(customValue) == "number" and customValue > 0, _errorText("Invalid %s parameter '%s' provided! Must be a numeric and positive.", parameterName, tostring(customValue)))
+            local assertionBool = ((typeText ~= "stringValue" and typeText ~= "sound") and type(customValue) == typeText) or false
+            if typeText == "number" and assertionBool == true then
+                assertionBool = customValue > 0
+                typeText = typeText .. " and positive"
+            elseif typeText == "stringValue" then
+                assertionBool = (type(customValue) == "string" and (customValue == "value" or customValue == "key")) or false
+                typeText = "either \'value\' or \'key\'"
+            elseif typeText == "sound" then
+                local sounds = SOUNDS
+                assertionBool = (type(customValue) == "string" and sounds[customValue] ~= nil) or false
+                typeText = "String and existing in global SOUNDS table"
+            end
+            assert(assertionBool == true, _errorText("Invalid %s parameter '%s' provided! Must be " .. tostring(typeText), parameterName, tostring(customValue)))
             settingsTbl[parameterName] = customValue
         end
+    end
+    local function _assertPositiveNumber(customSettingsTbl, parameterName, settingsTbl)
+        _validateType(customSettingsTbl, parameterName, settingsTbl, "number")
     end
     local function _assertBoolean(customSettingsTbl, parameterName, settingsTbl)
-        local customValue = customSettingsTbl[parameterName]
-        if customValue ~= nil then
-            assert(type(customValue) == "boolean", _errorText("Invalid %s parameter '%s' provided! Must be a boolean.", parameterName, tostring(customValue)))
-            settingsTbl[parameterName] = customValue
-        end
+        _validateType(customSettingsTbl, parameterName, settingsTbl, "boolean")
     end
     local function _assertString(customSettingsTbl, parameterName, settingsTbl)
-        local customValue = customSettingsTbl[parameterName]
-        if customValue ~= nil then
-            assert(type(customValue) == "string", _errorText("Invalid %s parameter '%s' provided! Must be a string.", parameterName, tostring(customValue)))
-            settingsTbl[parameterName] = customValue
-        end
+        _validateType(customSettingsTbl, parameterName, settingsTbl, "string")
     end
     local function _assertStringValueKey(customSettingsTbl, parameterName, settingsTbl)
-        local customValue = customSettingsTbl[parameterName]
-        if customValue ~= nil then
-            assert(type(customValue) == "string" and (customValue == "value" or customValue == "key"), _errorText("Invalid %s parameter '%s' provided! Must be either 'value' or 'key'.", parameterName, tostring(customValue)))
-            settingsTbl[parameterName] = customValue
-        end
+        _validateType(customSettingsTbl, parameterName, settingsTbl, "stringValue")
     end
     local function _assertFunction(customSettingsTbl, parameterName, settingsTbl)
-        local customValue = customSettingsTbl[parameterName]
-        if customValue ~= nil then
-            assert(type(customValue) == "function", _errorText("Invalid %s parameter '%s' provided! Must be a function.", parameterName, tostring(customValue)))
-            settingsTbl[parameterName] = customValue
-        end
+        _validateType(customSettingsTbl, parameterName, settingsTbl, "function")
     end
     local function _assertSound(customSettingsTbl, parameterName, settingsTbl)
-        local sounds = SOUNDS
-        local customValue = customSettingsTbl[parameterName]
-        if customValue ~= nil then
-            assert(type(customValue) == "string" and sounds[customValue] ~= nil, _errorText("Invalid %s parameter '%s' provided! Must be a string and existing in the global SOUNDS table.", parameterName, tostring(customValue)))
-            settingsTbl[parameterName] = customValue
-        end
+        _validateType(customSettingsTbl, parameterName, settingsTbl, "sound")
+    end
+    local function _assertTable(customSettingsTbl, parameterName, settingsTbl)
+        _validateType(customSettingsTbl, parameterName, settingsTbl, "table")
     end
 
     -- validate the individual customSettings
@@ -321,6 +319,7 @@ local function _applyCustomSettings(customSettings)
     _assertSound(customSettings.leftList, "rowDataTypeSelectSound", settings.leftList)
     _assertFunction(customSettings.leftList, "rowResetControlCallback", settings.leftList)
     _assertFunction(customSettings.leftList, "rowSetupAdditionalDataCallback", settings.leftList)
+    _assertTable(customSettings.leftList, "callbackRegister", settings.leftList)
 
     -- validate rightList settings
     _assertString(customSettings.rightList, "title", settings.rightList)
@@ -331,11 +330,12 @@ local function _applyCustomSettings(customSettings)
     _assertPositiveNumber(customSettings.rightList, "fontSize", settings.rightList)
     _assertFunction(customSettings.rightList, "rowOnMouseEnter", settings.rightList)
     _assertFunction(customSettings.rightList, "rowOnMouseExit", settings.rightList)
-    _assertFunction(customSettings.leftList, "rowOnMouseRightClick", settings.leftList)
+    _assertFunction(customSettings.rightList, "rowOnMouseRightClick", settings.rightList)
     _assertFunction(customSettings.rightList, "rowSetupCallback", settings.rightList)
-    _assertSound(customSettings.leftList, "rowDataTypeSelectSound", settings.leftList)
-    _assertFunction(customSettings.leftList, "rowResetControlCallback", settings.leftList)
-    _assertFunction(customSettings.leftList, "rowSetupAdditionalDataCallback", settings.leftList)
+    _assertSound(customSettings.rightList, "rowDataTypeSelectSound", settings.rightList)
+    _assertFunction(customSettings.rightList, "rowResetControlCallback", settings.rightList)
+    _assertFunction(customSettings.rightList, "rowSetupAdditionalDataCallback", settings.rightList)
+    _assertTable(customSettings.rightList, "callbackRegister", settings.rightList)
     return settings
 end
 
@@ -692,8 +692,10 @@ function ShifterBoxList:Initialize(control, shifterBoxSettings, isLeftList)
     end
     --Any callbacks to register now from the settings (e.g. the "List created" one, which would not fire again later :-) )
     if self.listBoxSettings.callbackRegister ~= nil then
-        for shifterBoxEvent, callbackFunc in pairs(self.listBoxSettings.callbackRegister) do
-            self.shifterBox:RegisterCallback(shifterBoxEvent, callbackFunc)
+d("Registering events at initialization")
+        for shifterBoxEventId, callbackFunc in pairs(self.listBoxSettings.callbackRegister) do
+d(">shifterBoxEventId: " ..tostring(shifterBoxEventId))
+            self.shifterBox:RegisterCallback(shifterBoxEventId, callbackFunc)
         end
     end
     -- then trigger the callback if present
@@ -1217,6 +1219,7 @@ end
 -- ---------------------------------------------------------------------------------------------------------------------
 
 function ShifterBox:RegisterCallback(shifterBoxEvent, callbackFunction)
+d("[ShifterBox:RegisterCallback]shifterBoxEvent: " ..tostring(shifterBoxEvent))
     _assertValidShifterBoxEvent(shifterBoxEvent)
     assert(type(callbackFunction) == "function", _errorText("Invalid callbackFunction parameter of type '%s' provided! Must be of type 'function'.", type(callbackFunction)))
     -- register the callback with ESO
