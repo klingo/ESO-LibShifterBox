@@ -553,7 +553,7 @@ ShifterBoxList.SORT_KEYS = {
 
 function ShifterBoxList:New(shifterBox, control, isLeftList)
     local shifterBoxSettings = shifterBox.shifterBoxSettings
-    local obj = ZO_SortFilterList.New(self, control, shifterBoxSettings, isLeftList)
+    local obj = ZO_SortFilterList.New(self, control, shifterBoxSettings, isLeftList, shifterBox) -->ShifterBoxList:Initialize
     obj.buttonControl = control:GetNamedChild("Button")
     obj.buttonAllControl = control:GetNamedChild("AllButton")
     obj.buttonAllControl:SetState(BSTATE_DISABLED, true) -- init it as disabled
@@ -577,7 +577,7 @@ function ShifterBoxList:OnSelectionChanged(previouslySelectedData, selectedData,
     end
 end
 
-function ShifterBoxList:Initialize(control, shifterBoxSettings, isLeftList)
+function ShifterBoxList:Initialize(control, shifterBoxSettings, isLeftList, shifterBox)
     local selfVar = self
     self.shifterBoxSettings = shifterBoxSettings
     if isLeftList then
@@ -692,14 +692,12 @@ function ShifterBoxList:Initialize(control, shifterBoxSettings, isLeftList)
     end
     --Any callbacks to register now from the settings (e.g. the "List created" one, which would not fire again later :-) )
     if self.listBoxSettings.callbackRegister ~= nil then
-d("Registering events at initialization")
         for shifterBoxEventId, callbackFunc in pairs(self.listBoxSettings.callbackRegister) do
-d(">shifterBoxEventId: " ..tostring(shifterBoxEventId))
-            self.shifterBox:RegisterCallback(shifterBoxEventId, callbackFunc)
+            shifterBox:RegisterCallback(shifterBoxEventId, callbackFunc)
         end
     end
     -- then trigger the callback if present
-    _fireCallback(self.shifterBox, control, { [true] = lib.EVENT_LEFT_LIST_CREATED, [false] = lib.EVENT_RIGHT_LIST_CREATED  }, isLeftList, self.shifterBox, isLeftList)
+    _fireCallback(shifterBox, control, { [true] = lib.EVENT_LEFT_LIST_CREATED, [false] = lib.EVENT_RIGHT_LIST_CREATED  }, isLeftList, shifterBox, isLeftList)
 end
 
 -- ZO_SortFilterList:RefreshData()      =>  BuildMasterList()   =>  FilterScrollList()  =>  SortScrollList()    =>  CommitScrollList()
@@ -1219,7 +1217,6 @@ end
 -- ---------------------------------------------------------------------------------------------------------------------
 
 function ShifterBox:RegisterCallback(shifterBoxEvent, callbackFunction)
-d("[ShifterBox:RegisterCallback]shifterBoxEvent: " ..tostring(shifterBoxEvent))
     _assertValidShifterBoxEvent(shifterBoxEvent)
     assert(type(callbackFunction) == "function", _errorText("Invalid callbackFunction parameter of type '%s' provided! Must be of type 'function'.", type(callbackFunction)))
     -- register the callback with ESO
