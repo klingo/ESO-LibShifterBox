@@ -580,6 +580,7 @@ function ShifterBoxList:OnSelectionChanged(previouslySelectedData, selectedData,
 end
 
 function ShifterBoxList:Initialize(control, shifterBoxSettings, isLeftList)
+    local selfVar = self
     self.shifterBoxSettings = shifterBoxSettings
     if isLeftList then
         self.listBoxSettings = shifterBoxSettings.leftList
@@ -614,14 +615,21 @@ function ShifterBoxList:Initialize(control, shifterBoxSettings, isLeftList)
     --@resetControlCallback - An optional callback when the datatype control gets reset.
     --function ZO_ScrollList_AddDataType(self, typeId, templateName, height, setupCallback, hideCallback, dataTypeSelectSound, resetControlCallback)
     local additionalDataCallbackFunc = self.listBoxSettings.rowSetupAdditionalDataCallback or nil
-    local function standardSetupCallback(rowControl, data)
+    local function standardSetupCallback(rowControl, data, doNotSetupRowNow)
         local dataTabEnriched = data
         if additionalDataCallbackFunc ~= nil then
             rowControl, dataTabEnriched = additionalDataCallbackFunc(rowControl, data)
         end
-        self:SetupRowEntry(rowControl, dataTabEnriched)
+        self:SetupRowEntry(rowControl, dataTabEnriched, doNotSetupRowNow)
     end
-    local setupCallbackFunc     = self.listBoxSettings.rowSetupCallback or standardSetupCallback
+    local setupCallbackFunc = standardSetupCallback
+    if self.listBoxSettings.rowSetupCallback ~= nil then
+        setupCallbackFunc = function(rowControl, data)
+            standardSetupCallback(rowControl, data, true)
+            self.listBoxSettings.rowSetupCallback(rowControl, data)
+            ZO_SortFilterList.SetupRow(selfVar, rowControl, data)
+        end
+    end
     local hideCallbackFunc      = self.listBoxSettings.rowHideCallback or nil
     local dataTypeSelectSound   = self.listBoxSettings.rowDataTypeSelectSound or nil
     local resetControlCallback  = self.listBoxSettings.rowResetControlCallback or nil
@@ -872,67 +880,68 @@ function ShifterBoxList:ToggleEntrySelection(data, control, reselectingDuringReb
     end
 end
 
-function ShifterBoxList:SetupRowEntry(rowControl, rowData)
-    local function onRowMouseEnter(rowControl)
+function ShifterBoxList:SetupRowEntry(rowControl, rowData, doNotSetupRowNow)
+    doNotSetupRowNow = doNotSetupRowNow or false
+    local function onRowMouseEnter(p_rowControl)
         -- then trigger the callback if present
-        _fireCallback(self.shifterBox, rowControl, { [true] = lib.EVENT_LEFT_LIST_ROW_ON_MOUSE_ENTER, [false] = lib.EVENT_RIGHT_LIST_ROW_ON_MOUSE_ENTER  }, self.shifterBox.isLeftList,
-                self.shifterBox, self.shifterBox.isLeftList, rowControl, rowData)
+        _fireCallback(self.shifterBox, p_rowControl, { [true] = lib.EVENT_LEFT_LIST_ROW_ON_MOUSE_ENTER, [false] = lib.EVENT_RIGHT_LIST_ROW_ON_MOUSE_ENTER  }, self.shifterBox.isLeftList,
+                self.shifterBox, self.shifterBox.isLeftList, p_rowControl, rowData)
 
         if self.listBoxSettings.rowOnMouseEnter ~= nil then
-            self.listBoxSettings.rowOnMouseEnter(rowControl)
+            self.listBoxSettings.rowOnMouseEnter(p_rowControl)
         else
-            local labelControl = rowControl:GetNamedChild("Label")
+            local labelControl = p_rowControl:GetNamedChild("Label")
             local textWidth = labelControl:GetTextWidth()
             local desiredWidth = labelControl:GetDesiredWidth()
             -- only show tooltip if the text/label was truncated or if the text is wider than the desiredWidth minus the scrollbar width
-            local wasTruncated = rowControl:GetNamedChild("Label"):WasTruncated()
+            local wasTruncated = p_rowControl:GetNamedChild("Label"):WasTruncated()
             if wasTruncated or (textWidth + SCROLLBAR_WIDTH) > desiredWidth then
-                local data = ZO_ScrollList_GetData(rowControl)
-                ZO_Tooltips_ShowTextTooltip(rowControl, TOP, data.value)
+                local data = ZO_ScrollList_GetData(p_rowControl)
+                ZO_Tooltips_ShowTextTooltip(p_rowControl, TOP, data.value)
             end
         end
     end
-    local function onRowMouseExit(rowControl)
+    local function onRowMouseExit(p_rowControl)
         -- then trigger the callback if present
-        _fireCallback(self.shifterBox, rowControl, { [true] = lib.EVENT_LEFT_LIST_ROW_ON_MOUSE_EXIT, [false] = lib.EVENT_RIGHT_LIST_ROW_ON_MOUSE_EXIT  }, self.shifterBox.isLeftList,
-                self.shifterBox, self.shifterBox.isLeftList, rowControl, rowData)
+        _fireCallback(self.shifterBox, p_rowControl, { [true] = lib.EVENT_LEFT_LIST_ROW_ON_MOUSE_EXIT, [false] = lib.EVENT_RIGHT_LIST_ROW_ON_MOUSE_EXIT  }, self.shifterBox.isLeftList,
+                self.shifterBox, self.shifterBox.isLeftList, p_rowControl, rowData)
 
         if self.listBoxSettings.rowOnMouseExit ~= nil then
-            self.listBoxSettings.rowOnMouseExit(rowControl)
+            self.listBoxSettings.rowOnMouseExit(p_rowControl)
         else
             ZO_Tooltips_HideTextTooltip()
         end
     end
-    local function onRowMouseUp(rowControl, mouseButton, isInside, ctrlKey, altKey, shiftKey, commandKey)
+    local function onRowMouseUp(p_rowControl, mouseButton, isInside, ctrlKey, altKey, shiftKey, commandKey)
         -- then trigger the callback if present
-        _fireCallback(self.shifterBox, rowControl, { [true] = lib.EVENT_LEFT_LIST_ROW_ON_MOUSE_UP, [false] = lib.EVENT_RIGHT_LIST_ROW_ON_MOUSE_UP  }, self.shifterBox.isLeftList,
-                self.shifterBox, self.shifterBox.isLeftList, rowControl, mouseButton, isInside, ctrlKey, altKey, shiftKey, commandKey, rowData)
+        _fireCallback(self.shifterBox, p_rowControl, { [true] = lib.EVENT_LEFT_LIST_ROW_ON_MOUSE_UP, [false] = lib.EVENT_RIGHT_LIST_ROW_ON_MOUSE_UP  }, self.shifterBox.isLeftList,
+                self.shifterBox, self.shifterBox.isLeftList, p_rowControl, mouseButton, isInside, ctrlKey, altKey, shiftKey, commandKey, rowData)
 
         if not isInside then return end
         if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
-            local data = ZO_ScrollList_GetData(rowControl)
-            self:ToggleEntrySelection(data, rowControl, RESELECTING_DURING_REBUILD, false)
+            local data = ZO_ScrollList_GetData(p_rowControl)
+            self:ToggleEntrySelection(data, p_rowControl, RESELECTING_DURING_REBUILD, false)
         elseif mouseButton == MOUSE_BUTTON_INDEX_RIGHT then
             if self.listBoxSettings.rowOnMouseRightClick ~= nil then
-                local data = ZO_ScrollList_GetData(rowControl)
-                self.listBoxSettings.rowOnMouseRightClick(rowControl, data)
+                local data = ZO_ScrollList_GetData(p_rowControl)
+                self.listBoxSettings.rowOnMouseRightClick(p_rowControl, data)
             end
         end
     end
-    local function onDragStart(rowControl, mouseButton)
+    local function onDragStart(p_rowControl, mouseButton)
         if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
---            WINDOW_MANAGER:SetMouseCursor(MOUSE_CURSOR_UI_HAND)
-            local currentDragData = ZO_ScrollList_GetData(rowControl)
+            --            WINDOW_MANAGER:SetMouseCursor(MOUSE_CURSOR_UI_HAND)
+            local currentDragData = ZO_ScrollList_GetData(p_rowControl)
             currentDragData._sourceListControl = self
             currentDragData._isSelected = self.list.selectedMultiData and self.list.selectedMultiData[currentDragData.key] ~= nil
             currentDragData._isFromLeftList = self.isLeftList
             lib.currentDragData  = currentDragData
 
             -- then trigger the callback if present
-            _fireCallback(self.shifterBox, rowControl, { [true] = lib.EVENT_LEFT_LIST_ROW_ON_DRAG_START, [false] = lib.EVENT_RIGHT_LIST_ROW_ON_DRAG_START  }, self.shifterBox.isLeftList,
-                    self.shifterBox, self.shifterBox.isLeftList, rowControl, mouseButton, currentDragData)
+            _fireCallback(self.shifterBox, p_rowControl, { [true] = lib.EVENT_LEFT_LIST_ROW_ON_DRAG_START, [false] = lib.EVENT_RIGHT_LIST_ROW_ON_DRAG_START  }, self.shifterBox.isLeftList,
+                    self.shifterBox, self.shifterBox.isLeftList, p_rowControl, mouseButton, currentDragData)
         else
---            WINDOW_MANAGER:SetMouseCursor(MOUSE_CURSOR_DEFAULT_CURSOR)
+            --            WINDOW_MANAGER:SetMouseCursor(MOUSE_CURSOR_DEFAULT_CURSOR)
         end
     end
     -- set the value for the row entry
@@ -966,6 +975,7 @@ function ShifterBoxList:SetupRowEntry(rowControl, rowData)
     end
 
     -- then setup the row
+    if doNotSetupRowNow then return end
     ZO_SortFilterList.SetupRow(self, rowControl, rowData)
 end
 
