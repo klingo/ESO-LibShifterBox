@@ -561,8 +561,6 @@ function ShifterBoxList:New(shifterBox, control, isLeftList)
     obj.enabled = true
     obj.masterList = {}
     obj.shifterBox = shifterBox -- keep a reference to the "parent" ShifterBox
-    -- then trigger the callback if present
-    _fireCallback(shifterBox, control, { [true] = lib.EVENT_LEFT_LIST_CREATED, [false] = lib.EVENT_RIGHT_LIST_CREATED  }, isLeftList, shifterBox, isLeftList)
     return obj
 end
 
@@ -662,8 +660,8 @@ function ShifterBoxList:Initialize(control, shifterBoxSettings, isLeftList)
                         local hasSameShifterBoxParent = _hasSameShifterBoxParent(self, sourceListControl)
 
                         -- then trigger the callback if present
-                        _fireCallback(self.shifterBox, draggedOntoControl, { [true] = lib.EVENT_LEFT_LIST_ROW_ON_DRAG_END, [false] = lib.EVENT_RIGHT_LIST_ROW_ON_DRAG_END  }, self.shifterBox.isLeftList,
-                                self.shifterBox, self.shifterBox.isLeftList, draggedOntoControl, mouseButton, dragData, hasSameShifterBoxParent)
+                        _fireCallback(self.shifterBox, draggedOntoControl, { [true] = lib.EVENT_LEFT_LIST_ROW_ON_DRAG_END, [false] = lib.EVENT_RIGHT_LIST_ROW_ON_DRAG_END  }, isLeftList,
+                                self.shifterBox, isLeftList, draggedOntoControl, mouseButton, dragData, hasSameShifterBoxParent)
 
                         if hasSameShifterBoxParent then
                             local sourceList
@@ -692,6 +690,14 @@ function ShifterBoxList:Initialize(control, shifterBoxSettings, isLeftList)
         self.list:SetHandler("OnReceiveDrag", onReceiveDrag)
         self.list:SetMouseEnabled(true)
     end
+    --Any callbacks to register now from the settings (e.g. the "List created" one, which would not fire again later :-) )
+    if self.listBoxSettings.callbackRegister ~= nil then
+        for shifterBoxEvent, callbackFunc in pairs(self.listBoxSettings.callbackRegister) do
+            self.shifterBox:RegisterCallback(shifterBoxEvent, callbackFunc)
+        end
+    end
+    -- then trigger the callback if present
+    _fireCallback(self.shifterBox, control, { [true] = lib.EVENT_LEFT_LIST_CREATED, [false] = lib.EVENT_RIGHT_LIST_CREATED  }, isLeftList, self.shifterBox, isLeftList)
 end
 
 -- ZO_SortFilterList:RefreshData()      =>  BuildMasterList()   =>  FilterScrollList()  =>  SortScrollList()    =>  CommitScrollList()
