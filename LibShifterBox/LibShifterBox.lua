@@ -1,6 +1,6 @@
 local LIB_IDENTIFIER = "LibShifterBox"
 
-local function errorText(textTemplate, ...)
+local function _errorText(textTemplate, ...)
     local errorTextStr = LIB_IDENTIFIER .. "_Error: "
     if ... ~= nil then
         errorTextStr =  errorTextStr .. string.format(textTemplate, ...)
@@ -33,15 +33,15 @@ local FONT_WEIGHT = "soft-shadow-thin"
 
 --Shifter box events for the callbacks
 local shifterBoxEvents = {
-   [1] = "EVENT_ENTRY_HIGHLIGHTED",
-   [2] = "EVENT_ENTRY_UNHIGHLIGHTED",
-   [3] = "EVENT_ENTRY_MOVED",
-   [4] = "EVENT_LEFT_LIST_CLEARED",
-   [5] = "EVENT_RIGHT_LIST_CLEARED",
-   [6] = "EVENT_LEFT_LIST_ENTRY_ADDED",
-   [7] = "EVENT_RIGHT_LIST_ENTRY_ADDED",
-   [8] = "EVENT_LEFT_LIST_ENTRY_REMOVED",
-   [9] = "EVENT_RIGHT_LIST_ENTRY_REMOVED",
+   [1]  = "EVENT_ENTRY_HIGHLIGHTED",
+   [2]  = "EVENT_ENTRY_UNHIGHLIGHTED",
+   [3]  = "EVENT_ENTRY_MOVED",
+   [4]  = "EVENT_LEFT_LIST_CLEARED",
+   [5]  = "EVENT_RIGHT_LIST_CLEARED",
+   [6]  = "EVENT_LEFT_LIST_ENTRY_ADDED",
+   [7]  = "EVENT_RIGHT_LIST_ENTRY_ADDED",
+   [8]  = "EVENT_LEFT_LIST_ENTRY_REMOVED",
+   [9]  = "EVENT_RIGHT_LIST_ENTRY_REMOVED",
    [10] = "EVENT_LEFT_LIST_CREATED",
    [11] = "EVENT_RIGHT_LIST_CREATED",
    [12] = "EVENT_LEFT_LIST_ROW_ON_MOUSE_ENTER",
@@ -146,13 +146,13 @@ end
 
 local function _assertValidShifterBoxEvent(shifterBoxEvent)
     assert(allowedShifterBoxEvents[shifterBoxEvent] == true,
-            errorText("Invalid shifterBoxEvent parameter provided! Must be one of table \'LibShifterBox.allowedEventNames\'!")
+            _errorText("Invalid shifterBoxEvent parameter provided! Must be one of table \'LibShifterBox.allowedEventNames\'!")
     )
 end
 
 local function _assertKeyIsNotInTable(key, value, self, sideControl)
     local masterList = self.masterList
-    assert(masterList[key] == nil, errorText("Violation of UNIQUE KEY. Cannot insert duplicate key '%s' with value '%s' in control '%s'. The statement has been terminated.", tostring(key), tostring(value), sideControl:GetName()))
+    assert(masterList[key] == nil, _errorText("Violation of UNIQUE KEY. Cannot insert duplicate key '%s' with value '%s' in control '%s'. The statement has been terminated.", tostring(key), tostring(value), sideControl:GetName()))
 end
 
 local function _initShifterBoxControls(self)
@@ -261,35 +261,35 @@ local function _applyCustomSettings(customSettings)
     local function _assertPositiveNumber(customSettingsTbl, parameterName, settingsTbl)
         local customValue = customSettingsTbl[parameterName]
         if customValue ~= nil then
-            assert(type(customValue) == "number" and customValue > 0, errorText("Invalid %s parameter '%s' provided! Must be a numeric and positive.", parameterName, tostring(customValue)))
+            assert(type(customValue) == "number" and customValue > 0, _errorText("Invalid %s parameter '%s' provided! Must be a numeric and positive.", parameterName, tostring(customValue)))
             settingsTbl[parameterName] = customValue
         end
     end
     local function _assertBoolean(customSettingsTbl, parameterName, settingsTbl)
         local customValue = customSettingsTbl[parameterName]
         if customValue ~= nil then
-            assert(type(customValue) == "boolean", errorText("Invalid %s parameter '%s' provided! Must be a boolean.", parameterName, tostring(customValue)))
+            assert(type(customValue) == "boolean", _errorText("Invalid %s parameter '%s' provided! Must be a boolean.", parameterName, tostring(customValue)))
             settingsTbl[parameterName] = customValue
         end
     end
     local function _assertString(customSettingsTbl, parameterName, settingsTbl)
         local customValue = customSettingsTbl[parameterName]
         if customValue ~= nil then
-            assert(type(customValue) == "string", errorText("Invalid %s parameter '%s' provided! Must be a string.", parameterName, tostring(customValue)))
+            assert(type(customValue) == "string", _errorText("Invalid %s parameter '%s' provided! Must be a string.", parameterName, tostring(customValue)))
             settingsTbl[parameterName] = customValue
         end
     end
     local function _assertStringValueKey(customSettingsTbl, parameterName, settingsTbl)
         local customValue = customSettingsTbl[parameterName]
         if customValue ~= nil then
-            assert(type(customValue) == "string" and (customValue == "value" or customValue == "key"), errorText("Invalid %s parameter '%s' provided! Must be either 'value' or 'key'.", parameterName, tostring(customValue)))
+            assert(type(customValue) == "string" and (customValue == "value" or customValue == "key"), _errorText("Invalid %s parameter '%s' provided! Must be either 'value' or 'key'.", parameterName, tostring(customValue)))
             settingsTbl[parameterName] = customValue
         end
     end
     local function _assertFunction(customSettingsTbl, parameterName, settingsTbl)
         local customValue = customSettingsTbl[parameterName]
         if customValue ~= nil then
-            assert(type(customValue) == "function", errorText("Invalid %s parameter '%s' provided! Must be a function.", parameterName, tostring(customValue)))
+            assert(type(customValue) == "function", _errorText("Invalid %s parameter '%s' provided! Must be a function.", parameterName, tostring(customValue)))
             settingsTbl[parameterName] = customValue
         end
     end
@@ -297,7 +297,7 @@ local function _applyCustomSettings(customSettings)
         local sounds = SOUNDS
         local customValue = customSettingsTbl[parameterName]
         if customValue ~= nil then
-            assert(type(customValue) == "string" and sounds[customValue] ~= nil, errorText("Invalid %s parameter '%s' provided! Must be a string and existing in the global SOUNDS table.", parameterName, tostring(customValue)))
+            assert(type(customValue) == "string" and sounds[customValue] ~= nil, _errorText("Invalid %s parameter '%s' provided! Must be a string and existing in the global SOUNDS table.", parameterName, tostring(customValue)))
             settingsTbl[parameterName] = customValue
         end
     end
@@ -1053,7 +1053,7 @@ function ShifterBox:New(uniqueAddonName, uniqueShifterBoxName, parentControl, cu
         existingShifterBoxes[uniqueAddonName] = {}
     end
     local addonShifterBoxes = existingShifterBoxes[uniqueAddonName]
-    assert(addonShifterBoxes[uniqueShifterBoxName] == nil, errorText("ShifterBox with the unique identifier '%s' is already registered for the addon '%s'!", tostring(uniqueShifterBoxName), tostring(uniqueAddonName)))
+    assert(addonShifterBoxes[uniqueShifterBoxName] == nil, _errorText("ShifterBox with the unique identifier '%s' is already registered for the addon '%s'!", tostring(uniqueShifterBoxName), tostring(uniqueAddonName)))
     local obj = ZO_Object.New(self)
     obj.addonName = uniqueAddonName
     obj.shifterBoxName = uniqueShifterBoxName
@@ -1101,7 +1101,7 @@ end
 -- @param width - the width for the whole shifterBox
 -- @param height - the height for the whole shifterBox (incl. headers if applicable)
 function ShifterBox:SetDimensions(width, height)
-    assert(type(width) == "number" and type(height) == "number", errorText("width and height must be numeric values!"))
+    assert(type(width) == "number" and type(height) == "number", _errorText("width and height must be numeric values!"))
     -- height must be at least 4x the height of the arrows
     if height < 4 * ARROW_SIZE then height = 4 * ARROW_SIZE end
     local singleListWidth, arrowOffset, arrowAllOffset = _getListBoxWidthAndArrowOffset(width, height)
@@ -1128,7 +1128,7 @@ function ShifterBox:SetHidden(hidden)
 end
 
 function ShifterBox:ShowCategory(categoryId)
-    assert(categoryId ~= nil, errorText("categoryId cannot be nil!"))
+    assert(categoryId ~= nil, _errorText("categoryId cannot be nil!"))
     ZO_ScrollList_ShowCategory(self.leftList.list, categoryId)
     ZO_ScrollList_ShowCategory(self.rightList.list, categoryId)
     _refreshFilters(self.leftList, self.rightList)
@@ -1167,7 +1167,7 @@ function ShifterBox:ShowAllCategories()
 end
 
 function ShifterBox:HideCategory(categoryId)
-    assert(categoryId ~= nil, errorText("categoryId cannot be nil!"))
+    assert(categoryId ~= nil, _errorText("categoryId cannot be nil!"))
     ZO_ScrollList_HideCategory(self.leftList.list, categoryId)
     ZO_ScrollList_HideCategory(self.rightList.list, categoryId)
     _refreshFilters(self.leftList, self.rightList, true)
@@ -1202,7 +1202,7 @@ end
 
 function ShifterBox:RegisterCallback(shifterBoxEvent, callbackFunction)
     _assertValidShifterBoxEvent(shifterBoxEvent)
-    assert(type(callbackFunction) == "function", errorText("Invalid callbackFunction parameter of type '%s' provided! Must be of type 'function'.", type(callbackFunction)))
+    assert(type(callbackFunction) == "function", _errorText("Invalid callbackFunction parameter of type '%s' provided! Must be of type 'function'.", type(callbackFunction)))
     -- register the callback with ESO
     local callbackIdentifier = _getUniqueShifterBoxEventName(self, shifterBoxEvent)
     CM:RegisterCallback(callbackIdentifier, callbackFunction)
