@@ -1,5 +1,6 @@
 local LSBStrings = {
-    LIBSHIFTERBOX_EMPTY = "空の"
+    LIBSHIFTERBOX_ALLREADY_LOADED   = "すでにロードされています",
+    LIBSHIFTERBOX_EMPTY             = "空の"
 }
 
 for key, value in pairs(LSBStrings) do

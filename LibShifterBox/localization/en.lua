@@ -1,5 +1,6 @@
 local LSBStrings = {
-    LIBSHIFTERBOX_EMPTY = "empty"
+    LIBSHIFTERBOX_ALLREADY_LOADED   = "Is already loaded",
+    LIBSHIFTERBOX_EMPTY             = "empty"
 }
 
 for key, value in pairs(LSBStrings) do
