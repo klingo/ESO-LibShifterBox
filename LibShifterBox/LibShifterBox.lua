@@ -1328,12 +1328,13 @@ end
 -- @param uniqueAddonName - a string identifer for the consuming addon
 -- @param uniqueShifterBoxName - a string identifier for the specific shifterBox
 -- @return an existing shifterBox CT_CONTROL object or nil if not found with the passed names
+--         2nd return param: The shifterbox instance of that control or nil
 function lib.GetControl(uniqueAddonName, uniqueShifterBoxName)
     local shifterBox = lib.GetShifterBox(uniqueAddonName, uniqueShifterBoxName)
     if shifterBox ~= nil then
-        return shifterBox.shifterBoxControl
+        return shifterBox.shifterBoxControl, shifterBox
     end
-    return nil
+    return nil, nil
 end
 
 function lib.Create(...)
