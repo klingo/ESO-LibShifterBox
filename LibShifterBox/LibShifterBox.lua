@@ -110,9 +110,7 @@ local function _getUniqueShifterBoxEventName(shifterBox, eventId)
     return table.concat({LIB_IDENTIFIER, "_", shifterBox.addonName, "_", shifterBox.shifterBoxName, "_", eventId})
 end
 
-local function _fireCallback(shifterBox, controlForCallback, eventIds, isLeftList, ...)
-    if isLeftList == nil then isLeftList = true end
-    local eventId = eventIds[isLeftList]
+local function _fireCallback(shifterBox, controlForCallback, eventId, ...)
     local callbackIdentifier = _getUniqueShifterBoxEventName(shifterBox, eventId)
     controlForCallback = controlForCallback or shifterBox
     CM:FireCallbacks(callbackIdentifier, controlForCallback, ...)
@@ -121,7 +119,8 @@ end
 local function _refreshFilter(list, checkForClearTrigger)
     list:RefreshFilters()
     if checkForClearTrigger and next(list.list.data) == nil then
-        _fireCallback(list.shifterBox, nil, { [true] = lib.EVENT_LEFT_LIST_CLEARED, [false] = lib.EVENT_RIGHT_LIST_CLEARED  }, list.isLeftList)
+        _fireCallback(list.shifterBox, nil, (list.isLeftList and lib.EVENT_LEFT_LIST_CLEARED) or lib.EVENT_RIGHT_LIST_CLEARED,
+                list.shifterBox, list.isLeftList)
     end
 end
 
@@ -136,12 +135,16 @@ local function _createShifterBox(uniqueAddonName, uniqueShifterBoxName, parentCo
 end
 
 local function _moveEntryFromTo(fromList, toList, key, shifterBox)
+    local retVar = false
     local key, value, categoryId = fromList:RemoveEntry(key)
     if key ~= nil then
         toList:AddEntry(key, value, categoryId)
+        retVar = true
         -- then trigger the callback if present
-        _fireCallback(shifterBox, nil, { [true] = lib.EVENT_ENTRY_MOVED, [false] = lib.EVENT_ENTRY_MOVED  }, toList.isLeftList, key, value, categoryId, toList.isLeftList, shifterBox)
+        _fireCallback(shifterBox, nil, lib.EVENT_ENTRY_MOVED,
+                shifterBox, key, value, categoryId, fromList, toList)
     end
+    return retVar
 end
 
 local function _assertValidShifterBoxEvent(shifterBoxEvent)
@@ -216,14 +219,20 @@ local function _initShifterBoxHandlers(self)
 
     local function toLeftButtonClicked(buttonControl)
         local rightListSelectedData = _getShallowClonedTable(self.rightList.list.selectedMultiData)
+        local retVarLoop = false
+        local retVar = true
         for key, data in pairs(rightListSelectedData) do
-            _moveEntryFromTo(self.rightList, self.leftList, data.key, self)
+            retVarLoop = _moveEntryFromTo(self.rightList, self.leftList, data.key, self)
+            if not retVarLoop then
+                retVar = false
+            end
         end
         -- then commit the changes to the scrollList and refresh the hidden states
         _refreshFilter(self.leftList)
         _refreshFilter(self.rightList, true)
         -- finally disable the button itself
         buttonControl:SetState(BSTATE_DISABLED, true)
+        return retVar
     end
     local function toLeftAllButtonClicked(buttonControl)
         -- move all entries
@@ -232,14 +241,20 @@ local function _initShifterBoxHandlers(self)
 
     local function toRightButtonClicked(buttonControl)
         local leftListSelectedData = _getShallowClonedTable(self.leftList.list.selectedMultiData)
+        local retVarLoop = false
+        local retVar = true
         for key, data in pairs(leftListSelectedData) do
-            _moveEntryFromTo(self.leftList, self.rightList, data.key, self)
+            retVarLoop = _moveEntryFromTo(self.leftList, self.rightList, data.key, self)
+            if not retVarLoop then
+                retVar = false
+            end
         end
         -- then commit the changes to the scrollList and refresh the hidden states
         _refreshFilter(self.leftList, true)
         _refreshFilter(self.rightList)
         -- finally disable the button itself
         buttonControl:SetState(BSTATE_DISABLED, true)
+        return retVar
     end
     local function toRightAllButtonClicked(buttonControl)
         -- move all entries
@@ -404,8 +419,8 @@ local function _removeEntriesFromList(list, keys)
     end
     if hasAtLeastOneRemoved then
         -- then trigger the callback if present
-        _fireCallback(list.shifterBox, list, { [true] = lib.EVENT_LEFT_LIST_ENTRY_REMOVED, [false] = lib.EVENT_RIGHT_LIST_ENTRY_REMOVED  }, list.shifterBox.isLeftList,
-                list.shifterBox, list.shifterBox.isLeftList, list, keys)
+        _fireCallback(list.shifterBox, nil, (list.isLeftList and lib.EVENT_LEFT_LIST_ENTRY_REMOVED) or lib.EVENT_RIGHT_LIST_ENTRY_REMOVED,
+                list.shifterBox, list.isLeftList, list, keys)
 
         _refreshFilter(list, true)
     end
@@ -504,7 +519,7 @@ local function _addEntriesToList(list, entries, replace, otherList, categoryId)
         end
         if hasAtLeastOneAdded then
             -- then trigger the callback if present
-            _fireCallback(list.shifterBox, list, { [true] = lib.EVENT_LEFT_LIST_ENTRY_ADDED, [false] = lib.EVENT_RIGHT_LIST_ENTRY_ADDED  }, list.isLeftList,
+            _fireCallback(list.shifterBox, nil, (list.isLeftList and lib.EVENT_LEFT_LIST_ENTRY_ADDED) or lib.EVENT_RIGHT_LIST_ENTRY_ADDED,
                     list.shifterBox, list.isLeftList, list, keysAdded)
 
             -- Afterwards refresh the visualisation of the data
@@ -512,7 +527,7 @@ local function _addEntriesToList(list, entries, replace, otherList, categoryId)
 
             if hasAtLeastOneRemoved then
                 -- then trigger the callback if present
-                _fireCallback(list.shifterBox, list, { [true] = lib.EVENT_LEFT_LIST_ENTRY_REMOVED, [false] = lib.EVENT_RIGHT_LIST_ENTRY_REMOVED  }, list.isLeftList,
+                _fireCallback(list.shifterBox, nil, (list.isLeftList and lib.EVENT_LEFT_LIST_ENTRY_REMOVED) or lib.EVENT_RIGHT_LIST_ENTRY_REMOVED,
                         list.shifterBox, list.isLeftList, list, keysRemoved)
 
                 _refreshFilter(otherList, true)
@@ -527,17 +542,23 @@ local function _addEntryToList(list, key, value, replace, otherList, categoryId)
 end
 
 local function _moveEntriesToOtherList(sourceList, keys, destList, shifterBox)
+    local retVarLoop = false
+    local retVar = true
     for _, key in pairs(keys) do
-        _moveEntryFromTo(sourceList, destList, key, shifterBox)
+        retVarLoop = _moveEntryFromTo(sourceList, destList, key, shifterBox)
+        if not retVarLoop then
+            retVar = false
+        end
     end
     -- refresh the display afterwards
     _refreshFilter(sourceList, true)
     _refreshFilter(destList)
+    return retVarLoop
 end
 
 local function _moveEntryToOtherList(sourceList, key, destList, shifterBox)
     local keys = { key }
-    _moveEntriesToOtherList(sourceList, keys, destList, shifterBox)
+    return _moveEntriesToOtherList(sourceList, keys, destList, shifterBox)
 end
 
 local function _clearList(list)
@@ -665,6 +686,8 @@ function ShifterBoxList:Initialize(control, shifterBoxSettings, isLeftList, shif
                 if GetCursorContentType() == MOUSE_CONTENT_EMPTY then
                     local dragData = lib.currentDragData
                     if dragData then
+                        local wasDragSuccessfull = false
+
                         -- make sure the sourceListBox and "this" listBox belong to the same shifterBox
                         local sourceListControl = dragData._sourceListControl
                         local hasSameShifterBoxParent = _hasSameShifterBoxParent(self, sourceListControl)
@@ -682,17 +705,16 @@ function ShifterBoxList:Initialize(control, shifterBoxSettings, isLeftList, shif
                                 -- if the draged data was selected (and is not from the same list), then move all selected entries (by "clicking" the button)
                                 local buttonControl = sourceListControl.buttonControl
                                 local buttonOnClickedFunction = buttonControl:GetHandler("OnClicked")
-                                buttonOnClickedFunction(buttonControl)
+                                wasDragSuccessfull = buttonOnClickedFunction(buttonControl)
                             else
                                 -- if the draged data was NOT selected, then only move that single entry
-                                _moveEntryToOtherList(sourceList, dragData.key, destList, self.shifterBox)
+                                wasDragSuccessfull = _moveEntryToOtherList(sourceList, dragData.key, destList, self.shifterBox)
                             end
-
-                            -- then trigger the callback if present
-                            _fireCallback(self.shifterBox, draggedOntoControl, { [true] = lib.EVENT_LEFT_LIST_ROW_ON_DRAG_END, [false] = lib.EVENT_RIGHT_LIST_ROW_ON_DRAG_END  }, isLeftList,
-                                    self.shifterBox, isLeftList, draggedOntoControl, mouseButton, dragData, hasSameShifterBoxParent)
-
                         end
+
+                        -- then trigger the callback if present
+                        _fireCallback(self.shifterBox, draggedOntoControl, (isLeftList and lib.EVENT_LEFT_LIST_ROW_ON_DRAG_END) or lib.EVENT_RIGHT_LIST_ROW_ON_DRAG_END,
+                                self.shifterBox, mouseButton, dragData, hasSameShifterBoxParent, wasDragSuccessfull, isLeftList)
                     end
                     lib.currentDragData  = nil
                 end
@@ -708,7 +730,8 @@ function ShifterBoxList:Initialize(control, shifterBoxSettings, isLeftList, shif
         end
     end
     -- then trigger the callback if present
-    _fireCallback(shifterBox, control, { [true] = lib.EVENT_LEFT_LIST_CREATED, [false] = lib.EVENT_RIGHT_LIST_CREATED  }, isLeftList, shifterBox, isLeftList)
+    _fireCallback(shifterBox, control, (isLeftList and lib.EVENT_LEFT_LIST_CREATED) or lib.EVENT_RIGHT_LIST_CREATED,
+            shifterBox, isLeftList)
 end
 
 -- ZO_SortFilterList:RefreshData()      =>  BuildMasterList()   =>  FilterScrollList()  =>  SortScrollList()    =>  CommitScrollList()
@@ -879,7 +902,7 @@ function ShifterBoxList:ToggleEntrySelection(data, control, reselectingDuringReb
             -- and select the control (if applicable)
             if control then self:SelectControl(control, animateInstantly) end
             -- then trigger the callback if present
-            _fireCallback(self.shifterBox, control, { [true] = lib.EVENT_ENTRY_HIGHLIGHTED, [false] = lib.EVENT_ENTRY_HIGHLIGHTED  }, self.isLeftList,
+            _fireCallback(self.shifterBox, control, lib.EVENT_ENTRY_HIGHLIGHTED,
                     self.shifterBox, dataKey, data.value, data.categoryId, self.isLeftList)
 
         elseif deselectOnReselect then
@@ -888,7 +911,7 @@ function ShifterBoxList:ToggleEntrySelection(data, control, reselectingDuringReb
             -- and unselect the control (if applicable)
             if control then self:UnselectControl(control, animateInstantly) end
             -- then trigger the callback if present
-            _fireCallback(self.shifterBox, control, { [true] = lib.EVENT_ENTRY_UNHIGHLIGHTED, [false] = lib.EVENT_ENTRY_UNHIGHLIGHTED  }, self.isLeftList,
+            _fireCallback(self.shifterBox, control, lib.EVENT_ENTRY_UNHIGHLIGHTED,
                     self.shifterBox, dataKey, data.value, data.categoryId, self.isLeftList)
         end
     end
@@ -901,8 +924,8 @@ function ShifterBoxList:SetupRowEntry(rowControl, rowData, doNotSetupRowNow)
     doNotSetupRowNow = doNotSetupRowNow or false
     local function onRowMouseEnter(p_rowControl)
         -- then trigger the callback if present
-        _fireCallback(self.shifterBox, p_rowControl, { [true] = lib.EVENT_LEFT_LIST_ROW_ON_MOUSE_ENTER, [false] = lib.EVENT_RIGHT_LIST_ROW_ON_MOUSE_ENTER  }, self.shifterBox.isLeftList,
-                self.shifterBox, self.shifterBox.isLeftList, p_rowControl, rowData)
+        _fireCallback(self.shifterBox, p_rowControl, (self.isLeftList and lib.EVENT_LEFT_LIST_ROW_ON_MOUSE_ENTER) or lib.EVENT_RIGHT_LIST_ROW_ON_MOUSE_ENTER,
+                self.shifterBox, self.isLeftList, rowData)
 
         if self.listBoxSettings.rowOnMouseEnter ~= nil then
             self.listBoxSettings.rowOnMouseEnter(p_rowControl)
@@ -920,8 +943,8 @@ function ShifterBoxList:SetupRowEntry(rowControl, rowData, doNotSetupRowNow)
     end
     local function onRowMouseExit(p_rowControl)
         -- then trigger the callback if present
-        _fireCallback(self.shifterBox, p_rowControl, { [true] = lib.EVENT_LEFT_LIST_ROW_ON_MOUSE_EXIT, [false] = lib.EVENT_RIGHT_LIST_ROW_ON_MOUSE_EXIT  }, self.shifterBox.isLeftList,
-                self.shifterBox, self.shifterBox.isLeftList, p_rowControl, rowData)
+        _fireCallback(self.shifterBox, p_rowControl, (self.isLeftList and lib.EVENT_LEFT_LIST_ROW_ON_MOUSE_EXIT) or lib.EVENT_RIGHT_LIST_ROW_ON_MOUSE_EXIT,
+                self.shifterBox, self.isLeftList, rowData)
 
         if self.listBoxSettings.rowOnMouseExit ~= nil then
             self.listBoxSettings.rowOnMouseExit(p_rowControl)
@@ -931,8 +954,8 @@ function ShifterBoxList:SetupRowEntry(rowControl, rowData, doNotSetupRowNow)
     end
     local function onRowMouseUp(p_rowControl, mouseButton, isInside, ctrlKey, altKey, shiftKey, commandKey)
         -- then trigger the callback if present
-        _fireCallback(self.shifterBox, p_rowControl, { [true] = lib.EVENT_LEFT_LIST_ROW_ON_MOUSE_UP, [false] = lib.EVENT_RIGHT_LIST_ROW_ON_MOUSE_UP  }, self.shifterBox.isLeftList,
-                self.shifterBox, self.shifterBox.isLeftList, p_rowControl, mouseButton, isInside, ctrlKey, altKey, shiftKey, commandKey, rowData)
+        _fireCallback(self.shifterBox, p_rowControl, (self.isLeftList and lib.EVENT_LEFT_LIST_ROW_ON_MOUSE_UP) or lib.EVENT_RIGHT_LIST_ROW_ON_MOUSE_UP,
+                self.shifterBox, self.isLeftList, mouseButton, isInside, ctrlKey, altKey, shiftKey, commandKey, rowData)
 
         if not isInside then return end
         if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
@@ -955,9 +978,9 @@ function ShifterBoxList:SetupRowEntry(rowControl, rowData, doNotSetupRowNow)
             lib.currentDragData  = currentDragData
 
             -- then trigger the callback if present
-            _fireCallback(self.shifterBox, p_rowControl, { [true] = lib.EVENT_LEFT_LIST_ROW_ON_DRAG_START, [false] = lib.EVENT_RIGHT_LIST_ROW_ON_DRAG_START  }, self.shifterBox.isLeftList,
-                    self.shifterBox, self.shifterBox.isLeftList, p_rowControl, mouseButton, currentDragData)
-        else
+            _fireCallback(self.shifterBox, p_rowControl, (self.isLeftList and lib.EVENT_LEFT_LIST_ROW_ON_DRAG_START) or lib.EVENT_RIGHT_LIST_ROW_ON_DRAG_START,
+                    self.shifterBox, self.isLeftList, mouseButton, currentDragData)
+        --else
             --            WINDOW_MANAGER:SetMouseCursor(MOUSE_CURSOR_DEFAULT_CURSOR)
         end
     end
