@@ -260,12 +260,22 @@ local function _applyCustomSettings(customSettings)
 
     -- validation functions
     local function _validateType(customSettingsTbl, parameterName, settingsTbl, typeText)
+        local specialTypeTexts = {
+            ["number+"]     = true,
+            ["number-"]     = true,
+            ["stringValue"] = true,
+            ["sound"]       = true,
+        }
         local customValue = customSettingsTbl[parameterName]
         if customValue ~= nil then
-            local assertionBool = ((typeText ~= "stringValue" and typeText ~= "sound") and type(customValue) == typeText) or false
-            if typeText == "number" and assertionBool == true then
+            local isSpecialTypeText = specialTypeTexts[typeText] or false
+            local assertionBool = (not isSpecialTypeText and type(customValue) == typeText) or false
+            if typeText == "number+" then
                 assertionBool = customValue > 0
                 typeText = typeText .. " and positive"
+            elseif typeText == "number-" then
+                assertionBool = customValue < 0
+                typeText = typeText .. " and negative"
             elseif typeText == "stringValue" then
                 assertionBool = (type(customValue) == "string" and (customValue == "value" or customValue == "key")) or false
                 typeText = "either \'value\' or \'key\'"
@@ -279,7 +289,7 @@ local function _applyCustomSettings(customSettings)
         end
     end
     local function _assertPositiveNumber(customSettingsTbl, parameterName, settingsTbl)
-        _validateType(customSettingsTbl, parameterName, settingsTbl, "number")
+        _validateType(customSettingsTbl, parameterName, settingsTbl, "number+")
     end
     local function _assertBoolean(customSettingsTbl, parameterName, settingsTbl)
         _validateType(customSettingsTbl, parameterName, settingsTbl, "boolean")
@@ -457,13 +467,13 @@ local function _addEntriesToList(list, entries, replace, otherList, categoryId)
         local keysAdded = {}
         local keysRemoved = {}
         for key, value in pairs(entriesList) do
-            local wasRemoved
+            local listRemovedFrom
             if replace and replace == true then
                 -- if replace is set to true, make sure that a potential entry with the same key is removed from both lists
                 local removeKey = list:RemoveEntry(key)
                 local otherRemoveKey = otherList:RemoveEntry(key)
                 if removeKey ~= nil or otherRemoveKey ~= nil then
-                    wasRemoved = (removeKey ~= nil and 1) or 2
+                    listRemovedFrom = (removeKey ~= nil and list) or otherList
                     hasAtLeastOneRemoved = true
                 end
             else
@@ -482,12 +492,12 @@ local function _addEntriesToList(list, entries, replace, otherList, categoryId)
             }
 
             --For the REMOVED callback
-            if wasRemoved ~= nil then
+            if listRemovedFrom ~= nil then
                 keysRemoved[key] = {
                     key=key,
                     value=value,
                     categoryId=categoryId,
-                    listRemovedFrom=(wasRemoved == 1 and list) or otherList,
+                    listRemovedFrom=listRemovedFrom,
                 }
             end
             hasAtLeastOneAdded = true
@@ -659,10 +669,6 @@ function ShifterBoxList:Initialize(control, shifterBoxSettings, isLeftList, shif
                         local sourceListControl = dragData._sourceListControl
                         local hasSameShifterBoxParent = _hasSameShifterBoxParent(self, sourceListControl)
 
-                        -- then trigger the callback if present
-                        _fireCallback(self.shifterBox, draggedOntoControl, { [true] = lib.EVENT_LEFT_LIST_ROW_ON_DRAG_END, [false] = lib.EVENT_RIGHT_LIST_ROW_ON_DRAG_END  }, isLeftList,
-                                self.shifterBox, isLeftList, draggedOntoControl, mouseButton, dragData, hasSameShifterBoxParent)
-
                         if hasSameShifterBoxParent then
                             local sourceList
                             local destList = self
@@ -681,6 +687,11 @@ function ShifterBoxList:Initialize(control, shifterBoxSettings, isLeftList, shif
                                 -- if the draged data was NOT selected, then only move that single entry
                                 _moveEntryToOtherList(sourceList, dragData.key, destList, self.shifterBox)
                             end
+
+                            -- then trigger the callback if present
+                            _fireCallback(self.shifterBox, draggedOntoControl, { [true] = lib.EVENT_LEFT_LIST_ROW_ON_DRAG_END, [false] = lib.EVENT_RIGHT_LIST_ROW_ON_DRAG_END  }, isLeftList,
+                                    self.shifterBox, isLeftList, draggedOntoControl, mouseButton, dragData, hasSameShifterBoxParent)
+
                         end
                     end
                     lib.currentDragData  = nil
