@@ -120,7 +120,7 @@ local function _refreshFilter(list, checkForClearTrigger)
     list:RefreshFilters()
     if checkForClearTrigger and next(list.list.data) == nil then
         _fireCallback(list.shifterBox, nil, (list.isLeftList and lib.EVENT_LEFT_LIST_CLEARED) or lib.EVENT_RIGHT_LIST_CLEARED,
-                list.shifterBox, list.isLeftList)
+                list.isLeftList)
     end
 end
 
@@ -142,7 +142,7 @@ local function _moveEntryFromTo(fromList, toList, key, shifterBox)
         retVar = true
         -- then trigger the callback if present
         _fireCallback(shifterBox, nil, lib.EVENT_ENTRY_MOVED,
-                shifterBox, key, value, categoryId, fromList, toList)
+                key, value, categoryId, fromList, toList)
     end
     return retVar
 end
@@ -420,7 +420,7 @@ local function _removeEntriesFromList(list, keys)
     if hasAtLeastOneRemoved then
         -- then trigger the callback if present
         _fireCallback(list.shifterBox, nil, (list.isLeftList and lib.EVENT_LEFT_LIST_ENTRY_REMOVED) or lib.EVENT_RIGHT_LIST_ENTRY_REMOVED,
-                list.shifterBox, list.isLeftList, list, keys)
+                list.isLeftList, list, keys)
 
         _refreshFilter(list, true)
     end
@@ -520,7 +520,7 @@ local function _addEntriesToList(list, entries, replace, otherList, categoryId)
         if hasAtLeastOneAdded then
             -- then trigger the callback if present
             _fireCallback(list.shifterBox, nil, (list.isLeftList and lib.EVENT_LEFT_LIST_ENTRY_ADDED) or lib.EVENT_RIGHT_LIST_ENTRY_ADDED,
-                    list.shifterBox, list.isLeftList, list, keysAdded)
+                    list.isLeftList, list, keysAdded)
 
             -- Afterwards refresh the visualisation of the data
             _refreshFilter(list)
@@ -528,7 +528,7 @@ local function _addEntriesToList(list, entries, replace, otherList, categoryId)
             if hasAtLeastOneRemoved then
                 -- then trigger the callback if present
                 _fireCallback(list.shifterBox, nil, (list.isLeftList and lib.EVENT_LEFT_LIST_ENTRY_REMOVED) or lib.EVENT_RIGHT_LIST_ENTRY_REMOVED,
-                        list.shifterBox, list.isLeftList, list, keysRemoved)
+                        list.isLeftList, list, keysRemoved)
 
                 _refreshFilter(otherList, true)
             end
