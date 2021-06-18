@@ -553,7 +553,7 @@ local function _moveEntriesToOtherList(sourceList, keys, destList, shifterBox)
     -- refresh the display afterwards
     _refreshFilter(sourceList, true)
     _refreshFilter(destList)
-    return retVarLoop
+    return retVar
 end
 
 local function _moveEntryToOtherList(sourceList, key, destList, shifterBox)
