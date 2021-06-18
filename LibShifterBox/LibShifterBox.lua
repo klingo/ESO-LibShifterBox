@@ -141,8 +141,8 @@ local function _moveEntryFromTo(fromList, toList, key, shifterBox)
         toList:AddEntry(key, value, categoryId)
         retVar = true
         -- then trigger the callback if present
-        _fireCallback(shifterBox, nil, lib.EVENT_ENTRY_MOVED,
-                key, value, categoryId, fromList, toList)
+         _fireCallback(shifterBox, nil, lib.EVENT_ENTRY_MOVED,
+                key, value, categoryId, fromList.isLeftList, fromList, toList)
     end
     return retVar
 end
