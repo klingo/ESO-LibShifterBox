@@ -16,6 +16,8 @@ local lib = {}
 _G[LIB_IDENTIFIER] = lib
 
 local CM = CALLBACK_MANAGER
+local EM = EVENT_MANAGER
+local WM = WINDOW_MANAGER
 
 -- =================================================================================================================
 -- == LIBRARY CONSTANTS/VARIABLES == --
@@ -30,6 +32,20 @@ local RESELECTING_DURING_REBUILD = true
 local ANIMATION_FIELD_NAME = "SelectionAnimation"
 local FONT_STYLE = "MEDIUM_FONT"
 local FONT_WEIGHT = "soft-shadow-thin"
+
+local CURSORTLC
+local CURSOR_TLC_NAME = LIB_IDENTIFIER .. "_Cursor_TLC"
+local EVENT_HANDLER_NAMESPACE = LIB_IDENTIFIER  .. "_Event"
+local GLOBAL_MOUSE_DOWN = "_GLOBAL_MOUSE_DOWN"
+local GLOBAL_MOUSE_UP   = "_GLOBAL_MOUSE_UP"
+local multipleRowsDraggedText = GetString(LIBSHIFTERBOX_DRAG_MULTIPLE)
+
+--Mouse cursors
+local MOUSECURSOR_UIHAND     = MOUSE_CURSOR_UI_HAND
+local MOUSECURSOR_DONOTCATRE = MOUSE_CURSOR_DO_NOT_CARE
+--local MOUSECURSOR_RESIZEEW   = MOUSE_CURSOR_RESIZE_EW
+local MOUSECURSOR_NEXTLEFT  = MOUSE_CURSOR_NEXT_LEFT
+local MOUSECURSOR_NEXTRIGHT = MOUSE_CURSOR_NEXT_RIGHT
 
 --Shifter box events for the callbacks
 local shifterBoxEvents = {
@@ -83,8 +99,6 @@ local defaultSettings = {
 
 -- KNOWN ISSUES
 -- TODO: Calling UnselectAllEntries() when mouse-over causes text to become white
--- TODO: Indicate the drag-and-drop on the mouse-cursor
---> Beartram, 20210614: See LibAddonMenu_OrderListBox as an example how to add a label control to Gui_Mouse containing the dragged text
 
 -- =================================================================================================================
 -- == SHIFTERBOX PRIVATE FUNCTIONS == --
@@ -141,7 +155,7 @@ local function _moveEntryFromTo(fromList, toList, key, shifterBox)
         toList:AddEntry(key, value, categoryId)
         retVar = true
         -- then trigger the callback if present
-         _fireCallback(shifterBox, nil, lib.EVENT_ENTRY_MOVED,
+        _fireCallback(shifterBox, nil, lib.EVENT_ENTRY_MOVED,
                 key, value, categoryId, toList.isLeftList, fromList, toList)
     end
     return retVar
@@ -392,9 +406,10 @@ end
 -- ---------------------------------------------------------------------------------------------------------------------
 
 local function _selectEntries(list, keys)
-    local visibleData = list.list.visibleData
+    local listsList = list.list
+    local visibleData = listsList.visibleData
     for _, visibleKey in ipairs(visibleData) do
-        local dataEntry = list.list.data[visibleKey]
+        local dataEntry = listsList.data[visibleKey]
         local data = dataEntry.data
         for _, key in pairs(keys) do
             if data.key == key then
@@ -570,6 +585,103 @@ local function _hasSameShifterBoxParent(aListBox, otherListBox)
     return aListBox.shifterBox.shifterBoxControl == otherListBox.shifterBox.shifterBoxControl
 end
 
+local function _getOtherSideShifterBoxListControl(sourceList)
+    local shifterBox = sourceList.shifterBox
+    local otherListBox = sourceList.isLeftList and shifterBox.rightList or shifterBox.leftList
+    return otherListBox.list
+end
+
+-- ---------------------------------------------------------------------------------------------------------------------
+--Functions of the cursor UI related TLC
+local function _setMouseCursor(cursorName)
+    WM:SetMouseCursor(cursorName)
+end
+
+local function _getCursorTLC()
+--d(">_getCursorTLC")
+    CURSORTLC = CURSORTLC or WM:GetControlByName(CURSOR_TLC_NAME, nil)
+    if not CURSORTLC then return end
+    CURSORTLC.label = CURSORTLC.label or GetControl(CURSORTLC, "Label")
+    CURSORTLC:ClearAnchors()
+    CURSORTLC:SetDimensions(0, 0)
+end
+
+-- ---------------------------------------------------------------------------------------------------------------------
+--Drag & drop functions
+local function _getDraggedDataAndTarget(shifterBox)
+    local dragData = shifterBox.currentDragData
+    local sourceListControl = dragData and dragData._sourceListControl
+    local otherSideShifterBox = sourceListControl and _getOtherSideShifterBoxListControl(sourceListControl)
+    return dragData, sourceListControl, otherSideShifterBox
+end
+
+local function _clearDragging(shifterBox)
+--d(">_clearDragging")
+    shifterBox.currentDragData = nil
+    shifterBox.draggingUpdateTime = nil
+    shifterBox.draggingMouseButtonPressed = nil
+end
+
+local function _disableOnUpdateHandler(shifterBox)
+--d(">_disableOnUpdateHandlerAndResetMouseCursor")
+    EM:UnregisterForEvent(EVENT_HANDLER_NAMESPACE .. GLOBAL_MOUSE_DOWN, EVENT_GLOBAL_MOUSE_DOWN)
+    EM:UnregisterForEvent(EVENT_HANDLER_NAMESPACE .. GLOBAL_MOUSE_UP,   EVENT_GLOBAL_MOUSE_UP)
+    shifterBox.shifterBoxControl:SetHandler("OnUpdate", nil)
+
+    --Hide the label control at the cursor again
+    shifterBox:UpdateCursorTLC(true, nil)
+end
+
+local function _abortDragging(shifterBox)
+--d(">_abortDragging")
+    _disableOnUpdateHandler(shifterBox)
+    _clearDragging(shifterBox)
+end
+
+local function _checkIfDraggedAndDisableUpdateHandler(lamPanel)
+--d("_checkIfDraggedAndDisableUpdateHandler")
+    if CURSORTLC == nil then _getCursorTLC() end
+    if not CURSORTLC then return end
+    local shifterBox = CURSORTLC.shifterBox
+    if shifterBox == nil or shifterBox.currentDragData == nil then return end
+    _abortDragging(shifterBox)
+    _setMouseCursor(MOUSECURSOR_DONOTCATRE)
+end
+
+local function _resetDragData(shifterBox)
+--d(">>resetDragData")
+    _abortDragging(shifterBox)
+    _setMouseCursor(MOUSECURSOR_DONOTCATRE)
+end
+
+--Auto scroll the orderListBox upon dragging an entry to the top/bottom of the list
+local function _autoScroll(shifterBox)
+--d(">autoscroll")
+    local dragData, sourceListControl, otherSideShifterBoxList = _getDraggedDataAndTarget(shifterBox)
+    if not dragData or not sourceListControl or not otherSideShifterBoxList then
+        _resetDragData(shifterBox)
+    end
+    local contents = otherSideShifterBoxList.contents
+    local numContentChildren = (contents ~= nil and contents:GetNumChildren()) or 0
+    local contentsHeight = contents:GetHeight()
+    if not contents or numContentChildren == 0 then return end
+    local controlBelowMouse = moc()
+    if not controlBelowMouse or not controlBelowMouse.GetParent or controlBelowMouse:GetParent() ~= contents then return end
+    local isValid, point, relTo, relPoint, offsetX, offsetY = controlBelowMouse:GetAnchor(0)
+    local libShifterBoxRowHeight = otherSideShifterBoxList.rowHeight or defaultListSettings.rowHeight
+    local libShifterBoxScrollArea = libShifterBoxRowHeight * 1.5
+    local scrollValue
+    if offsetY < 0 or (offsetY >= 0 and offsetY <= libShifterBoxScrollArea) then
+        --Scroll up
+        scrollValue = (libShifterBoxRowHeight * 2) * -1
+    elseif offsetY <= contentsHeight and offsetY >= contentsHeight - libShifterBoxScrollArea then
+        --Scroll down
+        scrollValue = libShifterBoxRowHeight * 2
+    end
+    if scrollValue == nil or scrollValue == 0 then return end
+--d(">scrollValue: " ..tostring(scrollValue))
+    ZO_ScrollList_ScrollRelative(otherSideShifterBoxList, scrollValue, nil, true)
+end
 
 -- =================================================================================================================
 -- == SCROLL-LISTS == --
@@ -617,6 +729,7 @@ function ShifterBoxList:Initialize(control, shifterBoxSettings, isLeftList, shif
         self.listBoxSettings = shifterBoxSettings.rightList
     end
     self.isLeftList = isLeftList
+    self.rowHeight = self.listBoxSettings.rowHeight
     self.rowWidth = 180 -- default value to init
     -- initialize the SortFilterList
     ZO_SortFilterList.Initialize(self, control)
@@ -675,54 +788,15 @@ function ShifterBoxList:Initialize(control, shifterBoxSettings, isLeftList, shif
         self:OnSelectionChanged(...)
     end)
     -- set up sorting function and refresh all data
-    self.sortFunction = function(listEntry1, listEntry2) return ZO_TableOrderingFunction(listEntry1.data, listEntry2.data, self.shifterBoxSettings.sortBy, ShifterBoxList.SORT_KEYS, self.currentSortOrder) end
-    self:RefreshData()
-    -- handle stop draging
-    if self.shifterBoxSettings.dragDropEnabled then
-        local function onReceiveDrag(draggedOntoControl, mouseButton)
---            WINDOW_MANAGER:SetMouseCursor(MOUSE_CURSOR_DEFAULT_CURSOR)
-            if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
-                -- ensure we do not drag any item or skill
-                if GetCursorContentType() == MOUSE_CONTENT_EMPTY then
-                    local dragData = lib.currentDragData
-                    if dragData then
-                        local wasDragSuccessfull = false
-
-                        -- make sure the sourceListBox and "this" listBox belong to the same shifterBox
-                        local sourceListControl = dragData._sourceListControl
-                        local hasSameShifterBoxParent = _hasSameShifterBoxParent(self, sourceListControl)
-
-                        if hasSameShifterBoxParent then
-                            local sourceList
-                            local destList = self
-                            if self.isLeftList then
-                                sourceList = self.shifterBox.rightList
-                            else
-                                sourceList = self.shifterBox.leftList
-                            end
-                            local isDragDataSelected = dragData._isSelected
-                            if isDragDataSelected and self.isLeftList ~= dragData._isFromLeftList then
-                                -- if the draged data was selected (and is not from the same list), then move all selected entries (by "clicking" the button)
-                                local buttonControl = sourceListControl.buttonControl
-                                local buttonOnClickedFunction = buttonControl:GetHandler("OnClicked")
-                                wasDragSuccessfull = buttonOnClickedFunction(buttonControl)
-                            else
-                                -- if the draged data was NOT selected, then only move that single entry
-                                wasDragSuccessfull = _moveEntryToOtherList(sourceList, dragData.key, destList, self.shifterBox)
-                            end
-                        end
-
-                        -- then trigger the callback if present
-                        _fireCallback(self.shifterBox, draggedOntoControl, (isLeftList and lib.EVENT_LEFT_LIST_ROW_ON_DRAG_END) or lib.EVENT_RIGHT_LIST_ROW_ON_DRAG_END,
-                                self.shifterBox, mouseButton, dragData, hasSameShifterBoxParent, wasDragSuccessfull, isLeftList)
-                    end
-                    lib.currentDragData  = nil
-                end
-            end
-        end
-        self.list:SetHandler("OnReceiveDrag", onReceiveDrag)
-        self.list:SetMouseEnabled(true)
+    self.sortFunction = function(listEntry1, listEntry2)
+        return ZO_TableOrderingFunction(listEntry1.data, listEntry2.data, self.shifterBoxSettings.sortBy, ShifterBoxList.SORT_KEYS, self.currentSortOrder)
     end
+    self:RefreshData()
+
+    -- handle stop draging -> Moved to self:StopDragging
+    self.list:SetHandler("OnReceiveDrag", function(...) self:StopDragging(...) end)
+    self.list:SetMouseEnabled(true)
+
     --Any callbacks to register now from the settings (e.g. the "List created" one, which would not fire again later :-) )
     if self.listBoxSettings.callbackRegister ~= nil then
         for shifterBoxEventId, callbackFunc in pairs(self.listBoxSettings.callbackRegister) do
@@ -886,7 +960,9 @@ function ShifterBoxList:ToggleEntrySelection(data, control, reselectingDuringReb
             end
         end
         -- this data we tried to select isn't in the scroll list at all, just abort
-        if dataKey == nil then return end
+        if dataKey == nil then
+            return
+        end
     end
     if self.list.selectedMultiData == nil then
         self.list.selectedMultiData = {}
@@ -969,20 +1045,7 @@ function ShifterBoxList:SetupRowEntry(rowControl, rowData, doNotSetupRowNow)
         end
     end
     local function onDragStart(p_rowControl, mouseButton)
-        if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
-            --            WINDOW_MANAGER:SetMouseCursor(MOUSE_CURSOR_UI_HAND)
-            local currentDragData = ZO_ScrollList_GetData(p_rowControl)
-            currentDragData._sourceListControl = self
-            currentDragData._isSelected = self.list.selectedMultiData and self.list.selectedMultiData[currentDragData.key] ~= nil
-            currentDragData._isFromLeftList = self.isLeftList
-            lib.currentDragData  = currentDragData
-
-            -- then trigger the callback if present
-            _fireCallback(self.shifterBox, p_rowControl, (self.isLeftList and lib.EVENT_LEFT_LIST_ROW_ON_DRAG_START) or lib.EVENT_RIGHT_LIST_ROW_ON_DRAG_START,
-                    self.shifterBox, self.isLeftList, mouseButton, currentDragData)
-        --else
-            --            WINDOW_MANAGER:SetMouseCursor(MOUSE_CURSOR_DEFAULT_CURSOR)
-        end
+        self:StartDragging(p_rowControl, mouseButton)
     end
     -- set the value for the row entry
     local labelControl = rowControl:GetNamedChild("Label")
@@ -1083,6 +1146,178 @@ function ShifterBoxList:SetEntriesEnabled(enabled)
     self.enabled = enabled
 end
 
+--Drag & drop functions
+function ShifterBoxList:OnGlobalMouseDownDuringDrag(eventId, mouseButton, ctrl, alt, shift, command)
+--d("[OrderListBox]OnGlobalMouseDownDuringDrag - draggedKey: " ..tostring(self.shifterBox.currentDragData.key) .. ", mouseButton: " ..tostring(mouseButton))
+    if not self.enabled or not self.shifterBoxSettings.dragDropEnabled then return end
+    if self.shifterBox.currentDragData then
+        self.shifterBox.draggingMouseButtonPressed = mouseButton
+    end
+end
+
+function ShifterBoxList:OnGlobalMouseUpDuringDrag(eventId, mouseButton, ctrl, alt, shift, command)
+--d("[OrderListBox]OnGlobalMouseUpDuringDrag - draggedKey: " ..tostring(self.shifterBox.currentDragData.key) .. ", mouseButton: " ..tostring(mouseButton))
+    if not self.enabled or not self.shifterBoxSettings.dragDropEnabled then return end
+    if mouseButton ~= MOUSE_BUTTON_INDEX_LEFT then
+--d("<ABORT due to wrong mouse button!")
+        _resetDragData(self.shifterBox)
+    end
+    local dragData, sourceListControl, otherSideShifterBox = _getDraggedDataAndTarget(self.shifterBox)
+    if not dragData or not sourceListControl or not otherSideShifterBox then
+--d(">drag data or source list or other side's list of shifterbox is missing")
+        _resetDragData(self.shifterBox)
+    end
+    --is the control below the mouse, or it's parent, a valid LibShifterBox's other side, e.g left->dragged to right)
+    local controlBelowMouse = moc()
+    local parentOfMoc = controlBelowMouse:GetParent()
+    if (not controlBelowMouse or not parentOfMoc or
+            (
+                    (controlBelowMouse and parentOfMoc) and
+                    (parentOfMoc == sourceListControl or
+                        (parentOfMoc ~= otherSideShifterBox and parentOfMoc ~= otherSideShifterBox.contents))
+            )
+    ) then
+--d(">control below mouse is not supported")
+        _resetDragData(self.shifterBox)
+    end
+end
+
+function ShifterBoxList:DragOnUpdateCallback(draggedControl)
+    if not self.enabled or not self.shifterBoxSettings.dragDropEnabled then
+        _abortDragging(self.shifterBox)
+        return
+    end
+
+    --Check the actual shown rows of the list (contents)
+    -->Check the anchor's offsetY of the row of the contents. If between 0 and 2*rowHeight -> Scroll up
+    -->If between contents:GetHeight()- 2*rowHeight and contents:GetHeight() -> Scroll down
+    --Only run the following code once every 200 ms!
+    local gameTimeMS = GetGameTimeMilliseconds()
+    local gameTimeDeltaNeeded = 200 --milliseconds
+    local draggingUpdateTime = self.shifterBox.draggingUpdateTime
+--d("[LibShifterbox]OnUpdate-gameTime: " ..tostring(gameTimeMS) .. ", self.draggingUpdateTime: " ..tostring(self.draggingUpdateTime))
+    local updateAutoScroll = false
+    if draggingUpdateTime == nil then
+        self.shifterBox.draggingUpdateTime = gameTimeMS
+        updateAutoScroll = true
+    elseif draggingUpdateTime > 0 then
+        if gameTimeMS >= (draggingUpdateTime + gameTimeDeltaNeeded) then
+            self.shifterBox.draggingUpdateTime = gameTimeMS
+            updateAutoScroll = true
+        end
+    end
+--d(">updateAutoScroll: " .. tostring(updateAutoScroll) ..", needed: " ..tostring(self.draggingUpdateTime + gameTimeDeltaNeeded))
+    if updateAutoScroll == true then
+        _autoScroll(self.shifterBox)
+    end
+end
+
+function ShifterBoxList:StartDragging(draggedControl, mouseButton)
+--d("StartDragging")
+    if not self.enabled or not self.shifterBoxSettings.dragDropEnabled then return end
+    if mouseButton ~= MOUSE_BUTTON_INDEX_LEFT then return end
+
+    local currentDragData = ZO_ScrollList_GetData(draggedControl)
+    local selectedData = _getShallowClonedTable(self.list.selectedMultiData)
+    local numRowsSelected = (selectedData ~= nil and NonContiguousCount(selectedData)) or 1
+    local draggedDataEntry = draggedControl.dataEntry.data
+    --Multiple rows were selected. Is the row we started the drag on also selected?
+    --If not: Select it!
+    local isSelected = selectedData and selectedData[draggedDataEntry.key] ~= nil
+--d("[ShifterBoxList]StartDragging - key: " ..tostring(draggedDataEntry.key) .. ", draggedControlKey: " ..tostring(draggedControl.key) ..", isSelected: " ..tostring(isSelected))
+    if not isSelected and selectedData then
+        for _, selectedRowData in pairs(selectedData) do
+            if draggedDataEntry.key == selectedRowData.key then
+                isSelected = true
+                break
+            end
+        end
+        if not isSelected then
+            _selectEntry(self, draggedDataEntry.key)
+            numRowsSelected = numRowsSelected + 1
+            isSelected = true
+        end
+    end
+    local hasMultipleRowsSelected = numRowsSelected > 1 or false
+    currentDragData._sourceListControl = self
+    currentDragData._sourceDraggedControl = draggedControl
+    currentDragData._isSelected = isSelected
+    currentDragData._hasMultipleRowsSelected = hasMultipleRowsSelected
+    currentDragData._numRowsSelected = numRowsSelected
+    currentDragData._isFromLeftList = self.isLeftList
+    currentDragData._draggedText = draggedDataEntry.value
+    currentDragData._draggedAdditionalText = (hasMultipleRowsSelected and zo_strformat(multipleRowsDraggedText, tostring(numRowsSelected - 1))) or nil
+    self.shifterBox.currentDragData  = currentDragData
+
+    self.shifterBox.draggingMouseButtonPressed = mouseButton
+
+    -- then trigger the callback if present
+    _fireCallback(self.shifterBox, draggedControl, (self.isLeftList and lib.EVENT_LEFT_LIST_ROW_ON_DRAG_START) or lib.EVENT_RIGHT_LIST_ROW_ON_DRAG_START,
+            self.shifterBox, self.isLeftList, mouseButton, currentDragData)
+
+    --Anchor the TLC with the label showing the text of the dragged row element(s) to GuiMouse
+    self.shifterBox:UpdateCursorTLC(false, draggedControl)
+
+    local mouseCursor = self.isLeftList and MOUSECURSOR_NEXTRIGHT or MOUSECURSOR_NEXTLEFT
+    _setMouseCursor(mouseCursor)
+    --Unselect any selected entry
+    --ZO_ScrollList_SelectData(self.list, nil, nil, nil, true)
+    --Enable a global MouseUp check and see if the mouse is above the ZO_SortList where the drag started
+    --If not: End the drag&drop
+    local selfVar = self
+    EM:RegisterForEvent(EVENT_HANDLER_NAMESPACE .. GLOBAL_MOUSE_DOWN, EVENT_GLOBAL_MOUSE_DOWN, function(...) selfVar:OnGlobalMouseDownDuringDrag(...) end)
+    EM:RegisterForEvent(EVENT_HANDLER_NAMESPACE .. GLOBAL_MOUSE_UP, EVENT_GLOBAL_MOUSE_UP, function(...) selfVar:OnGlobalMouseUpDuringDrag(...) end)
+
+    --Set the OnUpdate handler to check for the autosroll position of the cursor
+    self.shifterBox.draggingUpdateTime = nil
+    self.shifterBox.shifterBoxControl:SetHandler("OnUpdate", function() selfVar:DragOnUpdateCallback(draggedControl) end)
+end
+
+
+function ShifterBoxList:StopDragging(draggedOnToControl)
+--d("ShifterBoxList:StopDragging")
+    --Delay so the OnMouseButtonDown/Up handlers fire first
+    -->ShifterBoxList:OnGlobalMouseUpDuringDrag will clear teh draggedData if the draggedToContol is not a supported one
+    zo_callLater(function()
+        local mouseButton = self.shifterBox.draggingMouseButtonPressed
+--d("StopDragging - mouseButton: " ..tostring(mouseButton) ..", contentType: " ..tostring(GetCursorContentType()))
+        if not self.enabled or not self.shifterBoxSettings.dragDropEnabled then return end
+        _disableOnUpdateHandler(self.shifterBox)
+        _setMouseCursor(MOUSECURSOR_DONOTCATRE)
+
+        if mouseButton and mouseButton == MOUSE_BUTTON_INDEX_LEFT and GetCursorContentType() == MOUSE_CONTENT_EMPTY then
+--d("[ShifterBoxList]StopDragging -- from key: " ..tostring(self.shifterBox.currentDragData.key) .." to key: " ..tostring(draggedOnToControl.key))
+            local dragData = self.shifterBox.currentDragData
+            if dragData then
+                local wasDragSuccessfull = false
+
+                -- make sure the sourceListBox and "this" listBox belong to the same shifterBox
+                local sourceListControl = dragData._sourceListControl
+                local hasSameShifterBoxParent = _hasSameShifterBoxParent(self, sourceListControl)
+                local isLeftList = self.isLeftList
+                if hasSameShifterBoxParent then
+                    local sourceList = isLeftList and self.shifterBox.rightList or self.shifterBox.leftList
+                    local destList = self
+                    local isDragDataSelected = dragData._isSelected
+                    if isDragDataSelected and isLeftList ~= dragData._isFromLeftList then
+                        -- if the draged data was selected (and is not from the same list), then move all selected entries (by "clicking" the button)
+                        local buttonControl = sourceListControl.buttonControl
+                        local buttonOnClickedFunction = buttonControl:GetHandler("OnClicked")
+                        wasDragSuccessfull = buttonOnClickedFunction(buttonControl)
+                    else
+                        -- if the draged data was NOT selected, then only move that single entry
+                        wasDragSuccessfull = _moveEntryToOtherList(sourceList, dragData.key, destList, self.shifterBox)
+                    end
+                end
+
+                -- then trigger the callback if present
+                _fireCallback(self.shifterBox, draggedOnToControl, (isLeftList and lib.EVENT_LEFT_LIST_ROW_ON_DRAG_END) or lib.EVENT_RIGHT_LIST_ROW_ON_DRAG_END,
+                        self.shifterBox, mouseButton, dragData, hasSameShifterBoxParent, wasDragSuccessfull, isLeftList)
+            end
+        end
+        _clearDragging(self)
+    end, 50)
+end
 
 -- =================================================================================================================
 -- == SHIFTERBOX PUBLIC FUNCTIONS == --
@@ -1340,6 +1575,70 @@ function ShifterBox:ClearRightList()
     _clearList(self.rightList)
 end
 
+-- ---------------------------------------------------------------------------------------------------------------------
+-- Drag & drop operations -> Show dragged items at the cursor
+function ShifterBox:UpdateCursorTLC(isHidden, draggedControl)
+    if CURSORTLC == nil then _getCursorTLC() end
+    if not CURSORTLC then return end
+    CURSORTLC:ClearAnchors()
+    CURSORTLC.label:ClearAnchors()
+    local draggedData = self.currentDragData
+    if not isHidden and draggedData ~= nil then
+        local minLabelHeight = defaultListSettings.rowHeight
+        local maxLabelWidth = 400
+        local maxLabelHeight = 80
+
+        CURSORTLC.shifterBox = self
+        CURSORTLC:SetResizeToFitDescendents(true)
+
+        local draggedControlText = draggedData._draggedText
+        local draggedAdditionalText = draggedData._draggedAdditionalText
+        local draggedAdditionalTextIsGiven = (draggedAdditionalText ~= nil and draggedAdditionalText ~= "") or false
+        local textForLabel = draggedControlText
+        local textWidth = GetStringWidthScaledPixels(ZoFontGame, draggedControlText, 1) + 2
+        local textWidthAdditionalText = (draggedAdditionalTextIsGiven == true and (GetStringWidthScaledPixels(ZoFontGame, draggedAdditionalText, 1) + 2)) or 0
+        if draggedAdditionalTextIsGiven and textWidthAdditionalText > 0 then
+            if textWidthAdditionalText > textWidth then
+                textWidth = textWidthAdditionalText
+            end
+            textForLabel = draggedControlText .. "\n" .. draggedAdditionalText
+        end
+        local textHeight = (draggedAdditionalTextIsGiven == true and (2 * minLabelHeight)) or minLabelHeight
+--d(">draggedAdditionalText: " ..tostring(draggedAdditionalText) .. ", textWidth: " .. tostring(textWidth) .. ", textHeight: " ..tostring(textHeight))
+
+        CURSORTLC.label:SetText(textForLabel)
+        CURSORTLC.label:SetWidth(textWidth)
+        CURSORTLC.label:SetHeight(textHeight)
+        CURSORTLC:SetWidth(textWidth)
+        CURSORTLC:SetHeight(textHeight)
+
+        local width, height = CURSORTLC.label:GetDimensions()
+        if width > maxLabelWidth then width = maxLabelWidth end
+        if height > maxLabelHeight then height = maxLabelHeight end
+--d(">GuiMouse:isHidden: " ..tostring(GuiMouse:IsHidden()) .. ", cursorTLC.width: " ..tostring(CURSORTLC:GetWidth()) ..", cursorTLC.height: " ..tostring(CURSORTLC:GetHeight()) .. ", text: " ..tostring(textForLabel))
+
+        CURSORTLC:SetDimensionConstraints(width, height, maxLabelWidth, maxLabelHeight)
+        CURSORTLC:SetDrawTier(DT_HIGH)
+        CURSORTLC:SetDrawLayer(DL_OVERLAY)
+        CURSORTLC:SetDrawLevel(5)
+        CURSORTLC:SetAlpha(0.8)
+
+        local offsetX = draggedData._isFromLeftList and 10 or 35
+        CURSORTLC:SetAnchor(LEFT, GuiMouse, RIGHT, offsetX, 0)
+        CURSORTLC.label:SetAnchor(TOPLEFT, CURSORTLC, TOPLEFT, 0, 0)
+        CURSORTLC.label:SetAnchor(BOTTOMRIGHT, CURSORTLC, BOTTOMRIGHT, 0, 0)
+    else
+        CURSORTLC.shifterBox = nil
+        CURSORTLC:SetDimensions(0, 0)
+        CURSORTLC.label:SetText("")
+        CURSORTLC:SetDrawTier(DT_LOW)
+        CURSORTLC:SetDrawLayer(DL_BACKGROUND)
+        CURSORTLC:SetDrawLevel(0)
+        CURSORTLC:SetAlpha(0)
+    end
+    CURSORTLC:SetHidden(isHidden)
+    CURSORTLC:SetMouseEnabled(false)
+end
 
 -- =================================================================================================================
 -- == LIBRARY FUNCTIONS == --
@@ -1375,3 +1674,16 @@ function lib.Create(...)
     return ShifterBox:New(...)
 end
 setmetatable(lib, { __call = function(_, ...) return lib.Create(...) end })
+
+
+local function _OnAddOnLoaded(eventId, addonName)
+    if addonName ~= LIB_IDENTIFIER then return end
+    EM:UnregisterForEvent(LIB_IDENTIFIER .. "_EVENT_ADD_ON_LOADED", EVENT_ADD_ON_LOADED)
+
+    --Register a callback to the close of any LAM panel to hide dragged control at the mouse cursor, e.g. if ESC key
+    --was pressed during drag&drop, or if any other key closes the addon settings
+    if LibAddonMenu2 ~= nil then
+        CM:RegisterCallback("LAM-PanelClosed", _checkIfDraggedAndDisableUpdateHandler)
+    end
+end
+EM:RegisterForEvent(LIB_IDENTIFIER .. "_EVENT_ADD_ON_LOADED", EVENT_ADD_ON_LOADED, _OnAddOnLoaded)

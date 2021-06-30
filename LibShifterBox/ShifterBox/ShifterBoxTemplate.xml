@@ -1,7 +1,9 @@
 <GuiXml>
     <Controls>
+        <!-- The ZO_SortFilterList virtual template of the 2 list boxes (Shifter box) -->
         <Control name="ShifterBoxTemplate" resizeToFitDescendents="true" virtual="true">
             <Controls>
+                <!-- Left list -->
                 <Control name="$(parent)Left">
                     <Anchor point="TOPLEFT" />
                     <Controls>
@@ -45,6 +47,7 @@
                         </Button>
                     </Controls>
                 </Control>
+                <!-- Right list -->
                 <Control name="$(parent)Right">
                     <Anchor point="TOPLEFT" relativeTo="$(parent)LeftHeaders" relativePoint="TOPRIGHT" offsetX="40" />
                     <Controls>
@@ -90,6 +93,7 @@
                 </Control>
             </Controls>
         </Control>
+        <!-- The row virtual template of the shifter box lists -->
         <Control  name="ShifterBoxEntryTemplate" verticalAlignment="CENTER" horizontalAlignment="LEFT" mouseEnabled="true" virtual="true">
             <Dimensions x="180" y="32" />
             <Controls>
@@ -99,5 +103,15 @@
                 </Label>
             </Controls>
         </Control>
+        <!-- The Top Level Control positioned at the cursor, to show dragged list entries -->
+        <TopLevelControl name="LibShifterBox_Cursor_TLC" mouseEnabled="false" hidden="true">
+			<Dimensions x="0" y="0" />
+			<Controls>
+                <Label name="$(parent)Label" font="ZoFontGame" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_SELECTED" horizontalAlignment="LEFT" verticalAlignment="TOP" text="">
+                    <Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT"/>
+                    <Anchor point="BOTTOMRIGHT" relativeTo="$(parent)" relativePoint="BOTTOMRIGHT"/>
+                </Label>
+			</Controls>
+		</TopLevelControl>
     </Controls>
 </GuiXml>
