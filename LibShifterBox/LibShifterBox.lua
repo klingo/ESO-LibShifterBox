@@ -1373,7 +1373,7 @@ function ShifterBox:New(uniqueAddonName, uniqueShifterBoxName, parentControl, cu
 end
 
 function ShifterBox:GetControl()
-    return self.shifterBoxControl
+    return self.shifterBoxControl, self
 end
 
 --- Clears the current anchor(s) and sets a new one
