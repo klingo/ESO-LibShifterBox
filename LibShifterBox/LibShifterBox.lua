@@ -813,12 +813,12 @@ end
 -- ZO_SortFilterList:RefreshSort()                                                      =>  SortScrollList()    =>  CommitScrollList()
 
 function ShifterBoxList:BuildMasterList()
-    -- intended to be overriden
+    -- intended to be overridden
     -- should build the master list of data that is later filtered by FilterScrollList
 end
 
 function ShifterBoxList:FilterScrollList()
-    -- intended to be overriden
+    -- intended to be overridden
     -- should take the master list data and filter it
     local hasAtLeastOneEntry = false
     local scrollData = ZO_ScrollList_GetDataList(self.list)
@@ -1055,7 +1055,7 @@ function ShifterBoxList:SetupRowEntry(rowControl, rowData, doNotSetupRowNow)
     rowControl:SetHandler("OnMouseExit", onRowMouseExit)
     -- handle single clicks to mark entry
     rowControl:SetHandler("OnMouseUp", onRowMouseUp)
-    -- handle start draging
+    -- handle start dragging
     if self.shifterBoxSettings.dragDropEnabled then
         rowControl:SetHandler("OnDragStart", onDragStart)
     end
@@ -1120,7 +1120,7 @@ function ShifterBoxList:SetEntriesEnabled(enabled)
         -- unselect all entries
         self:UnselectEntries()
     end
-    -- after unselecing all entries, change the actual state of the rowControl-buttons
+    -- after unselecting all entries, change the actual state of the rowControl-buttons
     local rowControls = self.list.contents
     for childIndex = 1, rowControls:GetNumChildren() do
         local rowControl = rowControls:GetChild(childIndex)
@@ -1195,7 +1195,7 @@ function ShifterBoxList:DragOnUpdateCallback(draggedControl)
     local gameTimeMS = GetGameTimeMilliseconds()
     local gameTimeDeltaNeeded = 200 --milliseconds
     local draggingUpdateTime = self.shifterBox.draggingUpdateTime
---d("[LibShifterbox]OnUpdate-gameTime: " ..tostring(gameTimeMS) .. ", self.draggingUpdateTime: " ..tostring(self.draggingUpdateTime))
+--d("[LibShifterBox]OnUpdate-gameTime: " ..tostring(gameTimeMS) .. ", self.draggingUpdateTime: " ..tostring(self.draggingUpdateTime))
     local updateAutoScroll = false
     if draggingUpdateTime == nil then
         self.shifterBox.draggingUpdateTime = gameTimeMS
@@ -1277,7 +1277,7 @@ end
 function ShifterBoxList:StopDragging(draggedOnToControl)
 --d("ShifterBoxList:StopDragging")
     --Delay so the OnMouseButtonDown/Up handlers fire first
-    -->ShifterBoxList:OnGlobalMouseUpDuringDrag will clear teh draggedData if the draggedToContol is not a supported one
+    -->ShifterBoxList:OnGlobalMouseUpDuringDrag will clear teh draggedData if the draggedToControl is not a supported one
     zo_callLater(function()
         local mouseButton = self.shifterBox.draggingMouseButtonPressed
 --d("StopDragging - mouseButton: " ..tostring(mouseButton) ..", contentType: " ..tostring(GetCursorContentType()))
@@ -1289,7 +1289,7 @@ function ShifterBoxList:StopDragging(draggedOnToControl)
 --d("[ShifterBoxList]StopDragging -- from key: " ..tostring(self.shifterBox.currentDragData.key) .." to key: " ..tostring(draggedOnToControl.key))
             local dragData = self.shifterBox.currentDragData
             if dragData then
-                local wasDragSuccessfull = false
+                local wasDragSuccessful = false
 
                 -- make sure the sourceListBox and "this" listBox belong to the same shifterBox
                 local sourceListControl = dragData._sourceListControl
@@ -1300,19 +1300,19 @@ function ShifterBoxList:StopDragging(draggedOnToControl)
                     local destList = self
                     local isDragDataSelected = dragData._isSelected
                     if isDragDataSelected and isLeftList ~= dragData._isFromLeftList then
-                        -- if the draged data was selected (and is not from the same list), then move all selected entries (by "clicking" the button)
+                        -- if the dragged data was selected (and is not from the same list), then move all selected entries (by "clicking" the button)
                         local buttonControl = sourceListControl.buttonControl
                         local buttonOnClickedFunction = buttonControl:GetHandler("OnClicked")
-                        wasDragSuccessfull = buttonOnClickedFunction(buttonControl)
+                        wasDragSuccessful = buttonOnClickedFunction(buttonControl)
                     else
-                        -- if the draged data was NOT selected, then only move that single entry
-                        wasDragSuccessfull = _moveEntryToOtherList(sourceList, dragData.key, destList, self.shifterBox)
+                        -- if the dragged data was NOT selected, then only move that single entry
+                        wasDragSuccessful = _moveEntryToOtherList(sourceList, dragData.key, destList, self.shifterBox)
                     end
                 end
 
                 -- then trigger the callback if present
                 _fireCallback(self.shifterBox, draggedOnToControl, (isLeftList and lib.EVENT_LEFT_LIST_ROW_ON_DRAG_END) or lib.EVENT_RIGHT_LIST_ROW_ON_DRAG_END,
-                        self.shifterBox, mouseButton, dragData, hasSameShifterBoxParent, wasDragSuccessfull)
+                        self.shifterBox, mouseButton, dragData, hasSameShifterBoxParent, wasDragSuccessful)
             end
         end
         _clearDragging(self)
@@ -1646,7 +1646,7 @@ end
 lib.DEFAULT_CATEGORY                    = DATA_DEFAULT_CATEGORY
 
 --- Returns an existing ShifterBox instance
--- @param uniqueAddonName - a string identifer for the consuming addon
+-- @param uniqueAddonName - a string identifier for the consuming addon
 -- @param uniqueShifterBoxName - a string identifier for the specific shifterBox
 -- @return an existing shifterBox instance or nil if not found with the passed names
 function lib.GetShifterBox(uniqueAddonName, uniqueShifterBoxName)
@@ -1658,7 +1658,7 @@ function lib.GetShifterBox(uniqueAddonName, uniqueShifterBoxName)
 end
 
 --- Returns the CT_CONTROL object of an existing ShifterBox instance
--- @param uniqueAddonName - a string identifer for the consuming addon
+-- @param uniqueAddonName - a string identifier for the consuming addon
 -- @param uniqueShifterBoxName - a string identifier for the specific shifterBox
 -- @return an existing shifterBox CT_CONTROL object or nil if not found with the passed names
 --         2nd return param: The shifterbox instance of that control or nil
