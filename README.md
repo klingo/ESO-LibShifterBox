@@ -388,10 +388,10 @@ This event is triggered when the right list has been cleared from all (shown) en
 It does not check for entries that are part of a category that is currently hidden, only entries from shown categories are considered when evaluating if the right list is cleared or not. The event however can be triggered when `ShifterBox:HideCategory` or `ShifterBox:ShowOnlyCategory` are called and the right list does not have any entries left.
 ```lua
 -- @param shifterBox object referencing the shifterBox that triggered this event
-local function myLeftListClearedFunction(shifterBox)
+local function myRightListClearedFunction(shifterBox)
     -- do something
 end
-shifterBox:RegisterCallback(LibShifterBox.EVENT_LEFT_LIST_CLEARED, myLeftListClearedFunction)
+shifterBox:RegisterCallback(LibShifterBox.EVENT_RIGHT_LIST_CLEARED, myRightListClearedFunction)
 ```
 
 ### ShifterBox:UnregisterCallback
