@@ -148,9 +148,9 @@ local function _createShifterBox(uniqueAddonName, uniqueShifterBoxName, parentCo
     return CreateControlFromVirtual(shifterBoxName, parentControl, "ShifterBoxTemplate")
 end
 
-local function _moveEntryFromTo(fromList, toList, key, shifterBox)
+local function _moveEntryFromTo(fromList, toList, moveKey, shifterBox)
     local retVar = false
-    local key, value, categoryId = fromList:RemoveEntry(key)
+    local key, value, categoryId = fromList:RemoveEntry(moveKey)
     if key ~= nil then
         toList:AddEntry(key, value, categoryId)
         retVar = true
