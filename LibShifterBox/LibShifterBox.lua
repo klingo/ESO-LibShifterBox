@@ -494,8 +494,8 @@ local function _addEntriesToList(list, entries, replace, otherList, categoryId)
         entriesList = entries
     end
     if entriesList then
-        local keysAdded = {}
-        local keysRemoved = {}
+        local entryAdded = {}
+        local entryRemoved = {}
         for key, value in pairs(entriesList) do
             local listRemovedFrom
             if replace and replace == true then
@@ -505,6 +505,18 @@ local function _addEntriesToList(list, entries, replace, otherList, categoryId)
                 if removeKey ~= nil or otherRemoveKey ~= nil then
                     listRemovedFrom = (removeKey ~= nil and list) or otherList
                     hasAtLeastOneRemoved = true
+                    --For the REMOVED callback
+                    if listRemovedFrom ~= nil then
+                        entryRemoved = {
+                            key=key,
+                            value=value,
+                            categoryId=categoryId,
+                            listRemovedFrom=listRemovedFrom,
+                        }
+                    end
+                    -- then trigger the callback if present
+                    _fireCallback(list.shifterBox, nil, (list.isLeftList and lib.EVENT_LEFT_LIST_ENTRY_REMOVED) or lib.EVENT_RIGHT_LIST_ENTRY_REMOVED,
+                                  list, entryRemoved)
                 end
             else
                 -- if replace is not set or set to false, then assert that key does not exist in either list
@@ -514,37 +526,21 @@ local function _addEntriesToList(list, entries, replace, otherList, categoryId)
             -- then add entry to the corresponding list
             list:AddEntry(key, value, categoryId)
             --For the ADDED callback
-            keysAdded[key] = {
+            entryAdded = {
                 key=key,
                 value=value,
                 categoryId=categoryId,
                 listAddedTo=list,
             }
-
-            --For the REMOVED callback
-            if listRemovedFrom ~= nil then
-                keysRemoved[key] = {
-                    key=key,
-                    value=value,
-                    categoryId=categoryId,
-                    listRemovedFrom=listRemovedFrom,
-                }
-            end
             hasAtLeastOneAdded = true
-        end
-        if hasAtLeastOneAdded then
             -- then trigger the callback if present
             _fireCallback(list.shifterBox, nil, (list.isLeftList and lib.EVENT_LEFT_LIST_ENTRY_ADDED) or lib.EVENT_RIGHT_LIST_ENTRY_ADDED,
-                    list, keysAdded)
-
+                          list, entryAdded)
+        end
+        if hasAtLeastOneAdded then
             -- Afterwards refresh the visualisation of the data
             _refreshFilter(list)
-
             if hasAtLeastOneRemoved then
-                -- then trigger the callback if present
-                _fireCallback(list.shifterBox, nil, (list.isLeftList and lib.EVENT_LEFT_LIST_ENTRY_REMOVED) or lib.EVENT_RIGHT_LIST_ENTRY_REMOVED,
-                        list, keysRemoved)
-
                 _refreshFilter(otherList, true)
             end
         end
