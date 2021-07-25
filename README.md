@@ -399,30 +399,84 @@ shifterBox:RegisterCallback(LibShifterBox.EVENT_RIGHT_LIST_CLEARED, myRightListC
 ```
 
 #### LibShifterBox.EVENT_LEFT_LIST_ENTRY_ADDED
-This event is triggered whenever a new entry is added to the left list with `ShifterBox:AddEntryToLeftList` or `ShifterBox:AddEntriesToLeftList`.
+This event is triggered whenever a new entry is added to the left list with `ShifterBox:AddEntryToLeftList` (once) or `ShifterBox:AddEntriesToLeftList` (multiple times). \
+It is NOT triggered when items are moved from the right list to the left list.
 ```lua
 -- @param shifterBox object referencing the shifterBox that triggered this event
-local function myLeftListEntryAddedFunction(shifterBox)
+-- @param list object referencing the left ShifterBoxList (subclass of ZO_SortFilterList)
+-- @param entryAdded table containing details about the added entry
+local function myLeftListEntryAddedFunction(shifterBox, list, entryAdded)
     -- do something
 end
 shifterBox:RegisterCallback(LibShifterBox.EVENT_LEFT_LIST_ENTRY_ADDED, myLeftListEntryAddedFunction)
 ```
-
-TODO: to be clarified regarding: keysAdded
+The returned `entryAdded` has the following structure:
+```lua
+entryAdded = {
+    key=key,
+    value=value,
+    categoryId=categoryId,
+}
+```
 
 #### LibShifterBox.EVENT_RIGHT_LIST_ENTRY_ADDED
-tbd
-
-ShifterBox:AddEntryToRightList
-ShifterBox:AddEntriesToRightList
-
-TODO: to be clarified regarding: keysAdded
+This event is triggered whenever a new entry is added to the left list with `ShifterBox:AddEntryToRightList` (once) or `ShifterBox:AddEntriesToRightList` (multiple times). \
+It is NOT triggered when items are moved from the left list to the right list.
+```lua
+-- @param shifterBox object referencing the shifterBox that triggered this event
+-- @param list object referencing the left ShifterBoxList (subclass of ZO_SortFilterList)
+-- @param entryAdded table containing details about the added entry
+local function myRightListEntryAddedFunction(shifterBox, list, entryAdded)
+    -- do something
+end
+shifterBox:RegisterCallback(LibShifterBox.EVENT_RIGHT_LIST_ENTRY_ADDED, myRightListEntryAddedFunction)
+```
+The returned `entryAdded` has the following structure:
+```lua
+entryAdded = {
+    key=key,
+    value=value,
+    categoryId=categoryId,
+}
+```
 
 #### LibShifterBox.EVENT_LEFT_LIST_ENTRY_REMOVED
-tbd
+This event is triggered whenever an existing entry is removed from the left list with `ShifterBox:RemoveEntryByKey` (once) or `ShifterBox:RemoveEntriesByKey` (multiple times). It can also be triggered by `ShifterBox:AddEntryTo___List` (once) and `ShifterBox:AddEntriesTo___List` (multiple times) when `replace=true` and an entry with the same key already exists. In that case it will first be removed, and then a new entry is added. \
+It is NOT triggered when items are moved from the left list to the right list.  
+```lua
+-- @param shifterBox object referencing the shifterBox that triggered this event
+-- @param list object referencing the left ShifterBoxList (subclass of ZO_SortFilterList)
+-- @param entryRemoved table containing details about the removed entry
+local function myLeftListEntryRemovedFunction(shifterBox, list, entryRemoved)
+    -- do something
+end
+shifterBox:RegisterCallback(LibShifterBox.EVENT_LEFT_LIST_ENTRY_REMOVED, myLeftListEntryRemovedFunction)
+```
+The returned `entryRemoved` has the following structure:
+```lua
+entryRemoved = {
+    key=key,
+}
+```
 
 #### LibShifterBox.EVENT_RIGHT_LIST_ENTRY_REMOVED
-tbd
+This event is triggered whenever an existing entry is removed from the right list with `ShifterBox:RemoveEntryByKey` (once) or `ShifterBox:RemoveEntriesByKey` (multiple times). It can also be triggered by `ShifterBox:AddEntryTo___List` (once) and `ShifterBox:AddEntriesTo___List` (multiple times) when `replace=true` and an entry with the same key already exists. In that case it will first be removed, and then a new entry is added. \
+It is NOT triggered when items are moved from the right list to the left list.
+```lua
+-- @param shifterBox object referencing the shifterBox that triggered this event
+-- @param list object referencing the left ShifterBoxList (subclass of ZO_SortFilterList)
+-- @param entryRemoved table containing details about the removed entry
+local function myRightListEntryRemovedFunction(shifterBox, list, entryRemoved)
+    -- do something
+end
+shifterBox:RegisterCallback(LibShifterBox.EVENT_RIGHT_LIST_ENTRY_REMOVED, myRightListEntryRemovedFunction)
+```
+The returned `entryRemoved` has the following structure:
+```lua
+entryRemoved = {
+    key=key,
+}
+```
 
 #### LibShifterBox.EVENT_LEFT_LIST_CREATED
 This event is triggered when the left list has been created and thus is accessible now to other functions such as for adding new entries to it.
@@ -541,10 +595,10 @@ local function myLeftListRowDragStartFunction(draggedControl, shifterBox, mouseB
 end
 shifterBox:RegisterCallback(LibShifterBox.EVENT_LEFT_LIST_ROW_ON_DRAG_START, myLeftListRowDragStartFunction)
 ```
-The returned `rawDraggedRowData` is additionally enriched with the following information:
+The returned `rawDraggedRowData` is additionally enriched with the following attributes:
 ```
 _sourceListControl          CT_CONTROL
-_sourceDraggedControl      CT_CONTROL
+_sourceDraggedControl       CT_CONTROL
 _isSelected                 boolean
 _hasMultipleRowsSelected    boolean
 _numRowsSelected            number
@@ -566,10 +620,10 @@ local function myRightListRowDragStartFunction(draggedControl, shifterBox, mouse
 end
 shifterBox:RegisterCallback(LibShifterBox.EVENT_RIGHT_LIST_ROW_ON_DRAG_START, myRightListRowDragStartFunction)
 ```
-The returned `rawDraggedRowData` is additionally enriched with the following information:
+The returned `rawDraggedRowData` is additionally enriched with the following attributes:
 ```
 _sourceListControl          CT_CONTROL
-_sourceDraggedControl      CT_CONTROL
+_sourceDraggedControl       CT_CONTROL
 _isSelected                 boolean
 _hasMultipleRowsSelected    boolean
 _numRowsSelected            number
@@ -593,10 +647,10 @@ local function myLeftListRowDragEndFunction(draggedOnToControl, shifterBox, mous
 end
 shifterBox:RegisterCallback(LibShifterBox.EVENT_LEFT_LIST_ROW_ON_DRAG_END, myLeftListRowDragEndFunction)
 ```
-The returned `rawDraggedRowData` is additionally enriched with the following information:
+The returned `rawDraggedRowData` is additionally enriched with the following attributes:
 ```
 _sourceListControl          CT_CONTROL
-_sourceDraggedControl      CT_CONTROL
+_sourceDraggedControl       CT_CONTROL
 _isSelected                 boolean
 _hasMultipleRowsSelected    boolean
 _numRowsSelected            number
@@ -620,10 +674,10 @@ local function myRightListRowDragEndFunction(draggedOnToControl, shifterBox, mou
 end
 shifterBox:RegisterCallback(LibShifterBox.EVENT_RIGHT_LIST_ROW_ON_DRAG_END, myRightListRowDragEndFunction)
 ```
-The returned `rawDraggedRowData` is additionally enriched with the following information:
+The returned `rawDraggedRowData` is additionally enriched with the following attributes:
 ```
 _sourceListControl          CT_CONTROL
-_sourceDraggedControl      CT_CONTROL
+_sourceDraggedControl       CT_CONTROL
 _isSelected                 boolean
 _hasMultipleRowsSelected    boolean
 _numRowsSelected            number
