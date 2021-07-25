@@ -535,7 +535,6 @@ local function _addEntriesToList(list, entries, replace, otherList, categoryId)
                 key=key,
                 value=value,
                 categoryId=categoryId,
-                listAddedTo=list,
             }
             hasAtLeastOneAdded = true
             -- then trigger the callback if present
