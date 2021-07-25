@@ -9,6 +9,7 @@
 [*]Simple access to know which entries are in which ListBox
 [*]Change Dimension, Hidden and Enabled state at any time
 [*]Provide your own XML Templates to be used for the individual rows
+[*]Many events you can register your callback functions to
 [/LIST]
 
 

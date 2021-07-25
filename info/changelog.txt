@@ -1,3 +1,7 @@
+0.5.0   (July 25, 2021)
+- updated to APIVersion 100035 (Blackwood) ([URL="https://github.com/klingo/ESO-LibShifterBox/pull/24"]#24[/URL], thanks Baertram)
+- added many more events and callback functions, improved drag&drop visualisation, and other code improvements ([URL="https://github.com/klingo/ESO-LibShifterBox/pull/24"]#24[/URL], thanks Baertram / [URL="https://github.com/klingo/ESO-LibShifterBox/pull/25"]#25[/URL])
+
 0.4.1   (March 06, 2021)
 - updated to APIVersion 100034 (Flames of Ambition)) ([URL="https://github.com/klingo/ESO-LibShifterBox/pull/21"]#21[/URL])
 - fixed an issue where the (sorting) headers dit not get properly disabled ([URL="https://github.com/klingo/ESO-LibShifterBox/pull/22"]#22[/URL])
