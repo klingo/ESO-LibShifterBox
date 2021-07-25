@@ -430,13 +430,18 @@ local function _removeEntriesFromList(list, keys)
     local hasAtLeastOneRemoved = false
     for _, key in pairs(keys) do
         local removedKey = list:RemoveEntry(key)
-        if removedKey ~= nil then hasAtLeastOneRemoved = true end
+        if removedKey ~= nil then
+            hasAtLeastOneRemoved = true
+            --For the REMOVED callback
+            local entryRemoved = {
+                key=key,
+            }
+            -- then trigger the callback if present
+            _fireCallback(list.shifterBox, nil, (list.isLeftList and lib.EVENT_LEFT_LIST_ENTRY_REMOVED) or lib.EVENT_RIGHT_LIST_ENTRY_REMOVED,
+                          list, entryRemoved)
+        end
     end
     if hasAtLeastOneRemoved then
-        -- then trigger the callback if present
-        _fireCallback(list.shifterBox, nil, (list.isLeftList and lib.EVENT_LEFT_LIST_ENTRY_REMOVED) or lib.EVENT_RIGHT_LIST_ENTRY_REMOVED,
-                list, keys)
-
         _refreshFilter(list, true)
     end
 end
