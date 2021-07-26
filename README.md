@@ -177,15 +177,7 @@ customSettings = {
         end,
         rowResetControlCallback = function()                -- an optional callback when the datatype control gets reset
             d("LSB: RowResetControlCallback")
-        end,                    
-        callbackRegister = {                                -- directly register callback functions to any of the exposed events
-            [LibShifterBox.EVENT_LEFT_LIST_ROW_ON_MOUSE_ENTER] = function(rowControl, shifterBox, data)
-                d("LSB: LeftListRowOnMouseEnter")
-            end,
-            [LibShifterBox.EVENT_LEFT_LIST_ROW_ON_MOUSE_EXIT] = function(rowControl, shifterBox, data)
-                d("LSB: LeftListRowOnMouseExit")
-            end
-        }
+        end,
     },
     rightList = {               -- list-specific settings that apply to the RIGHT list
         title = "",                                         -- the title/header of the list
@@ -208,15 +200,15 @@ customSettings = {
         rowResetControlCallback = function()                -- an optional callback when the datatype control gets reset
             d("LSB: RowResetControlCallback")
         end,
-        callbackRegister = {                                -- directly register callback functions to any of the exposed events
-            [LibShifterBox.EVENT_RIGHT_LIST_ROW_ON_MOUSE_ENTER] = function(rowControl, shifterBox, data)
-                d("LSB: LeftListRowOnMouseEnter")
-            end,
-            [LibShifterBox.EVENT_RIGHT_LIST_ROW_ON_MOUSE_EXIT] = function(rowControl, shifterBox, data)
-                d("LSB: LeftListRowOnMouseExit")
-            end
-        }
-    }    
+    },
+    callbackRegister = {                                    -- directly register callback functions with any of the exposed events
+        [LibShifterBox.EVENT_LEFT_LIST_ROW_ON_MOUSE_ENTER] = function(rowControl, shifterBox, data)
+            d("LSB: LeftListRowOnMouseEnter")
+        end,
+        [LibShifterBox.EVENT_RIGHT_LIST_ROW_ON_MOUSE_ENTER] = function(rowControl, shifterBox, data)
+            d("LSB: RightListRowOnMouseEnter")
+        end
+    }
 }
 ```
 For `rowDataTypeSelectSound`, you may look at the overview of [Sounds](https://wiki.esoui.com/Sounds) in the ESOUI Wiki.
