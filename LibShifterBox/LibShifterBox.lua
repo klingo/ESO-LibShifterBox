@@ -1496,7 +1496,7 @@ end
 function ShifterBox:UnregisterCallback(shifterBoxEvent, callbackFunction)
     _assertValidShifterBoxEvent(shifterBoxEvent)
     local callbackIdentifier = _getUniqueShifterBoxEventName(self, shifterBoxEvent)
-    CM:RegisterCallback(callbackIdentifier, callbackFunction)
+    CM:UnregisterCallback(callbackIdentifier, callbackFunction)
 end
 
 -- ---------------------------------------------------------------------------------------------------------------------
