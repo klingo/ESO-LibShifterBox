@@ -8,7 +8,7 @@ You can always download the latest version here: https://www.esoui.com/downloads
 
 
 ## Quick Start Example
-This is a full example of how to use the LibShifterBox.
+This is a full example of how to use the LibShifterBox. \
 ![alt text][shifterbox-example]
 \
 \
@@ -329,273 +329,178 @@ shifterBox:RegisterCallback(shifterBoxEvent, callbackFunction)
 ```
 The following values for `shifterBoxEvent` are currently supported:
 
-#### LibShifterBox.EVENT_ENTRY_HIGHLIGHTED
-This event is triggered when an entry is highlighted (i.e. clicked on with the mouse, or by calling `ShifterBox:SelectEntryByKey` and `ShifterBox:SelectEntriesByKey`).
+#### LibShifterBox.EVENT_LIST_CREATED
+This event is triggered when a list has been created and thus is accessible now to other functions such as for adding new entries to it.
 ```lua
--- @param control object referencing the entry/row that has been highlighted
 -- @param shifterBox object referencing the shifterBox that triggered this event
--- @param key string with the key of the highlighted entry
--- @param value string with the (displayed) value of the highlighted entry
--- @categoryId string with the category of the highlighted entry (can be nil)
--- @isLeftList boolean whether the highlighted entry is in the left listBox
-local function myEntryHighlightedFunction(control, shifterBox, key, value, categoryId, isLeftList)
+-- @param isLeftList boolean indicating if it is the left list (true) or the right list (false)
+-- @param listControl object referencing the list control that has been created
+local function myListCreatedFunction(shifterBox, isLeftList, listControl)
     -- do something
 end
-shifterBox:RegisterCallback(LibShifterBox.EVENT_ENTRY_HIGHLIGHTED, myEntryHighlightedFunction)
+shifterBox:RegisterCallback(LibShifterBox.EVENT_LIST_CREATED, myListCreatedFunction)
 ```
 
-#### LibShifterBox.EVENT_ENTRY_UNHIGHLIGHTED
-This event is triggered when an entry is un-highlighted (i.e. clicked on a highlighted entry with the mouse)
+#### LibShifterBox.EVENT_LIST_CLEARED
+This event is triggered when a list has been cleared from all (shown) entries, i.e. the entries have been moved to the other list, or got deleted from it. \
+It does not check for entries that are part of a category that is currently hidden, only entries from shown categories are considered when evaluating if the list is cleared or not. The event however can be triggered when `ShifterBox:HideCategory` or `ShifterBox:ShowOnlyCategory` are called and the list does not have any entries left.
 ```lua
--- @param control object referencing the entry/row that has been un-highlighted
 -- @param shifterBox object referencing the shifterBox that triggered this event
--- @param key string with the key of the highlighted entry
--- @param value string with the (displayed) value of the un-highlighted entry
--- @categoryId string with the category of the un-highlighted entry (can be nil)
--- @isLeftList boolean whether the un-highlighted entry is in the left listBox
-local function myEntryUnhighlightedFunction(control, shifterBox, key, value, categoryId, isLeftList)
+-- @param isLeftList boolean indicating if it is the left list (true) or the right list (false)
+local function myListClearedFunction(shifterBox, isLeftList)
     -- do something
 end
-shifterBox:RegisterCallback(LibShifterBox.EVENT_ENTRY_UNHIGHLIGHTED, myEntryUnhighlightedFunction)
+shifterBox:RegisterCallback(LibShifterBox.EVENT_LIST_CLEARED, myListClearedFunction)
 ```
 
-#### LibShifterBox.EVENT_ENTRY_MOVED
-This event is triggered when an entry is moved from one list to another, either with the [<] and [>] buttons, by drag-and-drop or with any of the library functions. \
-Note that when you move multiple entries, this event is also triggered multiple times (once per moved entry).
+#### LibShifterBox.EVENT_LIST_ENTRY_ADDED
+This event is triggered whenever a new entry is added to the list with `ShifterBox:AddEntryToRightList` (once) or `ShifterBox:AddEntriesToRightList` (multiple times). \
+It is NOT triggered when items are moved from one list to the other list.
 ```lua
 -- @param shifterBox object referencing the shifterBox that triggered this event
+-- @param isLeftList boolean indicating if it is the left list (true) or the right list (false)
+-- @param list object referencing the ShifterBoxList (subclass of ZO_SortFilterList)
+-- @param entryAdded table containing details about the added entry
+local function myListEntryAddedFunction(shifterBox, isLeftList, list, entryAdded)
+    -- do something
+end
+shifterBox:RegisterCallback(LibShifterBox.EVENT_LIST_ENTRY_ADDED, myListEntryAddedFunction)
+```
+The returned `entryAdded` has the following structure:
+```lua
+entryAdded = {
+    key=key,
+    value=value,
+    categoryId=categoryId,
+}
+```
+
+#### LibShifterBox.EVENT_LIST_ENTRY_REMOVED
+This event is triggered whenever an existing entry is removed from the list with `ShifterBox:RemoveEntryByKey` (once) or `ShifterBox:RemoveEntriesByKey` (multiple times). It can also be triggered by `ShifterBox:AddEntryTo___List` (once) and `ShifterBox:AddEntriesTo___List` (multiple times) when `replace=true` and an entry with the same key already exists. In that case it will first be removed, and then a new entry is added. \
+It is NOT triggered when items are moved from one list to the other list.
+```lua
+-- @param shifterBox object referencing the shifterBox that triggered this event
+-- @param isLeftList boolean indicating if it is the left list (true) or the right list (false)
+-- @param list object referencing the ShifterBoxList (subclass of ZO_SortFilterList)
+-- @param entryRemoved table containing details about the removed entry
+local function myListEntryRemovedFunction(shifterBox, isLeftList, list, entryRemoved)
+    -- do something
+end
+shifterBox:RegisterCallback(LibShifterBox.EVENT_LIST_ENTRY_REMOVED, myListEntryRemovedFunction)
+```
+The returned `entryRemoved` has the following structure:
+```lua
+entryRemoved = {
+    key=key,
+}
+```
+
+#### LibShifterBox.EVENT_LIST_ENTRY_SHIFTED
+This event is triggered when an entry is shifted from one list to another, either with the [<] and [>] buttons, by drag-and-drop or with any of the library functions. \
+Note that when you move multiple entries, this event is also triggered multiple times (once per shifted entry).
+```lua
+-- @param shifterBox object referencing the shifterBox that triggered this event
+-- @param isDestLeftList boolean indicating if the DESTINATION list is the left list (true) or the right list (false)
 -- @param key string with the key of the moved entry
 -- @param value string with the (displayed) value of the moved entry
--- @categoryId string with the category of the moved entry (can be nil)
--- @isDestListLeftList boolean whether the entry is is moved to the left listBox
--- @fromList object a list of all entries from the source list, AFTER the move
--- #toList object a list of all entries from the destination list, AFTER the move 
-local function myEntryMovedFunction(shifterBox, key, value, categoryId, isDestListLeftList, fromList, toList)
+-- @param categoryId string with the category of the moved entry (can be nil)
+-- @param fromList object referencing the SOURCE ShifterBoxList (subclass of ZO_SortFilterList)
+-- @param toList object referencing the DESTINATION ShifterBoxList (subclass of ZO_SortFilterList)
+local function myEntryShiftedFunction(shifterBox, isDestLeftList, key, value, categoryId, fromList, toList)
     -- do something
 end
-shifterBox:RegisterCallback(LibShifterBox.EVENT_ENTRY_MOVED, myEntryMovedFunction)
+shifterBox:RegisterCallback(LibShifterBox.EVENT_LIST_ENTRY_SHIFTED, myEntryShiftedFunction)
 ```
 
-#### LibShifterBox.EVENT_LEFT_LIST_CLEARED
-This event is triggered when the left list has been cleared from all (shown) entries, i.e. the entries have been moved to the right list, or got deleted from it. \
-It does not check for entries that are part of a category that is currently hidden, only entries from shown categories are considered when evaluating if the left list is cleared or not. The event however can be triggered when `ShifterBox:HideCategory` or `ShifterBox:ShowOnlyCategory` are called and the left list does not have any entries left.
+#### LibShifterBox.EVENT_LIST_ROW_HIGHLIGHTED
+This event is triggered when a row is highlighted (i.e. clicked on with the mouse, or by calling `ShifterBox:SelectEntryByKey` and `ShifterBox:SelectEntriesByKey`).
 ```lua
 -- @param shifterBox object referencing the shifterBox that triggered this event
-local function myLeftListClearedFunction(shifterBox)
+-- @param isLeftList boolean indicating if it is the left list (true) or the right list (false)
+-- @param control object referencing the row/entry that has been highlighted
+-- @param key string with the key of the highlighted row/entry
+-- @param value string with the (displayed) value of the highlighted entry
+-- @param categoryId string with the category of the highlighted row/entry (can be nil)
+local function myRowHighlightedFunction(shifterBox, isLeftList, control, key, value, categoryId)
     -- do something
 end
-shifterBox:RegisterCallback(LibShifterBox.EVENT_LEFT_LIST_CLEARED, myLeftListClearedFunction)
+shifterBox:RegisterCallback(LibShifterBox.EVENT_LIST_ROW_HIGHLIGHTED, myRowHighlightedFunction)
 ```
 
-#### LibShifterBox.EVENT_RIGHT_LIST_CLEARED
-This event is triggered when the right list has been cleared from all (shown) entries, i.e. the entries have been moved to the left list, or got deleted from it. \
-It does not check for entries that are part of a category that is currently hidden, only entries from shown categories are considered when evaluating if the right list is cleared or not. The event however can be triggered when `ShifterBox:HideCategory` or `ShifterBox:ShowOnlyCategory` are called and the right list does not have any entries left.
+#### LibShifterBox.EVENT_LIST_ROW_UNHIGHLIGHTED
+This event is triggered when a row is un-highlighted (i.e. clicked on a highlighted row with the mouse)
 ```lua
 -- @param shifterBox object referencing the shifterBox that triggered this event
-local function myRightListClearedFunction(shifterBox)
+-- @param isLeftList boolean indicating if it is the left list (true) or the right list (false)
+-- @param control object referencing the row/entry that has been un-highlighted
+-- @param key string with the key of the highlighted row/entry
+-- @param value string with the (displayed) value of the un-highlighted row/entry
+-- @param categoryId string with the category of the un-highlighted row/entry (can be nil)
+local function myRowUnhighlightedFunction(shifterBox, isLeftList, control, key, value, categoryId)
     -- do something
 end
-shifterBox:RegisterCallback(LibShifterBox.EVENT_RIGHT_LIST_CLEARED, myRightListClearedFunction)
+shifterBox:RegisterCallback(LibShifterBox.EVENT_LIST_ROW_UNHIGHLIGHTED, myRowUnhighlightedFunction)
 ```
 
-#### LibShifterBox.EVENT_LEFT_LIST_ENTRY_ADDED
-This event is triggered whenever a new entry is added to the left list with `ShifterBox:AddEntryToLeftList` (once) or `ShifterBox:AddEntriesToLeftList` (multiple times). \
-It is NOT triggered when items are moved from the right list to the left list.
+#### LibShifterBox.EVENT_LIST_ROW_ON_MOUSE_ENTER
+This event is triggered when the mouse cursor enters the control of a row in the list. When the mouse cursors leaves the control of the row again, a different event `LibShifterBox.EVENT_LIST_ROW_ON_MOUSE_EXIT` is triggered.
 ```lua
 -- @param shifterBox object referencing the shifterBox that triggered this event
--- @param list object referencing the left ShifterBoxList (subclass of ZO_SortFilterList)
--- @param entryAdded table containing details about the added entry
-local function myLeftListEntryAddedFunction(shifterBox, list, entryAdded)
-    -- do something
-end
-shifterBox:RegisterCallback(LibShifterBox.EVENT_LEFT_LIST_ENTRY_ADDED, myLeftListEntryAddedFunction)
-```
-The returned `entryAdded` has the following structure:
-```lua
-entryAdded = {
-    key=key,
-    value=value,
-    categoryId=categoryId,
-}
-```
-
-#### LibShifterBox.EVENT_RIGHT_LIST_ENTRY_ADDED
-This event is triggered whenever a new entry is added to the left list with `ShifterBox:AddEntryToRightList` (once) or `ShifterBox:AddEntriesToRightList` (multiple times). \
-It is NOT triggered when items are moved from the left list to the right list.
-```lua
--- @param shifterBox object referencing the shifterBox that triggered this event
--- @param list object referencing the left ShifterBoxList (subclass of ZO_SortFilterList)
--- @param entryAdded table containing details about the added entry
-local function myRightListEntryAddedFunction(shifterBox, list, entryAdded)
-    -- do something
-end
-shifterBox:RegisterCallback(LibShifterBox.EVENT_RIGHT_LIST_ENTRY_ADDED, myRightListEntryAddedFunction)
-```
-The returned `entryAdded` has the following structure:
-```lua
-entryAdded = {
-    key=key,
-    value=value,
-    categoryId=categoryId,
-}
-```
-
-#### LibShifterBox.EVENT_LEFT_LIST_ENTRY_REMOVED
-This event is triggered whenever an existing entry is removed from the left list with `ShifterBox:RemoveEntryByKey` (once) or `ShifterBox:RemoveEntriesByKey` (multiple times). It can also be triggered by `ShifterBox:AddEntryTo___List` (once) and `ShifterBox:AddEntriesTo___List` (multiple times) when `replace=true` and an entry with the same key already exists. In that case it will first be removed, and then a new entry is added. \
-It is NOT triggered when items are moved from the left list to the right list.  
-```lua
--- @param shifterBox object referencing the shifterBox that triggered this event
--- @param list object referencing the left ShifterBoxList (subclass of ZO_SortFilterList)
--- @param entryRemoved table containing details about the removed entry
-local function myLeftListEntryRemovedFunction(shifterBox, list, entryRemoved)
-    -- do something
-end
-shifterBox:RegisterCallback(LibShifterBox.EVENT_LEFT_LIST_ENTRY_REMOVED, myLeftListEntryRemovedFunction)
-```
-The returned `entryRemoved` has the following structure:
-```lua
-entryRemoved = {
-    key=key,
-}
-```
-
-#### LibShifterBox.EVENT_RIGHT_LIST_ENTRY_REMOVED
-This event is triggered whenever an existing entry is removed from the right list with `ShifterBox:RemoveEntryByKey` (once) or `ShifterBox:RemoveEntriesByKey` (multiple times). It can also be triggered by `ShifterBox:AddEntryTo___List` (once) and `ShifterBox:AddEntriesTo___List` (multiple times) when `replace=true` and an entry with the same key already exists. In that case it will first be removed, and then a new entry is added. \
-It is NOT triggered when items are moved from the right list to the left list.
-```lua
--- @param shifterBox object referencing the shifterBox that triggered this event
--- @param list object referencing the left ShifterBoxList (subclass of ZO_SortFilterList)
--- @param entryRemoved table containing details about the removed entry
-local function myRightListEntryRemovedFunction(shifterBox, list, entryRemoved)
-    -- do something
-end
-shifterBox:RegisterCallback(LibShifterBox.EVENT_RIGHT_LIST_ENTRY_REMOVED, myRightListEntryRemovedFunction)
-```
-The returned `entryRemoved` has the following structure:
-```lua
-entryRemoved = {
-    key=key,
-}
-```
-
-#### LibShifterBox.EVENT_LEFT_LIST_CREATED
-This event is triggered when the left list has been created and thus is accessible now to other functions such as for adding new entries to it.
-```lua
--- @param leftListControl object referencing the left list control that has been created
--- @param shifterBox object referencing the shifterBox that triggered this event
-local function myLeftListCreatedFunction(leftListControl, shifterBox)
-    -- do something
-end
-shifterBox:RegisterCallback(LibShifterBox.EVENT_LEFT_LIST_CREATED, myLeftListCreatedFunction)
-```
-
-#### LibShifterBox.EVENT_RIGHT_LIST_CREATED
-This event is triggered when the right list has been created and thus is accessible now to other functions such as for adding new entries to it.
-```lua
--- @param rightListControl object referencing the right list control that has been created
--- @param shifterBox object referencing the shifterBox that triggered this event
-local function myRightListCreatedFunction(rightListControl, shifterBox)
-    -- do something
-end
-shifterBox:RegisterCallback(LibShifterBox.EVENT_RIGHT_LIST_CREATED, myRightListCreatedFunction)
-```
-
-#### LibShifterBox.EVENT_LEFT_LIST_ROW_ON_MOUSE_ENTER
-This event is triggered when the mouse cursor enters the control of a row in the left list. When the mouse cursors leaves the control of the row again, a different event `LibShifterBox.EVENT_LEFT_LIST_ROW_ON_MOUSE_EXIT` is triggered.
-```lua
+-- @param isLeftList boolean indicating if it is the left list (true) or the right list (false)
 -- @param rowControl object referencing the row control that the mouse cursor has entered
--- @param shifterBox object referencing the shifterBox that triggered this event
--- @param rawRowData object with the raw data from the row
-local function myLeftListRowMouseEnterFunction(rowControl, shifterBox, rawRowData)
+-- @param rowData object with the data from the row
+local function myListRowMouseEnterFunction(shifterBox, isLeftList, rowControl, rowData)
     -- do something
 end
-shifterBox:RegisterCallback(LibShifterBox.EVENT_LEFT_LIST_ROW_ON_MOUSE_ENTER, myLeftListRowMouseEnterFunction)
+shifterBox:RegisterCallback(LibShifterBox.EVENT_LIST_ROW_ON_MOUSE_ENTER, myListRowMouseEnterFunction)
 ```
 
-#### LibShifterBox.EVENT_RIGHT_LIST_ROW_ON_MOUSE_ENTER
-This event is triggered when the mouse cursor enters the control of a row in the right list. When the mouse cursors leaves the control of the row again, a different event `LibShifterBox.EVENT_LEFT_RIGHT_ROW_ON_MOUSE_EXIT` is triggered.
+#### LibShifterBox.EVENT_LIST_ROW_ON_MOUSE_EXIT
+This event is triggered when the mouse cursor enters the control of a row in the list. When the mouse cursors leaves the control of the row again, a different event `LibShifterBox.EVENT_LIST_ROW_ON_MOUSE_EXIT` is triggered.
 ```lua
+-- @param shifterBox object referencing the shifterBox that triggered this event
+-- @param isLeftList boolean indicating if it is the left list (true) or the right list (false)
 -- @param rowControl object referencing the row control that the mouse cursor has entered
--- @param shifterBox object referencing the shifterBox that triggered this event
--- @param rawRowData object with the raw data from the row
-local function myRightListRowMouseEnterFunction(rowControl, shifterBox, rawRowData)
+-- @param rowData object with the raw data from the row
+local function myListRowMouseEnterFunction(shifterBox, isLeftList, rowControl, rowData)
     -- do something
 end
-shifterBox:RegisterCallback(LibShifterBox.EVENT_RIGHT_LIST_ROW_ON_MOUSE_ENTER, myRightListRowMouseEnterFunction)
+shifterBox:RegisterCallback(LibShifterBox.EVENT_LIST_ROW_ON_MOUSE_EXIT, myListRowMouseEnterFunction)
 ```
 
-#### LibShifterBox.EVENT_LEFT_LIST_ROW_ON_MOUSE_EXIT
-This event is triggered when the mouse cursor leaves the control of a row in the left list.
+#### LibShifterBox.EVENT_LIST_ROW_ON_MOUSE_UP
+This event is triggered when a mouse button is pressed and released again while hovering over a row in the list.
 ```lua
--- @param rowControl object referencing the row control that the mouse cursor has left
 -- @param shifterBox object referencing the shifterBox that triggered this event
--- @param rawRowData object with the raw data from the row
-local function myLeftListRowMouseExitFunction(rowControl, shifterBox, rawRowData)
-    -- do something
-end
-shifterBox:RegisterCallback(LibShifterBox.EVENT_LEFT_LIST_ROW_ON_MOUSE_EXIT, myLeftListRowMouseExitFunction)
-```
-
-#### LibShifterBox.EVENT_RIGHT_LIST_ROW_ON_MOUSE_EXIT
-This event is triggered when the mouse cursor leaves the control of a row in the right list.
-```lua
--- @param rowControl object referencing the row control that the mouse cursor has left
--- @param shifterBox object referencing the shifterBox that triggered this event
--- @param rawRowData object with the raw data from the row
-local function myRightListRowMouseExitFunction(rowControl, shifterBox, rawRowData)
-    -- do something
-end
-shifterBox:RegisterCallback(LibShifterBox.EVENT_RIGHT_LIST_ROW_ON_MOUSE_EXIT, myRightListRowMouseExitFunction)
-```
-
-#### LibShifterBox.EVENT_LEFT_LIST_ROW_ON_MOUSE_UP
-This event is triggered when a mouse button is pressed and released again while hovering over a row in the left list.
-```lua
+-- @param isLeftList boolean indicating if it is the left list (true) or the right list (false)
 -- @param rowControl object referencing the row control that the mouse cursor clicked on
--- @param shifterBox object referencing the shifterBox that triggered this event
 -- @param mouseButton number referencing the mouse button that was pressed and release
 -- @param isInside boolean indicating whether the mouse cursor was still hovering the control when release (TO-BE-CONFIRMED)
 -- @param altKey boolean indicating whether the ALT key modifier was pressed
 -- @param shiftKey boolean indicating whether the SHIFT key modifier was pressed
 -- @param commandKey boolean indicating whether the CMD key modifier was pressed (macOS)
--- @param rawRowData object with the raw data from the row
-local function myLeftListRowMouseUpFunction(rowControl, shifterBox, mouseButton, isInside, altKey, shiftKey, commandKey, rawRowData)
+-- @param rowData object with the raw data from the row
+local function myListRowMouseUpFunction(shifterBox, isLeftList, rowControl, mouseButton, isInside, altKey, shiftKey, commandKey, rowData)
     -- do something
 end
-shifterBox:RegisterCallback(LibShifterBox.EVENT_LEFT_LIST_ROW_ON_MOUSE_UP, myLeftListRowMouseUpFunction)
+shifterBox:RegisterCallback(LibShifterBox.EVENT_LIST_ROW_ON_MOUSE_UP, myListRowMouseUpFunction)
 ```
 
-#### LibShifterBox.EVENT_RIGHT_LIST_ROW_ON_MOUSE_UP
-This event is triggered when a mouse button is pressed and released again while hovering over a row in the right list.
-```lua
--- @param rowControl object referencing the row control that the mouse cursor clicked on
--- @param shifterBox object referencing the shifterBox that triggered this event
--- @param mouseButton number referencing the mouse button that was pressed and release
--- @param isInside boolean indicating whether the mouse cursor was still hovering the control when release (TO-BE-CONFIRMED)
--- @param altKey boolean indicating whether the ALT key modifier was pressed
--- @param shiftKey boolean indicating whether the SHIFT key modifier was pressed
--- @param commandKey boolean indicating whether the CMD key modifier was pressed (macOS)
--- @param rawRowData object with the raw data from the row
-local function myRightListRowMouseUpFunction(rowControl, shifterBox, mouseButton, isInside, altKey, shiftKey, commandKey, rawRowData)
-    -- do something
-end
-shifterBox:RegisterCallback(LibShifterBox.EVENT_RIGHT_LIST_ROW_ON_MOUSE_UP, myRightListRowMouseUpFunction)
-```
-
-#### LibShifterBox.EVENT_LEFT_LIST_ROW_ON_DRAG_START
+#### LibShifterBox.EVENT_LIST_ROW_ON_DRAG_START
 This event is triggered when either one row in the left list was clicked on and then started to drag it out while still holding down the mouse key.
 It can also be triggered for multiple entries if they get selected before.
 ```lua
--- @param draggedControl object referencing the row control that the mouse cursor started to drag
 -- @param shifterBox object referencing the shifterBox that triggered this event
+-- @param isLeftList boolean indicating if it is the left list (true) or the right list (false)
+-- @param draggedControl object referencing the row control that the mouse cursor started to drag
 -- @param mouseButton number referencing the mouse button that was pressed and release
--- @param rawDraggedRowData object with the raw data from the row, enriched with additional data
-local function myLeftListRowDragStartFunction(draggedControl, shifterBox, mouseButton, rawDraggedRowData)
+-- @param draggedRowData object with the raw data from the row, enriched with additional data
+local function myListRowDragStartFunction(shifterBox, isLeftList, draggedControl, mouseButton, draggedRowData)
     -- do something
 end
-shifterBox:RegisterCallback(LibShifterBox.EVENT_LEFT_LIST_ROW_ON_DRAG_START, myLeftListRowDragStartFunction)
+shifterBox:RegisterCallback(LibShifterBox.EVENT_LIST_ROW_ON_DRAG_START, myListRowDragStartFunction)
 ```
-The returned `rawDraggedRowData` is additionally enriched with the following attributes:
+The returned `draggedRowData` is additionally enriched with the following attributes:
 ```
 _sourceListControl          CT_CONTROL
 _sourceDraggedControl       CT_CONTROL
@@ -607,74 +512,23 @@ _draggedText                string
 _draggedAdditionalText      string
 ```
 
-#### LibShifterBox.EVENT_RIGHT_LIST_ROW_ON_DRAG_START
-This event is triggered when either one row in the right list was clicked on and then started to drag it out while still holding down the mouse key.
-It can also be triggered for multiple entries if they get selected before.
-```lua
--- @param draggedControl object referencing the row control that the mouse cursor started to drag
--- @param shifterBox object referencing the shifterBox that triggered this event
--- @param mouseButton number referencing the mouse button that was pressed and release
--- @param rawDraggedRowData object with the raw data from the row, enriched with additional data
-local function myRightListRowDragStartFunction(draggedControl, shifterBox, mouseButton, rawDraggedRowData)
-    -- do something
-end
-shifterBox:RegisterCallback(LibShifterBox.EVENT_RIGHT_LIST_ROW_ON_DRAG_START, myRightListRowDragStartFunction)
-```
-The returned `rawDraggedRowData` is additionally enriched with the following attributes:
-```
-_sourceListControl          CT_CONTROL
-_sourceDraggedControl       CT_CONTROL
-_isSelected                 boolean
-_hasMultipleRowsSelected    boolean
-_numRowsSelected            number
-_isFromLeftList             boolean
-_draggedText                string
-_draggedAdditionalText      string
-```
-
-#### LibShifterBox.EVENT_LEFT_LIST_ROW_ON_DRAG_END
+#### LibShifterBox.EVENT_LIST_ROW_ON_DRAG_END
 This event is triggered when the mouse key is let go again after dragging a row from the left list.
 Entries can only be dragged to a list that belongs to the same shifterBox as the source list; the event gets triggered in all cases though.
 ```lua
--- @param draggedOnToControl object referencing the control that the mouse cursor stopped to drag
 -- @param shifterBox object referencing the shifterBox that triggered this event
+-- @param isLeftList boolean indicating if it is the left list (true) or the right list (false)
+-- @param draggedOnToControl object referencing the control that the mouse cursor stopped to drag
 -- @param mouseButton number referencing the mouse button that was pressed and release
--- @param rawDraggedRowData object with the raw data from the row, enriched with additional data
+-- @param draggedRowData object with the raw data from the row, enriched with additional data
 -- @param hasSameShifterBoxParent boolean indicating if the target list is of the same shifterBox
 -- @param wasDragSuccessful boolean indicating whether the dragged data was successfully moved to the right list
-local function myLeftListRowDragEndFunction(draggedOnToControl, shifterBox, mouseButton, rawDraggedRowData, hasSameShifterBoxParent, wasDragSuccessful)
+local function myListRowDragEndFunction(shifterBox, isLeftList, draggedOnToControl, mouseButton, draggedRowData, hasSameShifterBoxParent, wasDragSuccessful)
     -- do something
 end
-shifterBox:RegisterCallback(LibShifterBox.EVENT_LEFT_LIST_ROW_ON_DRAG_END, myLeftListRowDragEndFunction)
+shifterBox:RegisterCallback(LibShifterBox.EVENT_LIST_ROW_ON_DRAG_END, myListRowDragEndFunction)
 ```
-The returned `rawDraggedRowData` is additionally enriched with the following attributes:
-```
-_sourceListControl          CT_CONTROL
-_sourceDraggedControl       CT_CONTROL
-_isSelected                 boolean
-_hasMultipleRowsSelected    boolean
-_numRowsSelected            number
-_isFromLeftList             boolean
-_draggedText                string
-_draggedAdditionalText      string
-```
-
-#### LibShifterBox.EVENT_RIGHT_LIST_ROW_ON_DRAG_END
-This event is triggered when the mouse key is let go again after dragging a row from the left list.
-Entries can only be dragged to a list that belongs to the same shifterBox as the source list; the event gets triggered in all cases though.
-```lua
--- @param draggedOnToControl object referencing the control that the mouse cursor stopped to drag
--- @param shifterBox object referencing the shifterBox that triggered this event
--- @param mouseButton number referencing the mouse button that was pressed and release
--- @param rawDraggedRowData object with the raw data from the row, enriched with additional data
--- @param hasSameShifterBoxParent boolean indicating if the target list is of the same shifterBox
--- @param wasDragSuccessful boolean indicating whether the dragged data was successfully moved to the left list
-local function myRightListRowDragEndFunction(draggedOnToControl, shifterBox, mouseButton, rawDraggedRowData, hasSameShifterBoxParent, wasDragSuccessful)
-    -- do something
-end
-shifterBox:RegisterCallback(LibShifterBox.EVENT_RIGHT_LIST_ROW_ON_DRAG_END, myRightListRowDragEndFunction)
-```
-The returned `rawDraggedRowData` is additionally enriched with the following attributes:
+The returned `draggedRowData` is additionally enriched with the following attributes:
 ```
 _sourceListControl          CT_CONTROL
 _sourceDraggedControl       CT_CONTROL

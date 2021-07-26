@@ -49,27 +49,40 @@ local MOUSECURSOR_NEXTRIGHT = MOUSE_CURSOR_NEXT_RIGHT
 
 --Shifter box events for the callbacks
 local shifterBoxEvents = {
-   [1]  = "EVENT_ENTRY_HIGHLIGHTED",
-   [2]  = "EVENT_ENTRY_UNHIGHLIGHTED",
-   [3]  = "EVENT_ENTRY_MOVED",
-   [4]  = "EVENT_LEFT_LIST_CLEARED",
-   [5]  = "EVENT_RIGHT_LIST_CLEARED",
-   [6]  = "EVENT_LEFT_LIST_ENTRY_ADDED",
-   [7]  = "EVENT_RIGHT_LIST_ENTRY_ADDED",
-   [8]  = "EVENT_LEFT_LIST_ENTRY_REMOVED",
-   [9]  = "EVENT_RIGHT_LIST_ENTRY_REMOVED",
-   [10] = "EVENT_LEFT_LIST_CREATED",
-   [11] = "EVENT_RIGHT_LIST_CREATED",
-   [12] = "EVENT_LEFT_LIST_ROW_ON_MOUSE_ENTER",
-   [13] = "EVENT_RIGHT_LIST_ROW_ON_MOUSE_ENTER",
-   [14] = "EVENT_LEFT_LIST_ROW_ON_MOUSE_EXIT",
-   [15] = "EVENT_RIGHT_LIST_ROW_ON_MOUSE_EXIT",
-   [16] = "EVENT_LEFT_LIST_ROW_ON_MOUSE_UP",
-   [17] = "EVENT_RIGHT_LIST_ROW_ON_MOUSE_UP",
-   [18] = "EVENT_LEFT_LIST_ROW_ON_DRAG_START",
-   [19] = "EVENT_RIGHT_LIST_ROW_ON_DRAG_START",
-   [20] = "EVENT_LEFT_LIST_ROW_ON_DRAG_END",
-   [21] = "EVENT_RIGHT_LIST_ROW_ON_DRAG_END",
+   [1]  = "EVENT_LIST_CREATED",
+   [2]  = "EVENT_LIST_CLEARED",
+   [3]  = "EVENT_LIST_ENTRY_ADDED",
+   [4]  = "EVENT_LIST_ENTRY_REMOVED",
+   [5]  = "EVENT_LIST_ENTRY_SHIFTED",
+   [6]  = "EVENT_LIST_ROW_HIGHLIGHTED",
+   [7]  = "EVENT_LIST_ROW_UNHIGHLIGHTED",
+   [8]  = "EVENT_LIST_ROW_ON_MOUSE_ENTER",
+   [9]  = "EVENT_LIST_ROW_ON_MOUSE_EXIT",
+   [10] = "EVENT_LIST_ROW_ON_MOUSE_UP",
+   [11] = "EVENT_LIST_ROW_ON_DRAG_START",
+   [12] = "EVENT_LIST_ROW_ON_DRAG_END",
+
+   [13] = "EVENT_ENTRY_HIGHLIGHTED", ---@deprecated use EVENT_LIST_ROW_HIGHLIGHTED instead
+   [14] = "EVENT_ENTRY_UNHIGHLIGHTED", ---@deprecated use EVENT_LIST_ROW_UNHIGHLIGHTED instead
+   [15] = "EVENT_ENTRY_MOVED", ---@deprecated use EVENT_LIST_ENTRY_SHIFTED instead
+   [16] = "EVENT_LEFT_LIST_CLEARED", ---@deprecated use EVENT_LIST_CLEARED instead
+   [17] = "EVENT_RIGHT_LIST_CLEARED", ---@deprecated use EVENT_LIST_CLEARED instead
+   [18] = "EVENT_LEFT_LIST_ENTRY_ADDED", ---@deprecated use EVENT_LIST_ENTRY_ADDED instead
+   [19] = "EVENT_RIGHT_LIST_ENTRY_ADDED", ---@deprecated use EVENT_LIST_ENTRY_ADDED instead
+   [20] = "EVENT_LEFT_LIST_ENTRY_REMOVED", ---@deprecated use EVENT_LIST_ENTRY_REMOVED instead
+   [21] = "EVENT_RIGHT_LIST_ENTRY_REMOVED", ---@deprecated use EVENT_LIST_ENTRY_REMOVED instead
+   [22] = "EVENT_LEFT_LIST_CREATED", ---@deprecated use EVENT_LIST_CREATED instead
+   [23] = "EVENT_RIGHT_LIST_CREATED", ---@deprecated use EVENT_LIST_CREATED instead
+   [24] = "EVENT_LEFT_LIST_ROW_ON_MOUSE_ENTER", ---@deprecated use EVENT_LIST_ROW_ON_MOUSE_ENTER instead
+   [25] = "EVENT_RIGHT_LIST_ROW_ON_MOUSE_ENTER", ---@deprecated use EVENT_LIST_ROW_ON_MOUSE_ENTER instead
+   [26] = "EVENT_LEFT_LIST_ROW_ON_MOUSE_EXIT", ---@deprecated use EVENT_LIST_ROW_ON_MOUSE_EXIT instead
+   [27] = "EVENT_RIGHT_LIST_ROW_ON_MOUSE_EXIT", ---@deprecated use EVENT_LIST_ROW_ON_MOUSE_EXIT instead
+   [28] = "EVENT_LEFT_LIST_ROW_ON_MOUSE_UP", ---@deprecated use EVENT_LIST_ROW_ON_MOUSE_UP instead
+   [29] = "EVENT_RIGHT_LIST_ROW_ON_MOUSE_UP", ---@deprecated use EVENT_LIST_ROW_ON_MOUSE_UP instead
+   [30] = "EVENT_LEFT_LIST_ROW_ON_DRAG_START", ---@deprecated use EVENT_LIST_ROW_ON_DRAG_START instead
+   [31] = "EVENT_RIGHT_LIST_ROW_ON_DRAG_START", ---@deprecated use EVENT_LIST_ROW_ON_DRAG_START instead
+   [32] = "EVENT_LEFT_LIST_ROW_ON_DRAG_END", ---@deprecated use EVENT_LIST_ROW_ON_DRAG_END instead
+   [33] = "EVENT_RIGHT_LIST_ROW_ON_DRAG_END", ---@deprecated use EVENT_LIST_ROW_ON_DRAG_END instead
 }
 lib.allowedEventNames = shifterBoxEvents
 local allowedShifterBoxEvents = {}
@@ -124,17 +137,25 @@ local function _getUniqueShifterBoxEventName(shifterBox, eventId)
     return table.concat({LIB_IDENTIFIER, "_", shifterBox.addonName, "_", shifterBox.shifterBoxName, "_", eventId})
 end
 
+---@deprecated use _fireCallbackV2 instead
 local function _fireCallback(shifterBox, controlForCallback, eventId, ...)
     local callbackIdentifier = _getUniqueShifterBoxEventName(shifterBox, eventId)
     controlForCallback = controlForCallback or shifterBox
     CM:FireCallbacks(callbackIdentifier, controlForCallback, ...)
 end
 
+local function _fireCallbackV2(eventId, shifterBox, isLeftList, ...)
+    local callbackIdentifier = _getUniqueShifterBoxEventName(shifterBox, eventId)
+    CM:FireCallbacks(callbackIdentifier, shifterBox, isLeftList, ...)
+end
+
 local function _refreshFilter(list, checkForClearTrigger)
     list:RefreshFilters()
     if checkForClearTrigger and next(list.list.data) == nil then
+        ---@deprecated
         _fireCallback(list.shifterBox, nil, (list.isLeftList and lib.EVENT_LEFT_LIST_CLEARED) or lib.EVENT_RIGHT_LIST_CLEARED
                 )
+        _fireCallbackV2(lib.EVENT_LIST_CLEARED, list.shifterBox, list.isLeftList)
     end
 end
 
@@ -155,8 +176,11 @@ local function _moveEntryFromTo(fromList, toList, moveKey, shifterBox)
         toList:AddEntry(key, value, categoryId)
         retVar = true
         -- then trigger the callback if present
+        ---@deprecated
         _fireCallback(shifterBox, nil, lib.EVENT_ENTRY_MOVED,
                 key, value, categoryId, toList.isLeftList, fromList, toList)
+        _fireCallbackV2(lib.EVENT_LIST_ENTRY_SHIFTED, shifterBox, toList.isLeftList,
+                        key, value, categoryId, fromList, toList)
     end
     return retVar
 end
@@ -437,8 +461,11 @@ local function _removeEntriesFromList(list, keys)
                 key=key,
             }
             -- then trigger the callback if present
+            ---@deprecated
             _fireCallback(list.shifterBox, nil, (list.isLeftList and lib.EVENT_LEFT_LIST_ENTRY_REMOVED) or lib.EVENT_RIGHT_LIST_ENTRY_REMOVED,
                           list, entryRemoved)
+            _fireCallbackV2(lib.EVENT_LIST_ENTRY_REMOVED, list.shifterBox, list.isLeftList,
+                            list, entryRemoved)
         end
     end
     if hasAtLeastOneRemoved then
@@ -520,8 +547,11 @@ local function _addEntriesToList(list, entries, replace, otherList, categoryId)
                         }
                     end
                     -- then trigger the callback if present
+                    ---@deprecated
                     _fireCallback(list.shifterBox, nil, (list.isLeftList and lib.EVENT_LEFT_LIST_ENTRY_REMOVED) or lib.EVENT_RIGHT_LIST_ENTRY_REMOVED,
                                   list, entryRemoved)
+                    _fireCallbackV2(lib.EVENT_LIST_ENTRY_REMOVED, list.shifterBox, list.isLeftList,
+                                    list, entryRemoved)
                 end
             else
                 -- if replace is not set or set to false, then assert that key does not exist in either list
@@ -538,8 +568,11 @@ local function _addEntriesToList(list, entries, replace, otherList, categoryId)
             }
             hasAtLeastOneAdded = true
             -- then trigger the callback if present
+            ---@deprecated
             _fireCallback(list.shifterBox, nil, (list.isLeftList and lib.EVENT_LEFT_LIST_ENTRY_ADDED) or lib.EVENT_RIGHT_LIST_ENTRY_ADDED,
                           list, entryAdded)
+            _fireCallbackV2(lib.EVENT_LIST_ENTRY_ADDED, list.shifterBox, list.isLeftList,
+                            list, entryAdded)
         end
         if hasAtLeastOneAdded then
             -- Afterwards refresh the visualisation of the data
@@ -804,8 +837,11 @@ function ShifterBoxList:Initialize(control, shifterBoxSettings, isLeftList, shif
         end
     end
     -- then trigger the callback if present
+    ---@deprecated
     _fireCallback(shifterBox, control, (isLeftList and lib.EVENT_LEFT_LIST_CREATED) or lib.EVENT_RIGHT_LIST_CREATED,
             shifterBox)
+    _fireCallbackV2(lib.EVENT_LIST_CREATED, shifterBox, isLeftList,
+                    control)
 end
 
 -- ZO_SortFilterList:RefreshData()      =>  BuildMasterList()   =>  FilterScrollList()  =>  SortScrollList()    =>  CommitScrollList()
@@ -978,8 +1014,11 @@ function ShifterBoxList:ToggleEntrySelection(data, control, reselectingDuringReb
             -- and select the control (if applicable)
             if control then self:SelectControl(control, animateInstantly) end
             -- then trigger the callback if present
+            ---@deprecated
             _fireCallback(self.shifterBox, control, lib.EVENT_ENTRY_HIGHLIGHTED,
                     self.shifterBox, dataKey, data.value, data.categoryId, self.isLeftList)
+            _fireCallbackV2(lib.EVENT_LIST_ROW_HIGHLIGHTED, self.shifterBox, self.isLeftList,
+                            control, dataKey, data.value, data.categoryId)
 
         elseif deselectOnReselect then
             -- remove selected data
@@ -987,8 +1026,11 @@ function ShifterBoxList:ToggleEntrySelection(data, control, reselectingDuringReb
             -- and unselect the control (if applicable)
             if control then self:UnselectControl(control, animateInstantly) end
             -- then trigger the callback if present
+            ---@deprecated
             _fireCallback(self.shifterBox, control, lib.EVENT_ENTRY_UNHIGHLIGHTED,
                     self.shifterBox, dataKey, data.value, data.categoryId, self.isLeftList)
+            _fireCallbackV2(lib.EVENT_LIST_ROW_UNHIGHLIGHTED, self.shifterBox, self.isLeftList,
+                          control, dataKey, data.value, data.categoryId)
         end
     end
     if self.list.selectionCallback then
@@ -1000,8 +1042,11 @@ function ShifterBoxList:SetupRowEntry(rowControl, rowData, doNotSetupRowNow)
     doNotSetupRowNow = doNotSetupRowNow or false
     local function onRowMouseEnter(p_rowControl)
         -- then trigger the callback if present
+        ---@deprecated
         _fireCallback(self.shifterBox, p_rowControl, (self.isLeftList and lib.EVENT_LEFT_LIST_ROW_ON_MOUSE_ENTER) or lib.EVENT_RIGHT_LIST_ROW_ON_MOUSE_ENTER,
                 self.shifterBox, rowData)
+        _fireCallbackV2(lib.EVENT_LIST_ROW_ON_MOUSE_ENTER,self.shifterBox,  self.isLeftList,
+                        p_rowControl, rowData)
 
         if self.listBoxSettings.rowOnMouseEnter ~= nil then
             self.listBoxSettings.rowOnMouseEnter(p_rowControl)
@@ -1019,8 +1064,11 @@ function ShifterBoxList:SetupRowEntry(rowControl, rowData, doNotSetupRowNow)
     end
     local function onRowMouseExit(p_rowControl)
         -- then trigger the callback if present
+        ---@deprecated
         _fireCallback(self.shifterBox, p_rowControl, (self.isLeftList and lib.EVENT_LEFT_LIST_ROW_ON_MOUSE_EXIT) or lib.EVENT_RIGHT_LIST_ROW_ON_MOUSE_EXIT,
                 self.shifterBox, rowData)
+        _fireCallbackV2(lib.EVENT_LIST_ROW_ON_MOUSE_EXIT, self.shifterBox, self.isLeftList,
+                        p_rowControl, rowData)
 
         if self.listBoxSettings.rowOnMouseExit ~= nil then
             self.listBoxSettings.rowOnMouseExit(p_rowControl)
@@ -1030,8 +1078,11 @@ function ShifterBoxList:SetupRowEntry(rowControl, rowData, doNotSetupRowNow)
     end
     local function onRowMouseUp(p_rowControl, mouseButton, isInside, ctrlKey, altKey, shiftKey, commandKey)
         -- then trigger the callback if present
+        ---@deprecated
         _fireCallback(self.shifterBox, p_rowControl, (self.isLeftList and lib.EVENT_LEFT_LIST_ROW_ON_MOUSE_UP) or lib.EVENT_RIGHT_LIST_ROW_ON_MOUSE_UP,
                 self.shifterBox, mouseButton, isInside, ctrlKey, altKey, shiftKey, commandKey, rowData)
+        _fireCallbackV2(lib.EVENT_LIST_ROW_ON_MOUSE_UP, self.shifterBox, self.isLeftList,
+                        p_rowControl, mouseButton, isInside, ctrlKey, altKey, shiftKey, commandKey, rowData)
 
         if not isInside then return end
         if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
@@ -1252,8 +1303,11 @@ function ShifterBoxList:StartDragging(draggedControl, mouseButton)
     self.shifterBox.draggingMouseButtonPressed = mouseButton
 
     -- then trigger the callback if present
+    ---@deprecated
     _fireCallback(self.shifterBox, draggedControl, (self.isLeftList and lib.EVENT_LEFT_LIST_ROW_ON_DRAG_START) or lib.EVENT_RIGHT_LIST_ROW_ON_DRAG_START,
             self.shifterBox, mouseButton, currentDragData)
+    _fireCallbackV2(lib.EVENT_LIST_ROW_ON_DRAG_START, self.shifterBox, self.isLeftList,
+                    draggedControl, mouseButton, currentDragData)
 
     --Anchor the TLC with the label showing the text of the dragged row element(s) to GuiMouse
     self.shifterBox:UpdateCursorTLC(false, draggedControl)
@@ -1311,8 +1365,11 @@ function ShifterBoxList:StopDragging(draggedOnToControl)
                 end
 
                 -- then trigger the callback if present
+                ---@deprecated
                 _fireCallback(self.shifterBox, draggedOnToControl, (isLeftList and lib.EVENT_LEFT_LIST_ROW_ON_DRAG_END) or lib.EVENT_RIGHT_LIST_ROW_ON_DRAG_END,
                         self.shifterBox, mouseButton, dragData, hasSameShifterBoxParent, wasDragSuccessful)
+                _fireCallbackV2(lib.EVENT_LIST_ROW_ON_DRAG_END, self.shifterBox, isLeftList,
+                                draggedOnToControl, mouseButton, dragData, hasSameShifterBoxParent, wasDragSuccessful)
             end
         end
         _clearDragging(self)
