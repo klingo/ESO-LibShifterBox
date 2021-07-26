@@ -18,7 +18,7 @@ In your `MyAddon.txt` file, make sure you defined LibShifterBox as a dependency:
 ```
 Optionally, you can also define a specific min-version:
 ```
-## DependsOn: LibShifterBox>=17
+## DependsOn: LibShifterBox>=000500
 ```
 \
 \
@@ -158,21 +158,60 @@ customSettings = {
     sortEnabled = true,         -- sorting of the entries can be disabled
     sortBy = "value",           -- sort the list by value or key (allowed are: "value" or "key")
     leftList = {                -- list-specific settings that apply to the LEFT list
-        title = "",                                     -- the title/header of the list
-        rowHeight = 32,                                 -- the height of an individual row/entry
-        rowTemplateName = "ShifterBoxEntryTemplate",    -- an individual XML (cirtual) control can be provided for the rows/entries
-        emptyListText = GetString(LIBSHIFTERBOX_EMPTY), -- the text to be displayed if there are no entries left in the list
-        fontSize = 18,                                  -- size of the font
+        title = "",                                         -- the title/header of the list
+        rowHeight = 32,                                     -- the height of an individual row/entry
+        rowTemplateName = "ShifterBoxEntryTemplate",        -- an individual XML (cirtual) control can be provided for the rows/entries
+        emptyListText = GetString(LIBSHIFTERBOX_EMPTY),     -- the text to be displayed if there are no entries left in the list
+        fontSize = 18,                                      -- size of the font
+        rowDataTypeSelectSound = SOUNDS.ABILITY_SLOTTED,    -- an optional sound to play when a row of this data type is selected
+        rowOnMouseRightClick = function(rowControl, data)   -- an optional callback function when a right-click is done inside a row element (e.g. for custom context menus)
+            d("LSB: OnMouseRightClick: "..tostring(data.tooltipText))   -- reading custom 'tooltipText' from 'rowSetupAdditionalDataCallback'
+        end,
+        rowSetupCallback = function(rowControl, data)       -- function that will be called when a control of this type becomes visible
+            d("LSB: RowSetupCallback")                      -- Calls self:SetupRowEntry, then this function, finally ZO_SortFilterList.SetupRow
+        end,
+        rowSetupAdditionalDataCallback = function(rowControl, data) -- data can be extended with additional data during the 'rowSetupCallback'
+            d("LSB: SetupAdditionalDataCallback")
+            data.tooltipText = data.value
+            return rowControl, data                         -- this callback function must return the rowControl and (enriched) data again
+        end,
+        rowResetControlCallback = function()                -- an optional callback when the datatype control gets reset
+            d("LSB: RowResetControlCallback")
+        end,
     },
     rightList = {               -- list-specific settings that apply to the RIGHT list
-        title = "",                                     -- the title/header of the list
-        rowHeight = 32,                                 -- the height of an individual row/entry
-        rowTemplateName = "ShifterBoxEntryTemplate",    -- an individual XML (cirtual) control can be provided for the rows/entries
-        emptyListText = GetString(LIBSHIFTERBOX_EMPTY), -- the text to be displayed if there are no entries left in the list
-        fontSize = 18,                                  -- size of the font
-    }    
+        title = "",                                         -- the title/header of the list
+        rowHeight = 32,                                     -- the height of an individual row/entry
+        rowTemplateName = "ShifterBoxEntryTemplate",        -- an individual XML (cirtual) control can be provided for the rows/entries
+        emptyListText = GetString(LIBSHIFTERBOX_EMPTY),     -- the text to be displayed if there are no entries left in the list
+        fontSize = 18,                                      -- size of the font
+        rowDataTypeSelectSound = SOUNDS.ABILITY_SLOTTED,    -- an optional sound to play when a row of this data type is selected
+        rowOnMouseRightClick = function(rowControl, data)   -- an optional callback function when a right-click is done inside a row element (e.g. for custom context menus)
+            d("LSB: OnMouseRightClick: "..tostring(data.tooltipText))   -- reading custom 'tooltipText' from 'rowSetupAdditionalDataCallback'
+        end,
+        rowSetupCallback = function(rowControl, data)       -- function that will be called when a control of this type becomes visible
+            d("LSB: RowSetupCallback")                      -- Calls self:SetupRowEntry, then this function, finally ZO_SortFilterList.SetupRow
+        end,
+        rowSetupAdditionalDataCallback = function(rowControl, data) -- data can be extended with additional data during the 'rowSetupCallback'
+            d("LSB: SetupAdditionalDataCallback")
+            data.tooltipText = data.value
+            return rowControl, data                         -- this callback function must return the rowControl and (enriched) data again
+        end,
+        rowResetControlCallback = function()                -- an optional callback when the datatype control gets reset
+            d("LSB: RowResetControlCallback")
+        end,
+    },
+    callbackRegister = {                                    -- directly register callback functions with any of the exposed events
+        [LibShifterBox.EVENT_LEFT_LIST_ROW_ON_MOUSE_ENTER] = function(rowControl, shifterBox, data)
+            d("LSB: LeftListRowOnMouseEnter")
+        end,
+        [LibShifterBox.EVENT_RIGHT_LIST_ROW_ON_MOUSE_ENTER] = function(rowControl, shifterBox, data)
+            d("LSB: RightListRowOnMouseEnter")
+        end
+    }
 }
 ```
+For `rowDataTypeSelectSound`, you may look at the overview of [Sounds](https://wiki.esoui.com/Sounds) in the ESOUI Wiki.
 
 #### anchorOptions
 Optionally anchorOptions can be passed on when the ShifterBox is created. This replaces the separate call of `shifterBox:SetAnchors()`.

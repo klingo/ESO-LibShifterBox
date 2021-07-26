@@ -368,6 +368,7 @@ local function _applyCustomSettings(customSettings)
     _assertBoolean(customSettings, "dragDropEnabled", settings)
     _assertBoolean(customSettings, "sortEnabled", settings)
     _assertStringValueKey(customSettings, "sortBy", settings)
+    _assertTable(customSettings, "callbackRegister", settings)
     -- validate leftList settings
     _assertString(customSettings.leftList, "title", settings.leftList)
     _assertString(customSettings.leftList, "rowTemplateName", settings.leftList)
@@ -382,8 +383,6 @@ local function _applyCustomSettings(customSettings)
     _assertSound(customSettings.leftList, "rowDataTypeSelectSound", settings.leftList)
     _assertFunction(customSettings.leftList, "rowResetControlCallback", settings.leftList)
     _assertFunction(customSettings.leftList, "rowSetupAdditionalDataCallback", settings.leftList)
-    _assertTable(customSettings.leftList, "callbackRegister", settings.leftList)
-
     -- validate rightList settings
     _assertString(customSettings.rightList, "title", settings.rightList)
     _assertString(customSettings.rightList, "rowTemplateName", settings.rightList)
@@ -398,7 +397,6 @@ local function _applyCustomSettings(customSettings)
     _assertSound(customSettings.rightList, "rowDataTypeSelectSound", settings.rightList)
     _assertFunction(customSettings.rightList, "rowResetControlCallback", settings.rightList)
     _assertFunction(customSettings.rightList, "rowSetupAdditionalDataCallback", settings.rightList)
-    _assertTable(customSettings.rightList, "callbackRegister", settings.rightList)
     return settings
 end
 
@@ -761,6 +759,7 @@ function ShifterBoxList:Initialize(control, shifterBoxSettings, isLeftList, shif
     else
         self.listBoxSettings = shifterBoxSettings.rightList
     end
+    self.callbackRegister = shifterBoxSettings.callbackRegister
     self.isLeftList = isLeftList
     self.rowHeight = self.listBoxSettings.rowHeight
     self.rowWidth = 180 -- default value to init
@@ -831,8 +830,8 @@ function ShifterBoxList:Initialize(control, shifterBoxSettings, isLeftList, shif
     self.list:SetMouseEnabled(true)
 
     --Any callbacks to register now from the settings (e.g. the "List created" one, which would not fire again later :-) )
-    if self.listBoxSettings.callbackRegister ~= nil then
-        for shifterBoxEventId, callbackFunc in pairs(self.listBoxSettings.callbackRegister) do
+    if self.callbackRegister ~= nil then
+        for shifterBoxEventId, callbackFunc in pairs(self.callbackRegister) do
             shifterBox:RegisterCallback(shifterBoxEventId, callbackFunc)
         end
     end
@@ -1553,7 +1552,7 @@ end
 function ShifterBox:UnregisterCallback(shifterBoxEvent, callbackFunction)
     _assertValidShifterBoxEvent(shifterBoxEvent)
     local callbackIdentifier = _getUniqueShifterBoxEventName(self, shifterBoxEvent)
-    CM:RegisterCallback(callbackIdentifier, callbackFunction)
+    CM:UnregisterCallback(callbackIdentifier, callbackFunction)
 end
 
 -- ---------------------------------------------------------------------------------------------------------------------
