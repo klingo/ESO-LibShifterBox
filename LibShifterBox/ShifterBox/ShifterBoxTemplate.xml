@@ -18,6 +18,39 @@
                                         ZO_SortHeader_Initialize(self, "Left", "value", ZO_SORT_ORDER_UP, TEXT_ALIGN_LEFT, "ZoFontHeader")
                                     </OnInitialized>
                                 </Control>
+                                <Button name="$(parent)SearchButton" inherits="ZO_ButtonBehaviorClickSound">
+                                    <Dimensions x="32" y="32" />
+                                    <Anchor point="RIGHT" relativeTo="$(parent)Value" relativePoint="RIGHT" offsetX="10" />
+                                    <!-- /esoui/art/miscellaneous/search_icon.dds -->
+                                    <Textures normal="/esoui/art/inventory/inventory_trait_not_researched_icon.dds"
+                                              pressed="/esoui/art/inventory/inventory_trait_not_researched_icon.dds"
+                                              mouseOver="/esoui/art/inventory/inventory_trait_not_researched_icon.dds"
+                                              disabled="/esoui/art/inventory/inventory_trait_not_researched_icon.dds"/>
+                                </Button>
+                                <Backdrop name="$(parent)SearchUI" tier="HIGH" inherits="ZO_SingleLineEditBackdrop_Keyboard" hidden="true">
+                                    <Anchor point="RIGHT" relativeTo="$(parent)SearchButton" relativePoint="LEFT" offsetX="0" offsetY="-2" />
+                                    <Anchor point="LEFT" relativeTo="$(parent)" relativePoint="LEFT" offsetX="5" offsetY="-2" />
+                                    <Controls>
+                                        <EditBox name="$(parent)Box" excludeFromResizeToFitExtents="true" inherits="ZO_DefaultEditForBackdrop" defaultText="SI_SEARCH_FILTER_BY">
+                                            <!--
+                                            <OnTextChanged>
+                                                ClearMenu()
+                                            </OnTextChanged>
+
+                                            <OnMouseEnter>
+                                                ZO_Tooltips_ShowTextTooltip()
+                                            </OnMouseEnter>
+
+                                            <OnMouseExit>
+                                                ZO_Tooltips_HideTextTooltip()
+                                            </OnMouseExit>
+
+                                            <OnMouseUp>
+                                            </OnMouseUp>
+                                            -->
+                                        </EditBox>
+                                    </Controls>
+                                </Backdrop>
                             </Controls>
                         </Control>
                         <Control name="$(parent)List" inherits="ZO_ScrollList">
@@ -62,6 +95,38 @@
                                         ZO_SortHeader_Initialize(self, "Right", "value", ZO_SORT_ORDER_UP, TEXT_ALIGN_LEFT, "ZoFontHeader")
                                     </OnInitialized>
                                 </Control>
+                                <Button name="$(parent)SearchButton" inherits="ZO_ButtonBehaviorClickSound">
+                                    <Dimensions x="32" y="32" />
+                                    <Anchor point="RIGHT" relativeTo="$(parent)Value" relativePoint="RIGHT" offsetX="-10" />
+                                    <Textures normal="/esoui/art/inventory/inventory_trait_not_researched_icon.dds"
+                                              pressed="/esoui/art/inventory/inventory_trait_not_researched_icon.dds"
+                                              mouseOver="/esoui/art/inventory/inventory_trait_not_researched_icon.dds"
+                                              disabled="/esoui/art/inventory/inventory_trait_not_researched_icon.dds"/>
+                                </Button>
+                                <Backdrop name="$(parent)SearchUI" tier="HIGH" inherits="ZO_SingleLineEditBackdrop_Keyboard" hidden="true">
+                                    <Anchor point="RIGHT" relativeTo="$(parent)SearchButton" relativePoint="LEFT" offsetX="0" offsetY="-2" />
+                                    <Anchor point="LEFT" relativeTo="$(parent)" relativePoint="LEFT" offsetX="5" offsetY="-2" />
+                                    <Controls>
+                                        <EditBox name="$(parent)Box" excludeFromResizeToFitExtents="true" inherits="ZO_DefaultEditForBackdrop" defaultText="SI_SEARCH_FILTER_BY">
+                                            <!--
+                                            <OnTextChanged>
+                                                ClearMenu()
+                                            </OnTextChanged>
+
+                                            <OnMouseEnter>
+                                                ZO_Tooltips_ShowTextTooltip()
+                                            </OnMouseEnter>
+
+                                            <OnMouseExit>
+                                                ZO_Tooltips_HideTextTooltip()
+                                            </OnMouseExit>
+
+                                            <OnMouseUp>
+                                            </OnMouseUp>
+                                            -->
+                                        </EditBox>
+                                    </Controls>
+                                </Backdrop>
                             </Controls>
                         </Control>
                         <Control name="$(parent)List" inherits="ZO_ScrollList">
@@ -83,7 +148,7 @@
                         </Button>
                         <Button name="$(parent)AllButton" inherits="ZO_ButtonBehaviorClickSound">
                             <Dimensions x="40" y="40" />
-                            <Anchor point="TOP" relativeTo="$(parent)Button" relativePoint="BOTTOM" offsetY="-10" />
+                            <Anchor point="TOP" relativeTo="$(parent)Button" relativePoint="BOTTOM" offsetY="10" />
                             <Textures normal="/LibShifterBox/bin/textures/double_large_leftarrow_up.dds"
                                       pressed="/LibShifterBox/bin/textures/double_large_leftarrow_down.dds"
                                       mouseOver="/LibShifterBox/bin/textures/double_large_leftarrow_over.dds"
