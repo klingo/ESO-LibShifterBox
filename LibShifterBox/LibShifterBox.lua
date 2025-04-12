@@ -326,6 +326,10 @@ local function _toggleSearchHeaderUI(shifterBox, listObj, searchButtonCtrl)
     sortHeaderGroup.headerContainer:GetNamedChild("Value"):SetHidden(newState)
 
     listObj.isSearchHeaderUIShown = newState
+    if newState == true then
+        listObj.searchHeaderUIEditBox:TakeFocus()
+        listObj.searchHeaderUIEditBox:SelectAll()
+    end
 
     --Is the textBox still containing text then remove it and update the list
     -->But that prevents us to use the sort header on the results!
@@ -853,15 +857,24 @@ function ShifterBoxList:New(shifterBox, control, isLeftList)
     listObj.buttonSearchControl:SetHandler("OnClicked", function(...) _onSearchHeaderButtonClicked(shifterBox, listObj, ...) end)
     listObj.buttonSearchControl:SetHandler("OnMouseEnter", function(buttonCtrl)
         ZO_Tooltips_HideTextTooltip()
+        local tooltipText
         if listObj.searchHeaderUIEditBox:IsHidden() then
             buttonCtrl:SetAlpha(1)
             buttonCtrl:SetDimensions(32, 32)
 
-            local tooltipText = GetString(SI_SEARCH_FILTER_BY)
+            tooltipText = GetString(SI_SEARCH_FILTER_BY)
             local currentText = listObj.searchHeaderUIEditBox:GetText()
             if currentText ~= "" then
-                tooltipText = tooltipText .. "\n" .. GetString(SI_COLOR_PICKER_CURRENT) .. ": " .. currentText
+                tooltipText = tooltipText .. "\n|c00FF00" .. GetString(SI_COLOR_PICKER_CURRENT) .. "|r: " .. currentText
             end
+        end
+        local scrollData = ZO_ScrollList_GetDataList(listObj.list)
+        if tooltipText == nil then
+            tooltipText = "#" ..tos(#scrollData)
+        else
+            tooltipText = tooltipText .. "\n#" ..tos(#scrollData)
+        end
+        if tooltipText then
             ZO_Tooltips_ShowTextTooltip(buttonCtrl, TOP, tooltipText)
         end
     end)
@@ -889,6 +902,11 @@ function ShifterBoxList:New(shifterBox, control, isLeftList)
 end
 
 function ShifterBoxList:OnSelectionChanged(previouslySelectedData, selectedData, reselectingDuringRebuild)
+    if not self.enabled then
+        self.buttonControl:SetState(BSTATE_DISABLED, true)
+        return
+    end
+
     local selectedMultiData = _getShallowClonedTable(self.list.selectedMultiData)
     if selectedMultiData then
         local count = 0
@@ -1318,7 +1336,8 @@ function ShifterBoxList:SetEntriesEnabled(enabled)
         self:UnselectEntries()
     end
     -- after unselecting all entries, change the actual state of the rowControl-buttons
-    local rowControls = self.list.contents
+    local list = self.list
+    local rowControls = list.contents
     for childIndex = 1, rowControls:GetNumChildren() do
         local rowControl = rowControls:GetChild(childIndex)
         rowControl:SetMouseEnabled(enabled)
@@ -1342,6 +1361,10 @@ function ShifterBoxList:SetEntriesEnabled(enabled)
     else
         arrowCtrl:SetAlpha(0.5)
     end
+
+    list.scrollbar:SetMouseEnabled(enabled)
+    list.downButton:SetMouseEnabled(enabled)
+    list.upButton:SetMouseEnabled(enabled)
 
     self.searchHeaderUI:SetMouseEnabled(enabled)
     self.searchHeaderUIEditBox:SetMouseEnabled(enabled)
