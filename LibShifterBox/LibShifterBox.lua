@@ -309,7 +309,8 @@ end
 
 local function _onSearchHeaderEditBoxTextChanged(shifterBox, listObj, editBoxCtrl, textData)
     if shifterBox == nil or listObj == nil or editBoxCtrl == nil then return end
-    listObj.searchStr = editBoxCtrl:GetText()
+    local searchStr = editBoxCtrl:GetText()
+    listObj.searchStr = searchStr
 end
 
 local function _toggleSearchHeaderUI(shifterBox, listObj, searchButtonCtrl)
@@ -326,12 +327,15 @@ local function _toggleSearchHeaderUI(shifterBox, listObj, searchButtonCtrl)
 
     listObj.isSearchHeaderUIShown = newState
 
-    --Is the textBox still containing text then remove it
+    --Is the textBox still containing text then remove it and update the list
+    -->But that prevents us to use the sort header on the results!
+    --[[
     local currentFilterText = listObj.searchHeaderUIEditBox:GetText()
     if currentFilterText ~= nil and currentFilterText ~= "" then
         listObj.searchHeaderUIEditBox:SetText("")
         _onSearchHeaderEditBoxReturnKey(shifterBox, listObj, listObj.searchHeaderUIEditBox)
     end
+    ]]
 end
 
 local function _onSearchHeaderButtonClicked(shifterBox, listObj, buttonCtrl)
@@ -840,15 +844,40 @@ function ShifterBoxList:New(shifterBox, control, isLeftList)
     if shifterBoxSettings.showMoveAllButtons == false then listObj.buttonAllControl:SetHidden(true) end
     --Search button
     local searchEnabled         = shifterBoxSettings.search.enabled
+    listObj.searchHeaderUI = control:GetNamedChild("HeadersSearchUI")
+    listObj.searchHeaderUIEditBox = listObj.searchHeaderUI:GetNamedChild("Box")
     listObj.buttonSearchControl = control:GetNamedChild("HeadersSearchButton")
+    listObj.buttonSearchControl:SetAlpha(0.5)
     listObj.buttonSearchControl:SetState((searchEnabled and BSTATE_NORMAL) or BSTATE_DISABLED, not searchEnabled) -- init via customOptions
     listObj.buttonSearchControl:SetHidden(not searchEnabled)
     listObj.buttonSearchControl:SetHandler("OnClicked", function(...) _onSearchHeaderButtonClicked(shifterBox, listObj, ...) end)
-    listObj.searchHeaderUI = control:GetNamedChild("HeadersSearchUI")
+    listObj.buttonSearchControl:SetHandler("OnMouseEnter", function(buttonCtrl)
+        ZO_Tooltips_HideTextTooltip()
+        if listObj.searchHeaderUIEditBox:IsHidden() then
+            buttonCtrl:SetAlpha(1)
+            buttonCtrl:SetDimensions(32, 32)
+
+            local tooltipText = GetString(SI_SEARCH_FILTER_BY)
+            local currentText = listObj.searchHeaderUIEditBox:GetText()
+            if currentText ~= "" then
+                tooltipText = tooltipText .. "\n" .. GetString(SI_COLOR_PICKER_CURRENT) .. ": " .. currentText
+            end
+            ZO_Tooltips_ShowTextTooltip(buttonCtrl, TOP, tooltipText)
+        end
+    end)
+    listObj.buttonSearchControl:SetHandler("OnMouseExit", function(buttonCtrl)
+        ZO_Tooltips_HideTextTooltip()
+        if listObj.searchHeaderUIEditBox:IsHidden() then
+            local currentText = listObj.searchHeaderUIEditBox:GetText()
+            if currentText == "" then
+                buttonCtrl:SetAlpha(0.5)
+                buttonCtrl:SetDimensions(28, 28)
+            end
+        end
+    end)
     listObj.searchHeaderUI:SetHidden(true)
     listObj.isSearchHeaderUIShown = false
     listObj.searchStr             = nil
-    listObj.searchHeaderUIEditBox = listObj.searchHeaderUI:GetNamedChild("Box")
     listObj.searchHeaderUIEditBox:SetHandler("OnTextChanged", function(...) _onSearchHeaderEditBoxTextChanged(shifterBox, listObj, ...) end)
     listObj.searchHeaderUIEditBox:SetHandler("OnEnter", function(...) _onSearchHeaderEditBoxReturnKey(shifterBox, listObj, ...) end)
 
@@ -1304,12 +1333,29 @@ function ShifterBoxList:SetEntriesEnabled(enabled)
         self.buttonAllControl:SetState(BSTATE_DISABLED, true)
     end
     -- disable sortHeaderGroup
-    self.sortHeaderGroup:SetEnabled(enabled)
+    local sortHeaderGroup = self.sortHeaderGroup
+    sortHeaderGroup:SetEnabled(enabled)
+    local arrowCtrl = sortHeaderGroup.headerContainer:GetNamedChild("Arrow")
+    local valueCtrl = sortHeaderGroup.headerContainer:GetNamedChild("Value")
     if enabled then
-        self.sortHeaderGroup.headerContainer:GetNamedChild("Arrow"):SetAlpha(1)
+        arrowCtrl:SetAlpha(1)
     else
-        self.sortHeaderGroup.headerContainer:GetNamedChild("Arrow"):SetAlpha(0.5)
+        arrowCtrl:SetAlpha(0.5)
     end
+
+    self.searchHeaderUI:SetMouseEnabled(enabled)
+    self.searchHeaderUIEditBox:SetMouseEnabled(enabled)
+    self.buttonSearchControl:SetMouseEnabled(enabled)
+    if not enabled then
+        arrowCtrl:SetHidden(false)
+        valueCtrl:SetHidden(false)
+        self.searchHeaderUI:SetHidden(true)
+        self.searchHeaderUIEditBox:SetText("")
+        self.searchText = nil
+        self.buttonSearchControl:GetHandler("OnMouseExit")(self.buttonSearchControl)
+        self.isSearchHeaderUIShown = false
+    end
+
     -- finally, store the enabled state
     self.enabled = enabled
 end

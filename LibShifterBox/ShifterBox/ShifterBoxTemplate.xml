@@ -19,8 +19,8 @@
                                     </OnInitialized>
                                 </Control>
                                 <Button name="$(parent)SearchButton" inherits="ZO_ButtonBehaviorClickSound">
-                                    <Dimensions x="32" y="32" />
-                                    <Anchor point="RIGHT" relativeTo="$(parent)Value" relativePoint="RIGHT" offsetX="10" />
+                                    <Dimensions x="28" y="28" />
+                                    <Anchor point="RIGHT" relativeTo="$(parent)" relativePoint="RIGHT" offsetX="0" />
                                     <!-- /esoui/art/miscellaneous/search_icon.dds -->
                                     <Textures normal="/esoui/art/inventory/inventory_trait_not_researched_icon.dds"
                                               pressed="/esoui/art/inventory/inventory_trait_not_researched_icon.dds"
@@ -96,8 +96,8 @@
                                     </OnInitialized>
                                 </Control>
                                 <Button name="$(parent)SearchButton" inherits="ZO_ButtonBehaviorClickSound">
-                                    <Dimensions x="32" y="32" />
-                                    <Anchor point="RIGHT" relativeTo="$(parent)Value" relativePoint="RIGHT" offsetX="-10" />
+                                    <Dimensions x="28" y="28" />
+                                    <Anchor point="RIGHT" relativeTo="$(parent)" relativePoint="RIGHT" offsetX="0" />
                                     <Textures normal="/esoui/art/inventory/inventory_trait_not_researched_icon.dds"
                                               pressed="/esoui/art/inventory/inventory_trait_not_researched_icon.dds"
                                               mouseOver="/esoui/art/inventory/inventory_trait_not_researched_icon.dds"
