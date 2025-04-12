@@ -1,23 +1,42 @@
 local LIB_IDENTIFIER = "LibShifterBox"
 
+--local globals
+local CM = CALLBACK_MANAGER
+local EM = EVENT_MANAGER
+local WM = WINDOW_MANAGER
+
+local tos = tostring
+local tcon = table.concat
+local tins = table.insert
+local tsort = table.sort
+local strfor = string.format
+local zostrlow = zo_strlower
+
+
+--Error text output
 local function _errorText(textTemplate, ...)
     local errorTextStr = LIB_IDENTIFIER .. "_Error: "
     if ... ~= nil then
-        errorTextStr =  errorTextStr .. string.format(textTemplate, ...)
+        errorTextStr =  errorTextStr .. strfor(textTemplate, ...)
     else
         errorTextStr = errorTextStr .. textTemplate
     end
     return errorTextStr
 end
-
 assert(not _G[LIB_IDENTIFIER], _errorText(GetString(LIBSHIFTERBOX_ALLREADY_LOADED)))
 
+--Global Library variable
 local lib = {}
-_G[LIB_IDENTIFIER] = lib
+lib.name = LIB_IDENTIFIER
+lib.version = "0.7.0"
 
-local CM = CALLBACK_MANAGER
-local EM = EVENT_MANAGER
-local WM = WINDOW_MANAGER
+lib.doDebug = false
+
+------------------------------------------------------------------------------------------------------------------------
+--Global variable LibShifterBox
+_G[LIB_IDENTIFIER] = lib
+------------------------------------------------------------------------------------------------------------------------
+
 
 -- =================================================================================================================
 -- == LIBRARY CONSTANTS/VARIABLES == --
@@ -46,6 +65,50 @@ local MOUSECURSOR_DONOTCATRE = MOUSE_CURSOR_DO_NOT_CARE
 --local MOUSECURSOR_RESIZEEW   = MOUSE_CURSOR_RESIZE_EW
 local MOUSECURSOR_NEXTLEFT  = MOUSE_CURSOR_NEXT_LEFT
 local MOUSECURSOR_NEXTRIGHT = MOUSE_CURSOR_NEXT_RIGHT
+
+--Textures
+local searchTexture = " |t40:40:/esoui/art/tutorial/gamepad/gp_inventory_trait_not_researched_icon.dds|t"
+
+--Validation types (special ones) for customSettings
+local specialTypeTexts = {
+    ["number+"]     = true,
+    ["number-"]     = true,
+    ["stringValue"] = true,
+    ["sound"]       = true,
+}
+local validationTypeToFunc = {} --will be filled at EVENT_ADD_ON_LOADED
+
+--The possible customSettings entries and their validation type
+-->Each non-function validationtype coudl be a function -> which returns the actual value then.
+-->function's signature: validationFunc(keyToCheck, customSettingsTable)
+-->It will always pass in the customSettingsTable in total as 2nd param: You can provide additional values in that table to do further checks in your validation function
+local possibleCustomSettings = {
+    ["head"] = {
+        { name = "showMoveAllButtons",              validationType = "boolean" },
+        { name = "dragDropEnabled",                 validationType = "boolean" },
+        { name = "sortEnabled",                     validationType = "boolean" },
+        { name = "sortBy",                          validationType = "stringValueKey" },
+        { name = "search",                          validationType = "table" },
+
+   },
+   ["leftList"] = {
+        { name = "title",                           validationType = "string" },
+        { name = "rowTemplateName",                 validationType = "string" },
+        { name = "emptyListText",                   validationType = "string" },
+        { name = "fontName",                        validationType = "string" },
+        { name = "rowHeight",                       validationType = "positiveNumber" },
+        { name = "fontSize",                        validationType = "positiveNumber" },
+        { name = "rowOnMouseEnter",                 validationType = "function" },
+        { name = "rowOnMouseExit",                  validationType = "function" },
+        { name = "rowOnMouseRightClick",            validationType = "function" },
+        { name = "rowSetupCallback",                validationType = "function" },
+        { name = "rowDataTypeSelectSound",          validationType = "sound" },
+        { name = "rowResetControlCallback",         validationType = "function" },
+        { name = "rowSetupAdditionalDataCallback",  validationType = "function" },
+        { name = "callbackRegister",                validationType = "table" },
+   },
+}
+possibleCustomSettings["rightList"] = ZO_ShallowTableCopy(possibleCustomSettings["leftList"]) --Same custom settings for the rightList as available for the leftList
 
 --Shifter box events for the callbacks
 local shifterBoxEvents = {
@@ -79,13 +142,14 @@ for value, eventName in ipairs(shifterBoxEvents) do
 end
 
 local existingShifterBoxes = {}
+lib.existingShifterBoxes = existingShifterBoxes --todo: Removed after debugging
 
 local defaultListSettings = {
     title = "",
     rowHeight = 32,
     rowTemplateName = "ShifterBoxEntryTemplate",
     emptyListText = GetString(LIBSHIFTERBOX_EMPTY),
-    fontSize = 18
+    fontSize = 18,
 }
 
 local defaultSettings = {
@@ -94,7 +158,11 @@ local defaultSettings = {
     sortEnabled = true,
     sortBy = "value",
     leftList = defaultListSettings,
-    rightList = defaultListSettings
+    rightList = defaultListSettings,
+    search = {
+        enabled = false,
+        --searchFunc = function(shifterBox, entry, searchStr) return string.find(.......)  end
+    },
 }
 
 -- KNOWN ISSUES
@@ -117,11 +185,21 @@ local function _getShallowClonedTable(sourceTable)
     return targetTable
 end
 
+--Run function arg to get the return value (passing in ... as optional params to that function),
+--or directly use non-function return value arg
+local function getValueOrCallback(arg, ...)
+	if type(arg) == "function" then
+		return arg(...)
+	else
+		return arg
+	end
+end
+
 -- ---------------------------------------------------------------------------------------------------------------------
 
 local function _getUniqueShifterBoxEventName(shifterBox, eventId)
     if shifterBox == nil then return nil end
-    return table.concat({LIB_IDENTIFIER, "_", shifterBox.addonName, "_", shifterBox.shifterBoxName, "_", eventId})
+    return tcon({LIB_IDENTIFIER, "_", shifterBox.addonName, "_", shifterBox.shifterBoxName, "_", eventId})
 end
 
 local function _fireCallback(shifterBox, controlForCallback, eventId, ...)
@@ -143,9 +221,70 @@ local function _refreshFilters(list, anotherList, checkForClearTrigger)
     if anotherList then _refreshFilter(anotherList, checkForClearTrigger) end
 end
 
-local function _createShifterBox(uniqueAddonName, uniqueShifterBoxName, parentControl)
-    local shifterBoxName = table.concat({uniqueAddonName, "_", uniqueShifterBoxName})
-    return CreateControlFromVirtual(shifterBoxName, parentControl, "ShifterBoxTemplate")
+local function defaultSearchFunc(shifterBox, entry, searchStr)
+    local name = entry.value or entry.key
+	return zostrlow(name):find(searchStr) ~= nil
+end
+
+-- validation function for custom settings
+local function _validateType(customSettingsTbl, parameterName, settingsTbl, typeText)
+    local customValue = customSettingsTbl[parameterName]
+    if customValue ~= nil then
+        --Resolve callbackFunctions used to return an actual value
+        customValue = getValueOrCallback(customValue, customSettingsTbl)
+
+        local isSpecialTypeText = specialTypeTexts[typeText] or false
+        local assertionBool = (not isSpecialTypeText and type(customValue) == typeText) or false
+        if typeText == "number+" then
+            assertionBool = customValue > 0
+            typeText = typeText .. " and positive"
+        elseif typeText == "number-" then
+            assertionBool = customValue < 0
+            typeText = typeText .. " and negative"
+        elseif typeText == "stringValue" then
+            assertionBool = (type(customValue) == "string" and (customValue == "value" or customValue == "key")) or false
+            typeText = "either \'value\' or \'key\'"
+        elseif typeText == "sound" then
+            local sounds = SOUNDS
+            assertionBool = (type(customValue) == "string" and sounds[customValue] ~= nil) or false
+            typeText = "String and existing in global SOUNDS table"
+        end
+        assert(assertionBool == true, _errorText("Invalid %s parameter '%s' provided! Must be " .. tos(typeText), parameterName, tos(customValue)))
+        settingsTbl[parameterName] = customValue
+    end
+end
+
+local function _assertValidShifterBoxEvent(shifterBoxEvent)
+    assert(allowedShifterBoxEvents[shifterBoxEvent] == true,
+            _errorText("Invalid shifterBoxEvent parameter provided! Must be one of table \'LibShifterBox.allowedEventNames\'!")
+    )
+end
+
+local function _assertKeyIsNotInTable(key, value, self, sideControl)
+    local masterList = self.masterList
+    assert(masterList[key] == nil, _errorText("Violation of UNIQUE KEY. Cannot insert duplicate key '%s' with value '%s' in control '%s'. The statement has been terminated.", tos(key), tos(value), sideControl:GetName()))
+end
+
+local function _assertPositiveNumber(customSettingsTbl, parameterName, settingsTbl)
+    _validateType(customSettingsTbl, parameterName, settingsTbl, "number+")
+end
+local function _assertBoolean(customSettingsTbl, parameterName, settingsTbl)
+    _validateType(customSettingsTbl, parameterName, settingsTbl, "boolean")
+end
+local function _assertString(customSettingsTbl, parameterName, settingsTbl)
+    _validateType(customSettingsTbl, parameterName, settingsTbl, "string")
+end
+local function _assertStringValueKey(customSettingsTbl, parameterName, settingsTbl)
+    _validateType(customSettingsTbl, parameterName, settingsTbl, "stringValue")
+end
+local function _assertFunction(customSettingsTbl, parameterName, settingsTbl)
+    _validateType(customSettingsTbl, parameterName, settingsTbl, "function")
+end
+local function _assertSound(customSettingsTbl, parameterName, settingsTbl)
+    _validateType(customSettingsTbl, parameterName, settingsTbl, "sound")
+end
+local function _assertTable(customSettingsTbl, parameterName, settingsTbl)
+    _validateType(customSettingsTbl, parameterName, settingsTbl, "table")
 end
 
 local function _moveEntryFromTo(fromList, toList, moveKey, shifterBox)
@@ -161,20 +300,105 @@ local function _moveEntryFromTo(fromList, toList, moveKey, shifterBox)
     return retVar
 end
 
-local function _assertValidShifterBoxEvent(shifterBoxEvent)
-    assert(allowedShifterBoxEvents[shifterBoxEvent] == true,
-            _errorText("Invalid shifterBoxEvent parameter provided! Must be one of table \'LibShifterBox.allowedEventNames\'!")
-    )
+--Search header
+local function _onSearchHeaderEditBoxReturnKey(shifterBox, listObj, editBoxCtrl)
+    if shifterBox == nil or listObj == nil or editBoxCtrl == nil then return end
+    if listObj.searchStr == nil then return end
+    _refreshFilters(listObj, nil, false)
 end
 
-local function _assertKeyIsNotInTable(key, value, self, sideControl)
-    local masterList = self.masterList
-    assert(masterList[key] == nil, _errorText("Violation of UNIQUE KEY. Cannot insert duplicate key '%s' with value '%s' in control '%s'. The statement has been terminated.", tostring(key), tostring(value), sideControl:GetName()))
+local function _onSearchHeaderEditBoxTextChanged(shifterBox, listObj, editBoxCtrl, textData)
+    if shifterBox == nil or listObj == nil or editBoxCtrl == nil then return end
+    local searchStr = editBoxCtrl:GetText()
+    listObj.searchStr = searchStr
 end
 
-local function _initShifterBoxControls(self)
-    local control = self.shifterBoxControl
-    local shifterBoxSettings = self.shifterBoxSettings
+local function _toggleSearchHeaderUI(shifterBox, listObj, searchButtonCtrl)
+    local currentState = listObj.isSearchHeaderUIShown
+    local newState = not currentState
+    --Hide/Unhide the search backdrop with the editbox
+    local searchHeaderUIControl = listObj.searchHeaderUI
+    searchHeaderUIControl:SetHidden(not newState)
+
+    --Hide/Unhide the sort headers
+    local sortHeaderGroup = listObj.sortHeaderGroup
+    sortHeaderGroup.headerContainer:GetNamedChild("Arrow"):SetHidden(newState)
+    sortHeaderGroup.headerContainer:GetNamedChild("Value"):SetHidden(newState)
+
+    listObj.isSearchHeaderUIShown = newState
+    if newState == true then
+        listObj.searchHeaderUIEditBox:TakeFocus()
+        listObj.searchHeaderUIEditBox:SelectAll()
+    end
+
+    --Is the textBox still containing text then remove it and update the list
+    -->But that prevents us to use the sort header on the results!
+    --[[
+    local currentFilterText = listObj.searchHeaderUIEditBox:GetText()
+    if currentFilterText ~= nil and currentFilterText ~= "" then
+        listObj.searchHeaderUIEditBox:SetText("")
+        _onSearchHeaderEditBoxReturnKey(shifterBox, listObj, listObj.searchHeaderUIEditBox)
+    end
+    ]]
+end
+
+local function _onSearchHeaderButtonClicked(shifterBox, listObj, buttonCtrl)
+    if shifterBox == nil or listObj == nil or buttonCtrl == nil then return end
+    listObj.searchStr = nil
+
+    _toggleSearchHeaderUI(shifterBox, listObj, buttonCtrl)
+end
+
+
+local function _createShifterBox(uniqueAddonName, uniqueShifterBoxName, parentControl)
+    local shifterBoxName = tcon({uniqueAddonName, "_", uniqueShifterBoxName})
+    return CreateControlFromVirtual(shifterBoxName, parentControl, "ShifterBoxTemplate")
+end
+
+local function _applyCustomSettings(obj, customSettings)
+    if lib.doDebug then
+        LSB_Debug = LSB_Debug or {}
+        LSB_Debug[obj.shifterBoxName] = LSB_Debug[obj.shifterBoxName] or {}
+        LSB_Debug[obj.shifterBoxName].addonName = obj.addonName
+        LSB_Debug[obj.shifterBoxName].shifterBoxName = obj.shifterBoxName
+        LSB_Debug[obj.shifterBoxName].customSettings = ZO_ShallowTableCopy(customSettings)
+    end
+
+    -- if no custom settings provided, use the default ones
+    local defSettingsForCustomSettings = _getDeepClonedTable(defaultSettings)
+    if not ZO_IsTableEmpty(customSettings) then
+        for customSettingsSection, customSettingsSectionData in pairs(possibleCustomSettings) do
+            for _, validationData in ipairs(customSettingsSectionData) do
+                if validationData.validationType ~= nil then
+                    local validationFunc = validationTypeToFunc[validationData.validationType]
+                    if type(validationFunc) == "function" then
+                        if lib.doDebug then d(">validating ShifterBox section '" .. tos(customSettingsSection) .. "' setting: " ..tos(validationData.name)) end
+                        if customSettingsSection == "head" then
+                            -- validate the individual custom settings
+                            validationFunc(customSettings, validationData.name, defSettingsForCustomSettings)
+                        else
+                            if customSettingsSection == "leftList" then
+                                -- validate leftList settings
+                                validationFunc(customSettings.leftList, validationData.name, defSettingsForCustomSettings.leftList)
+
+                            elseif customSettingsSection == "rightList" then
+                                -- validate rightList settings
+                                validationFunc(customSettings.rightList, validationData.name, defSettingsForCustomSettings.rightList)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    defSettingsForCustomSettings.search.searchFunc = defSettingsForCustomSettings.search.searchFunc or defaultSearchFunc
+
+    return defSettingsForCustomSettings
+end
+
+local function _initShifterBoxControls(obj)
+    local control = obj.shifterBoxControl
+    local shifterBoxSettings = obj.shifterBoxSettings
     local leftControl = control:GetNamedChild("Left")
     local rightControl = control:GetNamedChild("Right")
     local fromLeftButtonControl = leftControl:GetNamedChild("Button")
@@ -182,36 +406,45 @@ local function _initShifterBoxControls(self)
     local rightListControl = rightControl:GetNamedChild("List")
     local leftListControl = leftControl:GetNamedChild("List")
 
+    if lib.doDebug then
+        LSB_Debug = LSB_Debug or {}
+        LSB_Debug[obj.shifterBoxName] = LSB_Debug[obj.shifterBoxName] or {}
+        LSB_Debug[obj.shifterBoxName].addonName = obj.addonName
+        LSB_Debug[obj.shifterBoxName].shifterBoxName = obj.shifterBoxName
+        LSB_Debug[obj.shifterBoxName].shifterBoxSettings = ZO_ShallowTableCopy(shifterBoxSettings)
+    end
+
     local function initListFrames(parentListControl)
         local listFrameControl = parentListControl:GetNamedChild("Frame")
         listFrameControl:SetCenterColor(0, 0, 0, 1)
         listFrameControl:SetEdgeTexture(nil, 1, 1, 1)
     end
 
-    local function initHeaders(self, leftListTitle, rightListTitle)
+    local function initHeaders(objVar, leftListTitle, rightListTitle)
+        if lib.doDebug then d("[LSB]initHeaders-addonName: " .. tos(objVar.addonName) .. ", boxName: "..tos(objVar.shifterBoxName) ..", leftListTitle: " ..tos(leftListTitle) .. ", rightListTitle: " .. tos(rightListTitle)) end
         if leftListTitle ~= nil or rightListTitle ~= nil then
-            self.headerHeight = HEADER_HEIGHT
+            objVar.headerHeight = HEADER_HEIGHT
             -- show the headers (default = hidden)
             local leftHeaders = leftControl:GetNamedChild("Headers")
             local leftHeadersTitle = leftHeaders:GetNamedChild("Value"):GetNamedChild("Name")
-            leftHeaders:SetHeight(self.headerHeight)
+            leftHeaders:SetHeight(objVar.headerHeight)
             leftHeaders:SetHidden(false)
             leftHeadersTitle:SetText(leftListTitle or "")
 
             local rightHeaders = rightControl:GetNamedChild("Headers")
             local rightHeadersTitle = rightHeaders:GetNamedChild("Value"):GetNamedChild("Name")
-            rightHeaders:SetHeight(self.headerHeight)
+            rightHeaders:SetHeight(objVar.headerHeight)
             rightHeaders:SetHidden(false)
             rightHeadersTitle:SetText(rightListTitle or "")
         else
-            self.headerHeight = 0
+            objVar.headerHeight = 0
         end
     end
 
     -- initialise the headers
     local leftListSettings = shifterBoxSettings.leftList
     local rightListSettings = shifterBoxSettings.rightList
-    initHeaders(self, leftListSettings.title, rightListSettings.title)
+    initHeaders(obj, leftListSettings.title, rightListSettings.title)
 
     -- initialize the frame/border around the listBoxes
     initListFrames(leftListControl)
@@ -222,8 +455,9 @@ local function _initShifterBoxControls(self)
     fromRightButtonControl:SetState(BSTATE_DISABLED, true)
 end
 
-local function _initShifterBoxHandlers(self)
-    local control = self.shifterBoxControl
+local function _initShifterBoxHandlers(obj)
+    local control = obj.shifterBoxControl
+
     local leftControl = control:GetNamedChild("Left")
     local fromLeftButtonControl = leftControl:GetNamedChild("Button")
     local fromLeftAllButtonControl = leftControl:GetNamedChild("AllButton")
@@ -232,47 +466,51 @@ local function _initShifterBoxHandlers(self)
     local fromRightAllButtonControl = rightControl:GetNamedChild("AllButton")
 
     local function toLeftButtonClicked(buttonControl)
-        local rightListSelectedData = _getShallowClonedTable(self.rightList.list.selectedMultiData)
+        local leftList = obj.leftList
+        local rightList = obj.rightList
+        local rightListSelectedData = _getShallowClonedTable(rightList.list.selectedMultiData)
         local retVarLoop = false
         local retVar = true
         for key, data in pairs(rightListSelectedData) do
-            retVarLoop = _moveEntryFromTo(self.rightList, self.leftList, data.key, self)
+            retVarLoop = _moveEntryFromTo(rightList, leftList, data.key, obj)
             if not retVarLoop then
                 retVar = false
             end
         end
         -- then commit the changes to the scrollList and refresh the hidden states
-        _refreshFilter(self.leftList)
-        _refreshFilter(self.rightList, true)
+        _refreshFilter(leftList)
+        _refreshFilter(rightList, true)
         -- finally disable the button itself
         buttonControl:SetState(BSTATE_DISABLED, true)
         return retVar
     end
     local function toLeftAllButtonClicked(buttonControl)
         -- move all entries
-        self:MoveAllEntriesToLeftList()
+        obj:MoveAllEntriesToLeftList()
     end
 
     local function toRightButtonClicked(buttonControl)
-        local leftListSelectedData = _getShallowClonedTable(self.leftList.list.selectedMultiData)
+        local leftList = obj.leftList
+        local rightList = obj.rightList
+        local leftListSelectedData = _getShallowClonedTable(leftList.list.selectedMultiData)
         local retVarLoop = false
         local retVar = true
         for key, data in pairs(leftListSelectedData) do
-            retVarLoop = _moveEntryFromTo(self.leftList, self.rightList, data.key, self)
+            retVarLoop = _moveEntryFromTo(leftList, rightList, data.key, obj)
             if not retVarLoop then
                 retVar = false
             end
         end
         -- then commit the changes to the scrollList and refresh the hidden states
-        _refreshFilter(self.leftList, true)
-        _refreshFilter(self.rightList)
+        _refreshFilter(leftList, true)
+        _refreshFilter(rightList)
         -- finally disable the button itself
         buttonControl:SetState(BSTATE_DISABLED, true)
         return retVar
     end
     local function toRightAllButtonClicked(buttonControl)
         -- move all entries
-        self:MoveAllEntriesToRightList()
+        obj:MoveAllEntriesToRightList()
     end
 
     -- initialize the handler when the buttons are clicked
@@ -280,100 +518,6 @@ local function _initShifterBoxHandlers(self)
     fromLeftAllButtonControl:SetHandler("OnClicked", toRightAllButtonClicked)
     fromRightButtonControl:SetHandler("OnClicked", toLeftButtonClicked)
     fromRightAllButtonControl:SetHandler("OnClicked", toLeftAllButtonClicked)
-end
-
-local function _applyCustomSettings(customSettings)
-    -- if no custom settings provided, use the default ones
-    local settings = _getDeepClonedTable(defaultSettings)
-    if customSettings == nil then return settings end
-
-    -- validation functions
-    local function _validateType(customSettingsTbl, parameterName, settingsTbl, typeText)
-        local specialTypeTexts = {
-            ["number+"]     = true,
-            ["number-"]     = true,
-            ["stringValue"] = true,
-            ["sound"]       = true,
-        }
-        local customValue = customSettingsTbl[parameterName]
-        if customValue ~= nil then
-            local isSpecialTypeText = specialTypeTexts[typeText] or false
-            local assertionBool = (not isSpecialTypeText and type(customValue) == typeText) or false
-            if typeText == "number+" then
-                assertionBool = customValue > 0
-                typeText = typeText .. " and positive"
-            elseif typeText == "number-" then
-                assertionBool = customValue < 0
-                typeText = typeText .. " and negative"
-            elseif typeText == "stringValue" then
-                assertionBool = (type(customValue) == "string" and (customValue == "value" or customValue == "key")) or false
-                typeText = "either \'value\' or \'key\'"
-            elseif typeText == "sound" then
-                local sounds = SOUNDS
-                assertionBool = (type(customValue) == "string" and sounds[customValue] ~= nil) or false
-                typeText = "String and existing in global SOUNDS table"
-            end
-            assert(assertionBool == true, _errorText("Invalid %s parameter '%s' provided! Must be " .. tostring(typeText), parameterName, tostring(customValue)))
-            settingsTbl[parameterName] = customValue
-        end
-    end
-    local function _assertPositiveNumber(customSettingsTbl, parameterName, settingsTbl)
-        _validateType(customSettingsTbl, parameterName, settingsTbl, "number+")
-    end
-    local function _assertBoolean(customSettingsTbl, parameterName, settingsTbl)
-        _validateType(customSettingsTbl, parameterName, settingsTbl, "boolean")
-    end
-    local function _assertString(customSettingsTbl, parameterName, settingsTbl)
-        _validateType(customSettingsTbl, parameterName, settingsTbl, "string")
-    end
-    local function _assertStringValueKey(customSettingsTbl, parameterName, settingsTbl)
-        _validateType(customSettingsTbl, parameterName, settingsTbl, "stringValue")
-    end
-    local function _assertFunction(customSettingsTbl, parameterName, settingsTbl)
-        _validateType(customSettingsTbl, parameterName, settingsTbl, "function")
-    end
-    local function _assertSound(customSettingsTbl, parameterName, settingsTbl)
-        _validateType(customSettingsTbl, parameterName, settingsTbl, "sound")
-    end
-    local function _assertTable(customSettingsTbl, parameterName, settingsTbl)
-        _validateType(customSettingsTbl, parameterName, settingsTbl, "table")
-    end
-
-    -- validate the individual customSettings
-    _assertBoolean(customSettings, "showMoveAllButtons", settings)
-    _assertBoolean(customSettings, "dragDropEnabled", settings)
-    _assertBoolean(customSettings, "sortEnabled", settings)
-    _assertStringValueKey(customSettings, "sortBy", settings)
-    _assertTable(customSettings, "callbackRegister", settings)
-    -- validate leftList settings
-    _assertString(customSettings.leftList, "title", settings.leftList)
-    _assertString(customSettings.leftList, "rowTemplateName", settings.leftList)
-    _assertString(customSettings.leftList, "emptyListText", settings.leftList)
-    _assertString(customSettings.leftList, "fontName", settings.leftList)
-    _assertPositiveNumber(customSettings.leftList, "rowHeight", settings.leftList)
-    _assertPositiveNumber(customSettings.leftList, "fontSize", settings.leftList)
-    _assertFunction(customSettings.leftList, "rowOnMouseEnter", settings.leftList)
-    _assertFunction(customSettings.leftList, "rowOnMouseExit", settings.leftList)
-    _assertFunction(customSettings.leftList, "rowOnMouseRightClick", settings.leftList)
-    _assertFunction(customSettings.leftList, "rowSetupCallback", settings.leftList)
-    _assertSound(customSettings.leftList, "rowDataTypeSelectSound", settings.leftList)
-    _assertFunction(customSettings.leftList, "rowResetControlCallback", settings.leftList)
-    _assertFunction(customSettings.leftList, "rowSetupAdditionalDataCallback", settings.leftList)
-    -- validate rightList settings
-    _assertString(customSettings.rightList, "title", settings.rightList)
-    _assertString(customSettings.rightList, "rowTemplateName", settings.rightList)
-    _assertString(customSettings.rightList, "emptyListText", settings.rightList)
-    _assertString(customSettings.rightList, "fontName", settings.rightList)
-    _assertPositiveNumber(customSettings.rightList, "rowHeight", settings.rightList)
-    _assertPositiveNumber(customSettings.rightList, "fontSize", settings.rightList)
-    _assertFunction(customSettings.rightList, "rowOnMouseEnter", settings.rightList)
-    _assertFunction(customSettings.rightList, "rowOnMouseExit", settings.rightList)
-    _assertFunction(customSettings.rightList, "rowOnMouseRightClick", settings.rightList)
-    _assertFunction(customSettings.rightList, "rowSetupCallback", settings.rightList)
-    _assertSound(customSettings.rightList, "rowDataTypeSelectSound", settings.rightList)
-    _assertFunction(customSettings.rightList, "rowResetControlCallback", settings.rightList)
-    _assertFunction(customSettings.rightList, "rowSetupAdditionalDataCallback", settings.rightList)
-    return settings
 end
 
 local function _getListBoxWidthAndArrowOffset(width, height)
@@ -677,9 +821,10 @@ local function _autoScroll(shifterBox)
         scrollValue = libShifterBoxRowHeight * 2
     end
     if scrollValue == nil or scrollValue == 0 then return end
---d(">scrollValue: " ..tostring(scrollValue))
+--d(">scrollValue: " ..tos(scrollValue))
     ZO_ScrollList_ScrollRelative(otherSideShifterBoxList, scrollValue, nil, true)
 end
+
 
 -- =================================================================================================================
 -- == SCROLL-LISTS == --
@@ -694,15 +839,66 @@ ShifterBoxList.SORT_KEYS = {
 
 function ShifterBoxList:New(shifterBox, control, isLeftList)
     local shifterBoxSettings = shifterBox.shifterBoxSettings
-    local obj = ZO_SortFilterList.New(self, control, shifterBoxSettings, isLeftList, shifterBox) -->ShifterBoxList:Initialize
-    obj.buttonControl = control:GetNamedChild("Button")
-    obj.buttonAllControl = control:GetNamedChild("AllButton")
-    obj.buttonAllControl:SetState(BSTATE_DISABLED, true) -- init it as disabled
-    if shifterBoxSettings.showMoveAllButtons == false then obj.buttonAllControl:SetHidden(true) end
-    obj.enabled = true
-    obj.masterList = {}
-    obj.shifterBox = shifterBox -- keep a reference to the "parent" ShifterBox
-    return obj
+    local listObj            = ZO_SortFilterList.New(self, control, shifterBoxSettings, isLeftList, shifterBox) -->ShifterBoxList:Initialize
+
+    --Buttons
+    listObj.buttonControl    = control:GetNamedChild("Button")
+    listObj.buttonAllControl = control:GetNamedChild("AllButton")
+    listObj.buttonAllControl:SetState(BSTATE_DISABLED, true) -- init it as disabled
+    if shifterBoxSettings.showMoveAllButtons == false then listObj.buttonAllControl:SetHidden(true) end
+    --Search button
+    local searchEnabled         = shifterBoxSettings.search.enabled
+    listObj.searchHeaderUI = control:GetNamedChild("HeadersSearchUI")
+    listObj.searchHeaderUIEditBox = listObj.searchHeaderUI:GetNamedChild("Box")
+    listObj.buttonSearchControl = control:GetNamedChild("HeadersSearchButton")
+    listObj.buttonSearchControl:SetAlpha(0.5)
+    listObj.buttonSearchControl:SetState((searchEnabled and BSTATE_NORMAL) or BSTATE_DISABLED, not searchEnabled) -- init via customOptions
+    listObj.buttonSearchControl:SetHidden(not searchEnabled)
+    listObj.buttonSearchControl:SetHandler("OnClicked", function(...) _onSearchHeaderButtonClicked(shifterBox, listObj, ...) end)
+    listObj.buttonSearchControl:SetHandler("OnMouseEnter", function(buttonCtrl)
+        ZO_Tooltips_HideTextTooltip()
+        local tooltipText
+        if listObj.searchHeaderUIEditBox:IsHidden() then
+            buttonCtrl:SetAlpha(1)
+            buttonCtrl:SetDimensions(32, 32)
+
+            tooltipText = GetString(SI_SEARCH_FILTER_BY)
+            local currentText = listObj.searchHeaderUIEditBox:GetText()
+            if currentText ~= "" then
+                tooltipText = tooltipText .. "\n|c00FF00" .. GetString(SI_COLOR_PICKER_CURRENT) .. "|r: " .. currentText
+            end
+        end
+        local scrollData = ZO_ScrollList_GetDataList(listObj.list)
+        if tooltipText == nil then
+            tooltipText = "#" ..tos(#scrollData)
+        else
+            tooltipText = tooltipText .. "\n#" ..tos(#scrollData)
+        end
+        if tooltipText then
+            ZO_Tooltips_ShowTextTooltip(buttonCtrl, TOP, tooltipText)
+        end
+    end)
+    listObj.buttonSearchControl:SetHandler("OnMouseExit", function(buttonCtrl)
+        ZO_Tooltips_HideTextTooltip()
+        if listObj.searchHeaderUIEditBox:IsHidden() then
+            local currentText = listObj.searchHeaderUIEditBox:GetText()
+            if currentText == "" then
+                buttonCtrl:SetAlpha(0.5)
+                buttonCtrl:SetDimensions(28, 28)
+            end
+        end
+    end)
+    listObj.searchHeaderUI:SetHidden(true)
+    listObj.isSearchHeaderUIShown = false
+    listObj.searchStr             = nil
+    listObj.searchHeaderUIEditBox:SetHandler("OnTextChanged", function(...) _onSearchHeaderEditBoxTextChanged(shifterBox, listObj, ...) end)
+    listObj.searchHeaderUIEditBox:SetHandler("OnEnter", function(...) _onSearchHeaderEditBoxReturnKey(shifterBox, listObj, ...) end)
+
+    listObj.enabled               = true
+    listObj.masterList            = {}
+
+    listObj.shifterBox            = shifterBox -- keep a reference to the "parent" ShifterBox
+    return listObj
 end
 
 function ShifterBoxList:OnSelectionChanged(previouslySelectedData, selectedData, reselectingDuringRebuild)
@@ -710,7 +906,7 @@ function ShifterBoxList:OnSelectionChanged(previouslySelectedData, selectedData,
     if selectedMultiData then
         local count = 0
         for _ in pairs(selectedMultiData) do count = count + 1 end
-        if count > 0 then
+        if count > 0 and self.enabled then
             self.buttonControl:SetState(BSTATE_NORMAL, false)
         else
             self.buttonControl:SetState(BSTATE_DISABLED, true)
@@ -718,22 +914,25 @@ function ShifterBoxList:OnSelectionChanged(previouslySelectedData, selectedData,
     end
 end
 
-function ShifterBoxList:Initialize(control, shifterBoxSettings, isLeftList, shifterBox)
+function ShifterBoxList:Initialize(control, shifterBoxSettings, isLeftList, shifterBox) --from ShifterBoxList:New -> ZO_SortFilterList.New(...
     local selfVar = self
     self.shifterBoxSettings = shifterBoxSettings
+
+    local listBoxSettings
     if isLeftList then
-        self.listBoxSettings = shifterBoxSettings.leftList
+        listBoxSettings = shifterBoxSettings.leftList
     else
-        self.listBoxSettings = shifterBoxSettings.rightList
+        listBoxSettings = shifterBoxSettings.rightList
     end
-    self.callbackRegister = shifterBoxSettings.callbackRegister
+    self.listBoxSettings = listBoxSettings
+
     self.isLeftList = isLeftList
-    self.rowHeight = self.listBoxSettings.rowHeight
+    self.rowHeight = listBoxSettings.rowHeight
     self.rowWidth = 180 -- default value to init
     -- initialize the SortFilterList
     ZO_SortFilterList.Initialize(self, control)
     -- set a text that is displayed when there are no entries
-    self:SetEmptyText(self.listBoxSettings.emptyListText)
+    self:SetEmptyText(listBoxSettings.emptyListText)
     if  self.shifterBoxSettings.sortEnabled then
         -- default sorting key
         -- Source: https://esodata.uesp.net/100028/src/libraries/zo_sortheadergroup/zo_sortheadergroup.lua.html
@@ -755,7 +954,7 @@ function ShifterBoxList:Initialize(control, shifterBoxSettings, isLeftList, shif
     --@dataTypeSelectSound - An optional sound to play when a row of this data type is selected.
     --@resetControlCallback - An optional callback when the datatype control gets reset.
     --function ZO_ScrollList_AddDataType(self, typeId, templateName, height, setupCallback, hideCallback, dataTypeSelectSound, resetControlCallback)
-    local additionalDataCallbackFunc = self.listBoxSettings.rowSetupAdditionalDataCallback or nil
+    local additionalDataCallbackFunc = listBoxSettings.rowSetupAdditionalDataCallback or nil
     local function standardSetupCallback(rowControl, data, doNotSetupRowNow)
         local dataTabEnriched = data
         if additionalDataCallbackFunc ~= nil then
@@ -764,20 +963,20 @@ function ShifterBoxList:Initialize(control, shifterBoxSettings, isLeftList, shif
         self:SetupRowEntry(rowControl, dataTabEnriched, doNotSetupRowNow)
     end
     local setupCallbackFunc = standardSetupCallback
-    if self.listBoxSettings.rowSetupCallback ~= nil then
+    if listBoxSettings.rowSetupCallback ~= nil then
         setupCallbackFunc = function(rowControl, data)
             standardSetupCallback(rowControl, data, true)
             self.listBoxSettings.rowSetupCallback(rowControl, data)
             ZO_SortFilterList.SetupRow(selfVar, rowControl, data)
         end
     end
-    local hideCallbackFunc      = self.listBoxSettings.rowHideCallback or nil
-    local dataTypeSelectSound   = self.listBoxSettings.rowDataTypeSelectSound or nil
-    local resetControlCallback  = self.listBoxSettings.rowResetControlCallback or nil
+    local hideCallbackFunc      = listBoxSettings.rowHideCallback or nil
+    local dataTypeSelectSound   = listBoxSettings.rowDataTypeSelectSound or nil
+    local resetControlCallback  = listBoxSettings.rowResetControlCallback or nil
     ZO_ScrollList_AddDataType(self.list,
             DATA_TYPE_DEFAULT,
-            self.listBoxSettings.rowTemplateName,
-            self.listBoxSettings.rowHeight,
+            listBoxSettings.rowTemplateName,
+            listBoxSettings.rowHeight,
             setupCallbackFunc,
             hideCallbackFunc,
             dataTypeSelectSound,
@@ -797,8 +996,8 @@ function ShifterBoxList:Initialize(control, shifterBoxSettings, isLeftList, shif
     self.list:SetMouseEnabled(true)
 
     --Any callbacks to register now from the settings (e.g. the "List created" one, which would not fire again later :-) )
-    if self.callbackRegister ~= nil then
-        for shifterBoxEventId, callbackFunc in pairs(self.callbackRegister) do
+    if self.listBoxSettings.callbackRegister ~= nil then
+        for shifterBoxEventId, callbackFunc in pairs(listBoxSettings.callbackRegister) do
             shifterBox:RegisterCallback(shifterBoxEventId, callbackFunc)
         end
     end
@@ -819,6 +1018,15 @@ end
 function ShifterBoxList:FilterScrollList()
     -- intended to be overridden
     -- should take the master list data and filter it
+    --Check for any search enabled and current search text is set
+    local shifterBoxSettings = self.shifterBoxSettings
+    local searchSettings = shifterBoxSettings.search
+    local searchEnabled = (self.searchStr ~= nil and getValueOrCallback(searchSettings.enabled, searchSettings)) or false
+    local searchFunc = (searchEnabled == true and searchSettings.searchFunc) or nil
+    if type(searchFunc) ~= "function" then
+        searchEnabled = false
+    end
+
     local hasAtLeastOneEntry = false
     local scrollData = ZO_ScrollList_GetDataList(self.list)
     ZO_ClearNumericallyIndexedTable(scrollData)
@@ -832,8 +1040,11 @@ function ShifterBoxList:FilterScrollList()
                     key = key,
                     value = data.value
                 }
-                table.insert(scrollData, ZO_ScrollList_CreateDataEntry(DATA_TYPE_DEFAULT, rowData, data.categoryId or DATA_DEFAULT_CATEGORY))
-                hasAtLeastOneEntry = true
+
+                if not searchEnabled or (searchEnabled and searchFunc(self, data, self.searchStr)) then
+                    tins(scrollData, ZO_ScrollList_CreateDataEntry(DATA_TYPE_DEFAULT, rowData, data.categoryId or DATA_DEFAULT_CATEGORY))
+                    hasAtLeastOneEntry = true
+                end
             else
                 -- entry will not (or will no longer) be visible
                 if self.list.selectedMultiData then
@@ -842,7 +1053,7 @@ function ShifterBoxList:FilterScrollList()
             end
         end
     end
-    if hasAtLeastOneEntry then
+    if hasAtLeastOneEntry and self.enabled then
         -- when there is at least one entry, the move-all button can be enabled
         self.buttonAllControl:SetState(BSTATE_NORMAL, false)
         self:OnSelectionChanged()
@@ -863,7 +1074,7 @@ function ShifterBoxList:SortScrollList()
     local shifterBoxSettings = self.shifterBoxSettings
     if shifterBoxSettings.sortEnabled then
         local scrollData = ZO_ScrollList_GetDataList(self.list)
-        table.sort(scrollData, self.sortFunction)
+        tsort(scrollData, self.sortFunction)
     end
 end
 
@@ -998,53 +1209,61 @@ end
 function ShifterBoxList:SetupRowEntry(rowControl, rowData, doNotSetupRowNow)
     doNotSetupRowNow = doNotSetupRowNow or false
     local function onRowMouseEnter(p_rowControl)
-        -- then trigger the callback if present
-        _fireCallback(self.shifterBox, p_rowControl, (self.isLeftList and lib.EVENT_LEFT_LIST_ROW_ON_MOUSE_ENTER) or lib.EVENT_RIGHT_LIST_ROW_ON_MOUSE_ENTER,
-                self.shifterBox, rowData)
+        if self.enabled then
+            -- then trigger the callback if present
+            _fireCallback(self.shifterBox, p_rowControl, (self.isLeftList and lib.EVENT_LEFT_LIST_ROW_ON_MOUSE_ENTER) or lib.EVENT_RIGHT_LIST_ROW_ON_MOUSE_ENTER,
+                    self.shifterBox, rowData)
 
-        if self.listBoxSettings.rowOnMouseEnter ~= nil then
-            self.listBoxSettings.rowOnMouseEnter(p_rowControl)
-        else
-            local labelControl = p_rowControl:GetNamedChild("Label")
-            local textWidth = labelControl:GetTextWidth()
-            local desiredWidth = labelControl:GetDesiredWidth()
-            -- only show tooltip if the text/label was truncated or if the text is wider than the desiredWidth minus the scrollbar width
-            local wasTruncated = p_rowControl:GetNamedChild("Label"):WasTruncated()
-            if wasTruncated or (textWidth + SCROLLBAR_WIDTH) > desiredWidth then
-                local data = ZO_ScrollList_GetData(p_rowControl)
-                ZO_Tooltips_ShowTextTooltip(p_rowControl, TOP, data.value)
+            if self.listBoxSettings.rowOnMouseEnter ~= nil then
+                self.listBoxSettings.rowOnMouseEnter(p_rowControl)
+            else
+                local labelControl = p_rowControl:GetNamedChild("Label")
+                local textWidth = labelControl:GetTextWidth()
+                local desiredWidth = labelControl:GetDesiredWidth()
+                -- only show tooltip if the text/label was truncated or if the text is wider than the desiredWidth minus the scrollbar width
+                local wasTruncated = p_rowControl:GetNamedChild("Label"):WasTruncated()
+                if wasTruncated or (textWidth + SCROLLBAR_WIDTH) > desiredWidth then
+                    local data = ZO_ScrollList_GetData(p_rowControl)
+                    ZO_Tooltips_ShowTextTooltip(p_rowControl, TOP, data.value)
+                end
             end
         end
     end
     local function onRowMouseExit(p_rowControl)
-        -- then trigger the callback if present
-        _fireCallback(self.shifterBox, p_rowControl, (self.isLeftList and lib.EVENT_LEFT_LIST_ROW_ON_MOUSE_EXIT) or lib.EVENT_RIGHT_LIST_ROW_ON_MOUSE_EXIT,
-                self.shifterBox, rowData)
+        if self.enabled then
+            -- then trigger the callback if present
+            _fireCallback(self.shifterBox, p_rowControl, (self.isLeftList and lib.EVENT_LEFT_LIST_ROW_ON_MOUSE_EXIT) or lib.EVENT_RIGHT_LIST_ROW_ON_MOUSE_EXIT,
+                    self.shifterBox, rowData)
 
-        if self.listBoxSettings.rowOnMouseExit ~= nil then
-            self.listBoxSettings.rowOnMouseExit(p_rowControl)
-        else
-            ZO_Tooltips_HideTextTooltip()
+            if self.listBoxSettings.rowOnMouseExit ~= nil then
+                self.listBoxSettings.rowOnMouseExit(p_rowControl)
+            else
+                ZO_Tooltips_HideTextTooltip()
+            end
         end
     end
     local function onRowMouseUp(p_rowControl, mouseButton, isInside, ctrlKey, altKey, shiftKey, commandKey)
-        -- then trigger the callback if present
-        _fireCallback(self.shifterBox, p_rowControl, (self.isLeftList and lib.EVENT_LEFT_LIST_ROW_ON_MOUSE_UP) or lib.EVENT_RIGHT_LIST_ROW_ON_MOUSE_UP,
-                self.shifterBox, mouseButton, isInside, ctrlKey, altKey, shiftKey, commandKey, rowData)
+        if self.enabled then
+            -- then trigger the callback if present
+            _fireCallback(self.shifterBox, p_rowControl, (self.isLeftList and lib.EVENT_LEFT_LIST_ROW_ON_MOUSE_UP) or lib.EVENT_RIGHT_LIST_ROW_ON_MOUSE_UP,
+                    self.shifterBox, mouseButton, isInside, ctrlKey, altKey, shiftKey, commandKey, rowData)
 
-        if not isInside then return end
-        if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
-            local data = ZO_ScrollList_GetData(p_rowControl)
-            self:ToggleEntrySelection(data, p_rowControl, RESELECTING_DURING_REBUILD, false)
-        elseif mouseButton == MOUSE_BUTTON_INDEX_RIGHT then
-            if self.listBoxSettings.rowOnMouseRightClick ~= nil then
+            if not isInside then return end
+            if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
                 local data = ZO_ScrollList_GetData(p_rowControl)
-                self.listBoxSettings.rowOnMouseRightClick(p_rowControl, data)
+                self:ToggleEntrySelection(data, p_rowControl, RESELECTING_DURING_REBUILD, false)
+            elseif mouseButton == MOUSE_BUTTON_INDEX_RIGHT then
+                if self.listBoxSettings.rowOnMouseRightClick ~= nil then
+                    local data = ZO_ScrollList_GetData(p_rowControl)
+                    self.listBoxSettings.rowOnMouseRightClick(p_rowControl, data)
+                end
             end
         end
     end
     local function onDragStart(p_rowControl, mouseButton)
-        self:StartDragging(p_rowControl, mouseButton)
+        if self.enabled then
+            self:StartDragging(p_rowControl, mouseButton)
+        end
     end
     -- set the value for the row entry
     local labelControl = rowControl:GetNamedChild("Label")
@@ -1067,7 +1286,7 @@ function ShifterBoxList:SetupRowEntry(rowControl, rowData, doNotSetupRowNow)
     labelControl:SetWidth(self.rowWidth)
 
     -- set the font
-    local customFont = string.format("$(%s)|$(KB_%s)|%s", FONT_STYLE, listBoxSettings.fontSize, FONT_WEIGHT)
+    local customFont = strfor("$(%s)|$(KB_%s)|%s", FONT_STYLE, listBoxSettings.fontSize, FONT_WEIGHT)
     labelControl:SetFont(customFont)
 
     -- reselect entries (only visually) if necessary
@@ -1120,7 +1339,8 @@ function ShifterBoxList:SetEntriesEnabled(enabled)
         self:UnselectEntries()
     end
     -- after unselecting all entries, change the actual state of the rowControl-buttons
-    local rowControls = self.list.contents
+    local list = self.list
+    local rowControls = list.contents
     for childIndex = 1, rowControls:GetNumChildren() do
         local rowControl = rowControls:GetChild(childIndex)
         rowControl:SetMouseEnabled(enabled)
@@ -1128,26 +1348,47 @@ function ShifterBoxList:SetEntriesEnabled(enabled)
     rowControls:SetAlpha(enabled and 1 or 0.3)
     local scrollData = ZO_ScrollList_GetDataList(self.list)
     local numChildren = #scrollData
-    -- enable/disable the "all" button
+    -- enable/disable the "all" and "Search" button
     if enabled and numChildren > 0 then
         self.buttonAllControl:SetState(BSTATE_NORMAL, false)
     else
         self.buttonAllControl:SetState(BSTATE_DISABLED, true)
     end
     -- disable sortHeaderGroup
-    self.sortHeaderGroup:SetEnabled(enabled)
+    local sortHeaderGroup = self.sortHeaderGroup
+    sortHeaderGroup:SetEnabled(enabled)
+    local arrowCtrl = sortHeaderGroup.headerContainer:GetNamedChild("Arrow")
+    local valueCtrl = sortHeaderGroup.headerContainer:GetNamedChild("Value")
     if enabled then
-        self.sortHeaderGroup.headerContainer:GetNamedChild("Arrow"):SetAlpha(1)
+        arrowCtrl:SetAlpha(1)
     else
-        self.sortHeaderGroup.headerContainer:GetNamedChild("Arrow"):SetAlpha(0.5)
+        arrowCtrl:SetAlpha(0.5)
     end
+
+    list.scrollbar:SetMouseEnabled(enabled)
+    list.downButton:SetMouseEnabled(enabled)
+    list.upButton:SetMouseEnabled(enabled)
+
+    self.searchHeaderUI:SetMouseEnabled(enabled)
+    self.searchHeaderUIEditBox:SetMouseEnabled(enabled)
+    self.buttonSearchControl:SetMouseEnabled(enabled)
+    if not enabled then
+        arrowCtrl:SetHidden(false)
+        valueCtrl:SetHidden(false)
+        self.searchHeaderUI:SetHidden(true)
+        self.searchHeaderUIEditBox:SetText("")
+        self.searchText = nil
+        self.buttonSearchControl:GetHandler("OnMouseExit")(self.buttonSearchControl)
+        self.isSearchHeaderUIShown = false
+    end
+
     -- finally, store the enabled state
     self.enabled = enabled
 end
 
 --Drag & drop functions
 function ShifterBoxList:OnGlobalMouseDownDuringDrag(eventId, mouseButton, ctrl, alt, shift, command)
---d("[OrderListBox]OnGlobalMouseDownDuringDrag - draggedKey: " ..tostring(self.shifterBox.currentDragData.key) .. ", mouseButton: " ..tostring(mouseButton))
+--d("[OrderListBox]OnGlobalMouseDownDuringDrag - draggedKey: " ..tos(self.shifterBox.currentDragData.key) .. ", mouseButton: " ..tos(mouseButton))
     if not self.enabled or not self.shifterBoxSettings.dragDropEnabled then return end
     if self.shifterBox.currentDragData then
         self.shifterBox.draggingMouseButtonPressed = mouseButton
@@ -1155,7 +1396,7 @@ function ShifterBoxList:OnGlobalMouseDownDuringDrag(eventId, mouseButton, ctrl, 
 end
 
 function ShifterBoxList:OnGlobalMouseUpDuringDrag(eventId, mouseButton, ctrl, alt, shift, command)
---d("[OrderListBox]OnGlobalMouseUpDuringDrag - draggedKey: " ..tostring(self.shifterBox.currentDragData.key) .. ", mouseButton: " ..tostring(mouseButton))
+--d("[OrderListBox]OnGlobalMouseUpDuringDrag - draggedKey: " ..tos(self.shifterBox.currentDragData.key) .. ", mouseButton: " ..tos(mouseButton))
     if not self.enabled or not self.shifterBoxSettings.dragDropEnabled then return end
     if mouseButton ~= MOUSE_BUTTON_INDEX_LEFT then
 --d("<ABORT due to wrong mouse button!")
@@ -1194,7 +1435,7 @@ function ShifterBoxList:DragOnUpdateCallback(draggedControl)
     local gameTimeMS = GetGameTimeMilliseconds()
     local gameTimeDeltaNeeded = 200 --milliseconds
     local draggingUpdateTime = self.shifterBox.draggingUpdateTime
---d("[LibShifterBox]OnUpdate-gameTime: " ..tostring(gameTimeMS) .. ", self.draggingUpdateTime: " ..tostring(self.draggingUpdateTime))
+--d("[LibShifterBox]OnUpdate-gameTime: " ..tos(gameTimeMS) .. ", self.draggingUpdateTime: " ..tos(self.draggingUpdateTime))
     local updateAutoScroll = false
     if draggingUpdateTime == nil then
         self.shifterBox.draggingUpdateTime = gameTimeMS
@@ -1205,7 +1446,7 @@ function ShifterBoxList:DragOnUpdateCallback(draggedControl)
             updateAutoScroll = true
         end
     end
---d(">updateAutoScroll: " .. tostring(updateAutoScroll) ..", needed: " ..tostring(self.draggingUpdateTime + gameTimeDeltaNeeded))
+--d(">updateAutoScroll: " .. tos(updateAutoScroll) ..", needed: " ..tos(self.draggingUpdateTime + gameTimeDeltaNeeded))
     if updateAutoScroll == true then
         _autoScroll(self.shifterBox)
     end
@@ -1223,7 +1464,7 @@ function ShifterBoxList:StartDragging(draggedControl, mouseButton)
     --Multiple rows were selected. Is the row we started the drag on also selected?
     --If not: Select it!
     local isSelected = selectedData and selectedData[draggedDataEntry.key] ~= nil
---d("[ShifterBoxList]StartDragging - key: " ..tostring(draggedDataEntry.key) .. ", draggedControlKey: " ..tostring(draggedControl.key) ..", isSelected: " ..tostring(isSelected))
+--d("[ShifterBoxList]StartDragging - key: " ..tos(draggedDataEntry.key) .. ", draggedControlKey: " ..tos(draggedControl.key) ..", isSelected: " ..tos(isSelected))
     if not isSelected and selectedData then
         for _, selectedRowData in pairs(selectedData) do
             if draggedDataEntry.key == selectedRowData.key then
@@ -1245,7 +1486,7 @@ function ShifterBoxList:StartDragging(draggedControl, mouseButton)
     currentDragData._numRowsSelected = numRowsSelected
     currentDragData._isFromLeftList = self.isLeftList
     currentDragData._draggedText = draggedDataEntry.value
-    currentDragData._draggedAdditionalText = (hasMultipleRowsSelected and zo_strformat(multipleRowsDraggedText, tostring(numRowsSelected - 1))) or nil
+    currentDragData._draggedAdditionalText = (hasMultipleRowsSelected and zo_strformat(multipleRowsDraggedText, tos(numRowsSelected - 1))) or nil
     self.shifterBox.currentDragData  = currentDragData
 
     self.shifterBox.draggingMouseButtonPressed = mouseButton
@@ -1279,13 +1520,13 @@ function ShifterBoxList:StopDragging(draggedOnToControl)
     -->ShifterBoxList:OnGlobalMouseUpDuringDrag will clear teh draggedData if the draggedToControl is not a supported one
     zo_callLater(function()
         local mouseButton = self.shifterBox.draggingMouseButtonPressed
---d("StopDragging - mouseButton: " ..tostring(mouseButton) ..", contentType: " ..tostring(GetCursorContentType()))
+--d("StopDragging - mouseButton: " ..tos(mouseButton) ..", contentType: " ..tos(GetCursorContentType()))
         if not self.enabled or not self.shifterBoxSettings.dragDropEnabled then return end
         _disableOnUpdateHandler(self.shifterBox)
         _setMouseCursor(MOUSECURSOR_DONOTCATRE)
 
         if mouseButton and mouseButton == MOUSE_BUTTON_INDEX_LEFT and GetCursorContentType() == MOUSE_CONTENT_EMPTY then
---d("[ShifterBoxList]StopDragging -- from key: " ..tostring(self.shifterBox.currentDragData.key) .." to key: " ..tostring(draggedOnToControl.key))
+--d("[ShifterBoxList]StopDragging -- from key: " ..tos(self.shifterBox.currentDragData.key) .." to key: " ..tos(draggedOnToControl.key))
             local dragData = self.shifterBox.currentDragData
             if dragData then
                 local wasDragSuccessful = false
@@ -1337,12 +1578,12 @@ function ShifterBox:New(uniqueAddonName, uniqueShifterBoxName, parentControl, cu
         existingShifterBoxes[uniqueAddonName] = {}
     end
     local addonShifterBoxes = existingShifterBoxes[uniqueAddonName]
-    assert(addonShifterBoxes[uniqueShifterBoxName] == nil, _errorText("ShifterBox with the unique identifier '%s' is already registered for the addon '%s'!", tostring(uniqueShifterBoxName), tostring(uniqueAddonName)))
+    assert(addonShifterBoxes[uniqueShifterBoxName] == nil, _errorText("ShifterBox with the unique identifier '%s' is already registered for the addon '%s'!", tos(uniqueShifterBoxName), tos(uniqueAddonName)))
     local obj = ZO_Object.New(self)
     obj.addonName = uniqueAddonName
     obj.shifterBoxName = uniqueShifterBoxName
     obj.shifterBoxControl = _createShifterBox(uniqueAddonName, uniqueShifterBoxName, parentControl)
-    obj.shifterBoxSettings = _applyCustomSettings(customSettings)
+    obj.shifterBoxSettings = _applyCustomSettings(obj, customSettings)
     _initShifterBoxControls(obj)
     _initShifterBoxHandlers(obj)
     -- initialize the ShifterBoxLists
@@ -1495,7 +1736,7 @@ end
 function ShifterBox:UnregisterCallback(shifterBoxEvent, callbackFunction)
     _assertValidShifterBoxEvent(shifterBoxEvent)
     local callbackIdentifier = _getUniqueShifterBoxEventName(self, shifterBoxEvent)
-    CM:UnregisterCallback(callbackIdentifier, callbackFunction)
+    CM:RegisterCallback(callbackIdentifier, callbackFunction)
 end
 
 -- ---------------------------------------------------------------------------------------------------------------------
@@ -1527,7 +1768,7 @@ end
 function ShifterBox:MoveAllEntriesToLeftList()
     local keyset = {}
     for _, entry in pairs(self.rightList.list.data) do
-        table.insert(keyset, entry.data.key)
+        tins(keyset, entry.data.key)
     end
     _moveEntriesToOtherList(self.rightList, keyset, self.leftList, self)
 end
@@ -1565,7 +1806,7 @@ end
 function ShifterBox:MoveAllEntriesToRightList()
     local keyset = {}
     for _, entry in pairs(self.leftList.list.data) do
-        table.insert(keyset, entry.data.key)
+        tins(keyset, entry.data.key)
     end
     _moveEntriesToOtherList(self.leftList, keyset, self.rightList, self)
 end
@@ -1603,7 +1844,7 @@ function ShifterBox:UpdateCursorTLC(isHidden, draggedControl)
             textForLabel = draggedControlText .. "\n" .. draggedAdditionalText
         end
         local textHeight = (draggedAdditionalTextIsGiven == true and (2 * minLabelHeight)) or minLabelHeight
---d(">draggedAdditionalText: " ..tostring(draggedAdditionalText) .. ", textWidth: " .. tostring(textWidth) .. ", textHeight: " ..tostring(textHeight))
+--d(">draggedAdditionalText: " ..tos(draggedAdditionalText) .. ", textWidth: " .. tos(textWidth) .. ", textHeight: " ..tos(textHeight))
 
         CURSORTLC.label:SetText(textForLabel)
         CURSORTLC.label:SetWidth(textWidth)
@@ -1614,7 +1855,7 @@ function ShifterBox:UpdateCursorTLC(isHidden, draggedControl)
         local width, height = CURSORTLC.label:GetDimensions()
         if width > maxLabelWidth then width = maxLabelWidth end
         if height > maxLabelHeight then height = maxLabelHeight end
---d(">GuiMouse:isHidden: " ..tostring(GuiMouse:IsHidden()) .. ", cursorTLC.width: " ..tostring(CURSORTLC:GetWidth()) ..", cursorTLC.height: " ..tostring(CURSORTLC:GetHeight()) .. ", text: " ..tostring(textForLabel))
+--d(">GuiMouse:isHidden: " ..tos(GuiMouse:IsHidden()) .. ", cursorTLC.width: " ..tos(CURSORTLC:GetWidth()) ..", cursorTLC.height: " ..tos(CURSORTLC:GetHeight()) .. ", text: " ..tos(textForLabel))
 
         CURSORTLC:SetDimensionConstraints(width, height, maxLabelWidth, maxLabelHeight)
         CURSORTLC:SetDrawTier(DT_HIGH)
@@ -1640,7 +1881,7 @@ function ShifterBox:UpdateCursorTLC(isHidden, draggedControl)
 end
 
 -- =================================================================================================================
--- == LIBRARY FUNCTIONS == --
+-- == LIBRARY API FUNCTIONS == --
 -- -----------------------------------------------------------------------------------------------------------------
 lib.DEFAULT_CATEGORY                    = DATA_DEFAULT_CATEGORY
 
@@ -1675,9 +1916,23 @@ end
 setmetatable(lib, { __call = function(_, ...) return lib.Create(...) end })
 
 
+
+
+------------------------------------------------------------------------------------------------------------------------
 local function _OnAddOnLoaded(eventId, addonName)
     if addonName ~= LIB_IDENTIFIER then return end
     EM:UnregisterForEvent(LIB_IDENTIFIER .. "_EVENT_ADD_ON_LOADED", EVENT_ADD_ON_LOADED)
+
+    --Validation for customSettings - Prepare needed data and functions
+    validationTypeToFunc = {
+        ["boolean"] =           _assertBoolean,
+        ["stringValueKey"] =    _assertStringValueKey,
+        ["string"] =            _assertString,
+        ["positiveNumber"] =    _assertPositiveNumber,
+        ["function"] =          _assertFunction,
+        ["sound"] =             _assertSound,
+        ["table"] =             _assertTable,
+    }
 
     --Register a callback to the close of any LAM panel to hide dragged control at the mouse cursor, e.g. if ESC key
     --was pressed during drag&drop, or if any other key closes the addon settings
