@@ -28,7 +28,7 @@ assert(not _G[LIB_IDENTIFIER], _errorText(GetString(LIBSHIFTERBOX_ALLREADY_LOADE
 --Global Library variable
 local lib = {}
 lib.name = LIB_IDENTIFIER
-lib.version = "0.7.0"
+lib.version = "0.8.0"
 
 lib.doDebug = false
 
@@ -60,7 +60,7 @@ local GLOBAL_MOUSE_UP   = "_GLOBAL_MOUSE_UP"
 local multipleRowsDraggedText = GetString(LIBSHIFTERBOX_DRAG_MULTIPLE)
 
 --Mouse cursors
-local MOUSECURSOR_UIHAND     = MOUSE_CURSOR_UI_HAND
+--local MOUSECURSOR_UIHAND     = MOUSE_CURSOR_UI_HAND
 local MOUSECURSOR_DONOTCATRE = MOUSE_CURSOR_DO_NOT_CARE
 --local MOUSECURSOR_RESIZEEW   = MOUSE_CURSOR_RESIZE_EW
 local MOUSECURSOR_NEXTLEFT  = MOUSE_CURSOR_NEXT_LEFT
@@ -78,7 +78,7 @@ local specialTypeTexts = {
 }
 local validationTypeToFunc = {} --will be filled at EVENT_ADD_ON_LOADED
 
---The possible customSettings entries and their validation type
+--The possible customSettings entries and their validation type. If the validationtype is a table you can specify entries to be validated too
 -->Each non-function validationtype coudl be a function -> which returns the actual value then.
 -->function's signature: validationFunc(keyToCheck, customSettingsTable)
 -->It will always pass in the customSettingsTable in total as 2nd param: You can provide additional values in that table to do further checks in your validation function
@@ -88,7 +88,11 @@ local possibleCustomSettings = {
         { name = "dragDropEnabled",                 validationType = "boolean" },
         { name = "sortEnabled",                     validationType = "boolean" },
         { name = "sortBy",                          validationType = "stringValueKey" },
-        { name = "search",                          validationType = "table" },
+        { name = "search",                          validationType = "table",  validationEntries = {
+              { name = "enabled",                   validationType = "boolean" },
+              { name = "searchFunc",                validationType = "function"}
+          }
+        }, -- search <- validationEntries
 
    },
    ["leftList"] = {
@@ -102,10 +106,37 @@ local possibleCustomSettings = {
         { name = "rowOnMouseExit",                  validationType = "function" },
         { name = "rowOnMouseRightClick",            validationType = "function" },
         { name = "rowSetupCallback",                validationType = "function" },
-        { name = "rowDataTypeSelectSound",          validationType = "sound" },
+        { name = "rowDataTypeSelectSound",          validationType = "sound"    },
         { name = "rowResetControlCallback",         validationType = "function" },
         { name = "rowSetupAdditionalDataCallback",  validationType = "function" },
-        { name = "callbackRegister",                validationType = "table" },
+        { name = "callbackRegister",                validationType = "table"    },
+        { name = "buttonTemplates",                 validationType = "table",  validationEntries = {
+              { name = "moveButton",                validationType = "table",       validationEntries = {
+                    { name = "normalTexture",       validationType = "string" },
+                    { name = "mouseOverTexture",    validationType = "string" },
+                    { name = "pressedTexture",      validationType = "string" },
+                    { name = "disabledTexture",     validationType = "string" },
+                    { name = "anchorData",          validationType = "table"  },
+                } -- buttonTemplates <- moveButton <- validationEntries
+              },
+              { name = "moveAllButton",             validationType = "table",       validationEntries = {
+                    { name = "normalTexture",       validationType = "string" },
+                    { name = "mouseOverTexture",    validationType = "string" },
+                    { name = "pressedTexture",      validationType = "string" },
+                    { name = "disabledTexture",     validationType = "string" },
+                    { name = "anchorData",          validationType = "table"  },
+                } -- buttonTemplates <- moveAllButton <- validationEntries
+              },
+              { name = "searchButton",              validationType = "table",       validationEntries = {
+                    { name = "normalTexture",       validationType = "string" },
+                    { name = "mouseOverTexture",    validationType = "string" },
+                    { name = "pressedTexture",      validationType = "string" },
+                    { name = "disabledTexture",     validationType = "string" },
+                    { name = "anchorData",          validationType = "table"  },
+                } -- buttonTemplates <- moveAllButton <- validationEntries
+              },
+            }, -- buttonTemplates <- validationEntries
+        }
    },
 }
 possibleCustomSettings["rightList"] = ZO_ShallowTableCopy(possibleCustomSettings["leftList"]) --Same custom settings for the rightList as available for the leftList
@@ -150,6 +181,26 @@ local defaultListSettings = {
     rowTemplateName = "ShifterBoxEntryTemplate",
     emptyListText = GetString(LIBSHIFTERBOX_EMPTY),
     fontSize = 18,
+    buttonTemplates = {
+        moveButton = {
+            normalTexture = "/esoui/art/buttons/large_leftarrow_up.dds",
+            mouseOverTexture = "/esoui/art/buttons/large_leftarrow_over.dds",
+            pressedTexture = "/esoui/art/buttons/large_leftarrow_down.dds",
+            disabledTexture = "/esoui/art/buttons/large_leftarrow_disabled.dds",
+        },
+        moveAllButton = {
+            normalTexture = "/LibShifterBox/bin/textures/double_large_leftarrow_up.dds",
+            mouseOverTexture = "/LibShifterBox/bin/textures/double_large_leftarrow_over.dds",
+            pressedTexture = "/LibShifterBox/bin/textures/double_large_leftarrow_down.dds",
+            disabledTexture = "/LibShifterBox/bin/textures/double_large_leftarrow_disabled.dds",
+        },
+        searchButton = {
+            normalTexture = "/esoui/art/inventory/inventory_trait_not_researched_icon.dds",
+            mouseOverTexture = "/esoui/art/inventory/inventory_trait_not_researched_icon.dds",
+            pressedTexture = "/esoui/art/inventory/inventory_trait_not_researched_icon.dds",
+            disabledTexture = "/esoui/art/inventory/inventory_trait_not_researched_icon.dds",
+        }
+    }
 }
 
 local defaultSettings = {
@@ -227,14 +278,22 @@ local function defaultSearchFunc(shifterBox, entry, searchStr)
 end
 
 -- validation function for custom settings
-local function _validateType(customSettingsTbl, parameterName, settingsTbl, typeText)
+local function _validateType(customSettingsSection, customSettingsTbl, parameterName, settingsTbl, typeText)
     local customValue = customSettingsTbl[parameterName]
     if customValue ~= nil then
         --Resolve callbackFunctions used to return an actual value
         customValue = getValueOrCallback(customValue, customSettingsTbl)
 
-        local isSpecialTypeText = specialTypeTexts[typeText] or false
+        local isSpecialTypeText = specialTypeTexts[typeText]
         local assertionBool = (not isSpecialTypeText and type(customValue) == typeText) or false
+
+
+        if lib.doDebug then
+            if typeText == "string" then
+                d(">>>[LSB]_validateType-customValue: " .. tos(customValue) .."; assertionBool: " ..tos(assertionBool) .. "; isSpecialTypeText: " ..tos(isSpecialTypeText) .. "; customSettingsSection: " ..tos(customSettingsSection))
+            end
+        end
+
         if typeText == "number+" then
             assertionBool = customValue > 0
             typeText = typeText .. " and positive"
@@ -249,7 +308,7 @@ local function _validateType(customSettingsTbl, parameterName, settingsTbl, type
             assertionBool = (type(customValue) == "string" and sounds[customValue] ~= nil) or false
             typeText = "String and existing in global SOUNDS table"
         end
-        assert(assertionBool == true, _errorText("Invalid %s parameter '%s' provided! Must be " .. tos(typeText), parameterName, tos(customValue)))
+        assert(assertionBool == true, _errorText("Invalid %s parameter %q provided in custom settings %q! Must be %s", tos(customSettingsSection), tos(parameterName), tos(customValue), tos(typeText)))
         settingsTbl[parameterName] = customValue
     end
 end
@@ -265,26 +324,26 @@ local function _assertKeyIsNotInTable(key, value, self, sideControl)
     assert(masterList[key] == nil, _errorText("Violation of UNIQUE KEY. Cannot insert duplicate key '%s' with value '%s' in control '%s'. The statement has been terminated.", tos(key), tos(value), sideControl:GetName()))
 end
 
-local function _assertPositiveNumber(customSettingsTbl, parameterName, settingsTbl)
-    _validateType(customSettingsTbl, parameterName, settingsTbl, "number+")
+local function _assertPositiveNumber(customSettingsSection, customSettingsTbl, parameterName, settingsTbl)
+    _validateType(customSettingsSection, customSettingsTbl, parameterName, settingsTbl, "number+")
 end
-local function _assertBoolean(customSettingsTbl, parameterName, settingsTbl)
-    _validateType(customSettingsTbl, parameterName, settingsTbl, "boolean")
+local function _assertBoolean(customSettingsSection, customSettingsTbl, parameterName, settingsTbl)
+    _validateType(customSettingsSection, customSettingsTbl, parameterName, settingsTbl, "boolean")
 end
-local function _assertString(customSettingsTbl, parameterName, settingsTbl)
-    _validateType(customSettingsTbl, parameterName, settingsTbl, "string")
+local function _assertString(customSettingsSection, customSettingsTbl, parameterName, settingsTbl)
+    _validateType(customSettingsSection, customSettingsTbl, parameterName, settingsTbl, "string")
 end
-local function _assertStringValueKey(customSettingsTbl, parameterName, settingsTbl)
-    _validateType(customSettingsTbl, parameterName, settingsTbl, "stringValue")
+local function _assertStringValueKey(customSettingsSection, customSettingsTbl, parameterName, settingsTbl)
+    _validateType(customSettingsSection, customSettingsTbl, parameterName, settingsTbl, "stringValue")
 end
-local function _assertFunction(customSettingsTbl, parameterName, settingsTbl)
-    _validateType(customSettingsTbl, parameterName, settingsTbl, "function")
+local function _assertFunction(customSettingsSection, customSettingsTbl, parameterName, settingsTbl)
+    _validateType(customSettingsSection, customSettingsTbl, parameterName, settingsTbl, "function")
 end
-local function _assertSound(customSettingsTbl, parameterName, settingsTbl)
-    _validateType(customSettingsTbl, parameterName, settingsTbl, "sound")
+local function _assertSound(customSettingsSection, customSettingsTbl, parameterName, settingsTbl)
+    _validateType(customSettingsSection, customSettingsTbl, parameterName, settingsTbl, "sound")
 end
-local function _assertTable(customSettingsTbl, parameterName, settingsTbl)
-    _validateType(customSettingsTbl, parameterName, settingsTbl, "table")
+local function _assertTable(customSettingsSection, customSettingsTbl, parameterName, settingsTbl)
+    _validateType(customSettingsSection, customSettingsTbl, parameterName, settingsTbl, "table")
 end
 
 local function _moveEntryFromTo(fromList, toList, moveKey, shifterBox)
@@ -349,6 +408,58 @@ local function _onSearchHeaderButtonClicked(shifterBox, listObj, buttonCtrl)
     _toggleSearchHeaderUI(shifterBox, listObj, buttonCtrl)
 end
 
+local function validateCustomSettingEntryNow(customSettingsSection, validationType, validationData, defaultSettingsForCustomSettings, customSettings)
+    local validationFunc = validationTypeToFunc[validationType]
+    if type(validationFunc) == "function" then
+        local name = validationData.name
+        if lib.doDebug then d(">validating ShifterBox section '" .. tos(customSettingsSection) .. "' setting: " ..tos(name)) end
+        if lib.doDebug then
+            d(">>validating ShifterBox section '" .. tos(customSettingsSection) .. ", setting: " ..tos(name).. ", validationFunc: " ..tos(validationFunc))
+        end
+        if customSettingsSection == "head" then
+            -- validate the individual custom settings for head (both lists etc.) related settings
+            validationFunc(customSettingsSection, customSettings, name, defaultSettingsForCustomSettings)
+        else
+            if defaultSettingsForCustomSettings["customSettingsSection"] ~= nil then
+                -- validate leftList or rightList or any other settings
+                validationFunc(customSettingsSection, customSettings["customSettingsSection"], name, defaultSettingsForCustomSettings["customSettingsSection"])
+            end
+        end
+    end
+end
+
+local preventEndlessLoopCounter = 0
+local function recursiveleyValidateCustomSettingsEntriesNow(customSettingsSection, customSettingsSectionData, defaultSettingsForCustomSettings, customSettings)
+    preventEndlessLoopCounter = preventEndlessLoopCounter + 1
+    if lib.doDebug then
+        d(">------------->")
+        d("[LSB]recursiveleyValidateCustomSettingsEntriesNow - counter: " ..tos(preventEndlessLoopCounter) .. ", section: " ..tos(customSettingsSection))
+    end
+    if preventEndlessLoopCounter >= 100 then
+        d("["..LIB_IDENTIFIER.."]Endless loop prevented in recursiveleyValidateCustomSettingsEntriesNow -> Aborted")
+        return
+    end
+
+    --/ validationData (or: customSettingsSectionData): table with index 1, 2, 3 and data = table { name="...", validationType="...", validationEntries={ ... } }
+    for idx, validationData in ipairs(customSettingsSectionData) do
+        local validationType = validationData.validationType
+        if validationType ~= nil then
+            if lib.doDebug then
+                d(">depth: ".. tos(preventEndlessLoopCounter) ..", idx: " .. tos(idx) .. ", name: " .. tos(validationData.name).. ", validationType: " ..tos(validationType) .. ", validationSubTableEntries: " ..tos(not ZO_IsTableEmpty(validationData.validationEntries)))
+            end
+            --Loop a subtable with provided validationEntries, and validate each of them?
+            local validationSubTableEntries = (validationType == "table" and validationData.validationEntries) or nil
+            if not ZO_IsTableEmpty(validationSubTableEntries) then
+                recursiveleyValidateCustomSettingsEntriesNow(customSettingsSection, validationSubTableEntries, defaultSettingsForCustomSettings, customSettings)
+            else
+                validateCustomSettingEntryNow(customSettingsSection, validationType, validationData, defaultSettingsForCustomSettings, customSettings)
+            end
+        end
+    end
+    if lib.doDebug then
+        d("<-------------<")
+    end
+end
 
 local function _createShifterBox(uniqueAddonName, uniqueShifterBoxName, parentControl)
     local shifterBoxName = tcon({uniqueAddonName, "_", uniqueShifterBoxName})
@@ -362,36 +473,27 @@ local function _applyCustomSettings(obj, customSettings)
         LSB_Debug[obj.shifterBoxName].addonName = obj.addonName
         LSB_Debug[obj.shifterBoxName].shifterBoxName = obj.shifterBoxName
         LSB_Debug[obj.shifterBoxName].customSettings = ZO_ShallowTableCopy(customSettings)
+        d("!!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        d("[LSB]CustomSettings - addonName: " ..tos(obj.addonName) .. ", shifterBoxName: " .. tos(obj.shifterBoxName))
     end
-
     -- if no custom settings provided, use the default ones
     local defSettingsForCustomSettings = _getDeepClonedTable(defaultSettings)
+    if lib.doDebug then
+        LSB_Debug[obj.shifterBoxName].defaultSettingsBefore = ZO_ShallowTableCopy(defSettingsForCustomSettings)
+    end
     if not ZO_IsTableEmpty(customSettings) then
+        --customSettingsSection: "head", "leftList", "rightList" / customSettingsSectionData: table with index 1, 2, 3 and data = table { name="...", validationType="...", validationEntries={ ... } }
         for customSettingsSection, customSettingsSectionData in pairs(possibleCustomSettings) do
-            for _, validationData in ipairs(customSettingsSectionData) do
-                if validationData.validationType ~= nil then
-                    local validationFunc = validationTypeToFunc[validationData.validationType]
-                    if type(validationFunc) == "function" then
-                        if lib.doDebug then d(">validating ShifterBox section '" .. tos(customSettingsSection) .. "' setting: " ..tos(validationData.name)) end
-                        if customSettingsSection == "head" then
-                            -- validate the individual custom settings
-                            validationFunc(customSettings, validationData.name, defSettingsForCustomSettings)
-                        else
-                            if customSettingsSection == "leftList" then
-                                -- validate leftList settings
-                                validationFunc(customSettings.leftList, validationData.name, defSettingsForCustomSettings.leftList)
-
-                            elseif customSettingsSection == "rightList" then
-                                -- validate rightList settings
-                                validationFunc(customSettings.rightList, validationData.name, defSettingsForCustomSettings.rightList)
-                            end
-                        end
-                    end
-                end
-            end
+            preventEndlessLoopCounter = 0
+            recursiveleyValidateCustomSettingsEntriesNow(customSettingsSection, customSettingsSectionData, defSettingsForCustomSettings, customSettings)
         end
     end
     defSettingsForCustomSettings.search.searchFunc = defSettingsForCustomSettings.search.searchFunc or defaultSearchFunc
+
+    if lib.doDebug then
+        LSB_Debug[obj.shifterBoxName].defaultSettingsAfter = ZO_ShallowTableCopy(defSettingsForCustomSettings)
+        d("<<<~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+    end
 
     return defSettingsForCustomSettings
 end
@@ -417,8 +519,9 @@ local function _initShifterBoxControls(obj)
     local function initListFrames(parentListControl)
         local listFrameControl = parentListControl:GetNamedChild("Frame")
         listFrameControl:SetCenterColor(0, 0, 0, 1)
-        listFrameControl:SetEdgeTexture(nil, 1, 1, 1)
+        listFrameControl:SetEdgeTexture(nil, 1, 1, 1, 1)
     end
+
 
     local function initHeaders(objVar, leftListTitle, rightListTitle)
         if lib.doDebug then d("[LSB]initHeaders-addonName: " .. tos(objVar.addonName) .. ", boxName: "..tos(objVar.shifterBoxName) ..", leftListTitle: " ..tos(leftListTitle) .. ", rightListTitle: " .. tos(rightListTitle)) end
@@ -1835,8 +1938,10 @@ function ShifterBox:UpdateCursorTLC(isHidden, draggedControl)
         local draggedAdditionalText = draggedData._draggedAdditionalText
         local draggedAdditionalTextIsGiven = (draggedAdditionalText ~= nil and draggedAdditionalText ~= "") or false
         local textForLabel = draggedControlText
-        local textWidth = GetStringWidthScaledPixels(ZoFontGame, draggedControlText, 1) + 2
-        local textWidthAdditionalText = (draggedAdditionalTextIsGiven == true and (GetStringWidthScaledPixels(ZoFontGame, draggedAdditionalText, 1) + 2)) or 0
+        --local textWidth = GetStringWidthScaledPixels(ZoFontGame, draggedControlText, 1) + 2
+        local textWidth = GetStringWidthScaled(ZoFontGame, draggedControlText, 1, SPACE_INTERFACE) + 2
+        --local textWidthAdditionalText = (draggedAdditionalTextIsGiven == true and (GetStringWidthScaledPixels(ZoFontGame, draggedAdditionalText, 1) + 2)) or 0
+        local textWidthAdditionalText = (draggedAdditionalTextIsGiven == true and (GetStringWidthScaled(ZoFontGame, draggedAdditionalText, 1, SPACE_INTERFACE) + 2)) or 0
         if draggedAdditionalTextIsGiven and textWidthAdditionalText > 0 then
             if textWidthAdditionalText > textWidth then
                 textWidth = textWidthAdditionalText

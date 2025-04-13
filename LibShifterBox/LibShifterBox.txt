@@ -6,8 +6,8 @@
 
 ## Title: LibShifterBox
 ## Description: A library to aid in the creation of ShifterBoxes (aka Dual-ListBoxes)
-## Version: 0.7.0
-## AddOnVersion: 000700
+## Version: 0.8.0
+## AddOnVersion: 000800
 ## Author: Klingo, Baertram
 ## APIVersion: 101045 101046
 ## IsLibrary: true

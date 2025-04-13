@@ -159,7 +159,7 @@
             </Controls>
         </Control>
         <!-- The row virtual template of the shifter box lists -->
-        <Control  name="ShifterBoxEntryTemplate" verticalAlignment="CENTER" horizontalAlignment="LEFT" mouseEnabled="true" virtual="true">
+        <Control  name="ShifterBoxEntryTemplate" mouseEnabled="true" virtual="true">
             <Dimensions x="180" y="32" />
             <Controls>
                 <Label name="$(parent)Label" font="ZoFontGame" verticalAlignment="CENTER" horizontalAlignment="LEFT">
