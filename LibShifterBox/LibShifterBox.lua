@@ -11,6 +11,7 @@ local tins = table.insert
 local tsort = table.sort
 local strfor = string.format
 local zostrlow = zo_strlower
+local strfind = string.find
 
 
 --Error text output
@@ -198,20 +199,20 @@ local defaultListSettings = {
     fontSize = 18,
     buttonTemplates = {
         moveButton = {
-            normalTexture = "/esoui/art/buttons/large_leftarrow_up.dds",
-            mouseOverTexture = "/esoui/art/buttons/large_leftarrow_over.dds",
-            pressedTexture = "/esoui/art/buttons/large_leftarrow_down.dds",
-            disabledTexture = "/esoui/art/buttons/large_leftarrow_disabled.dds",
+            normalTexture = "/esoui/art/buttons/large_rightarrow_up.dds",
+            mouseOverTexture = "/esoui/art/buttons/large_rightarrow_over.dds",
+            pressedTexture = "/esoui/art/buttons/large_rightarrow_down.dds",
+            disabledTexture = "/esoui/art/buttons/large_rightarrow_disabled.dds",
             anchors = {
                 [1] = { TOPLEFT, "$(parent)List", TOPRIGHT, 0, 50 },
             },
             dimensions = { x=40, y=40 }
         },
         moveAllButton = {
-            normalTexture = "/LibShifterBox/bin/textures/double_large_leftarrow_up.dds",
-            mouseOverTexture = "/LibShifterBox/bin/textures/double_large_leftarrow_over.dds",
-            pressedTexture = "/LibShifterBox/bin/textures/double_large_leftarrow_down.dds",
-            disabledTexture = "/LibShifterBox/bin/textures/double_large_leftarrow_disabled.dds",
+            normalTexture = "/LibShifterBox/bin/textures/double_large_rightarrow_up.dds",
+            mouseOverTexture = "/LibShifterBox/bin/textures/double_large_rightarrow_over.dds",
+            pressedTexture = "/LibShifterBox/bin/textures/double_large_rightarrow_down.dds",
+            disabledTexture = "/LibShifterBox/bin/textures/double_large_rightarrow_disabled.dds",
             anchors = {
                 [1] = { BOTTOM, "$(parent)Button", TOP, 0, 10 },
             },
@@ -242,6 +243,17 @@ local defaultSettings = {
         --searchFunc = function(shifterBox, entry, searchStr) return string.find(.......)  end
     },
 }
+--Overwrite rightList buttonTemplates textures
+local rightListButtonTemplates = defaultSettings.rightList.buttonTemplates
+rightListButtonTemplates.moveButton.normalTexture = "/esoui/art/buttons/large_leftarrow_up.dds"
+rightListButtonTemplates.moveButton.mouseOverTexture = "/esoui/art/buttons/large_leftarrow_over.dds"
+rightListButtonTemplates.moveButton.pressedTexture = "/esoui/art/buttons/large_leftarrow_down.dds"
+rightListButtonTemplates.moveButton.disabledTexture = "/esoui/art/buttons/large_leftarrow_disabled.dds"
+rightListButtonTemplates.moveAllButton.normalTexture = "/LibShifterBox/bin/textures/double_large_leftarrow_up.dds"
+rightListButtonTemplates.moveAllButton.mouseOverTexture = "/LibShifterBox/bin/textures/double_large_leftarrow_over.dds"
+rightListButtonTemplates.moveAllButton.pressedTexture = "/LibShifterBox/bin/textures/double_large_leftarrow_down.dds"
+rightListButtonTemplates.moveAllButton.disabledTexture = "/LibShifterBox/bin/textures/double_large_leftarrow_disabled.dds"
+
 
 -- KNOWN ISSUES
 -- TODO: Calling UnselectAllEntries() when mouse-over causes text to become white
@@ -530,14 +542,14 @@ local function _getShifterBoxChildControls(obj)
 
     local leftControl = control:GetNamedChild("Left")
     local leftHeadersControl = leftControl:GetNamedChild("Headers")
-    local leftListControl = leftControl:GetNamedChild("Left")
+    local leftListControl = leftControl:GetNamedChild("List")
     local fromLeftButtonControl = leftControl:GetNamedChild("Button")
     local fromLeftAllButtonControl = leftControl:GetNamedChild("AllButton")
     local leftSearchButtonControl = leftHeadersControl:GetNamedChild("SearchButton")
 
     local rightControl = control:GetNamedChild("Right")
     local rightHeadersControl = rightControl:GetNamedChild("Headers")
-    local rightListControl = rightControl:GetNamedChild("Left")
+    local rightListControl = rightControl:GetNamedChild("List")
     local fromRightButtonControl = rightControl:GetNamedChild("Button")
     local fromRightAllButtonControl = rightControl:GetNamedChild("AllButton")
     local rightSearchButtonControl = rightHeadersControl:GetNamedChild("SearchButton")
@@ -584,18 +596,43 @@ local function _initShifterBoxControls(obj)
         end
     end
 
+    local function getAnchorParentAndChild(buttonCtrl, relativeTo)
+        local parentCtrl = buttonCtrl:GetParent()
+        if parentCtrl ~= nil then
+            if type(relativeTo) == "string" then
+                if relativeTo == "$(parent)" then
+                    return parentCtrl
+                elseif strfind(relativeTo, "$(parent)", 0, true) == 1 then
+                    --Get the suffix after the ) -> childControl name of parent
+                    local childName = string.match(relativeTo, "%$%(parent%)(.*)")
+                    if childName ~= nil and childName ~= "" then
+                        return parentCtrl:GetNamedChild(childName)
+                    end
+                end
+            end
+        end
+        return relativeTo
+    end
+
+    local function applyAnchors(buttonCtrl, anchorsData)
+        if not ZO_IsTableEmpty(anchorsData) then
+            for idx, anchorData in ipairs(anchorsData) do
+                if idx == 1 then
+                    buttonCtrl:ClearAnchors()
+                end
+
+                local myPoint, relativeTo, relativePoint, offsetX, offsetY = unpack(anchorData)
+                relativeTo = getAnchorParentAndChild(buttonCtrl, relativeTo)
+                buttonCtrl:SetAnchor(myPoint, relativeTo, relativePoint, offsetX, offsetY)
+            end
+        end
+    end
+
     local function applyButtonTemplate(buttonCtrl, buttonTemplateData)
         if buttonTemplateData == nil then return end
 
         --Anchors
-        local anchorData = buttonTemplateData.anchors
-        if anchorData ~= nil then
-            buttonCtrl:ClearAnchors()
-            buttonCtrl:SetAnchors(unpack(anchorData[1]))
-            if anchorData[2] ~= nil then
-                buttonCtrl:SetAnchors(unpack(anchorData[2]))
-            end
-        end
+        applyAnchors(buttonCtrl, buttonTemplateData.anchors)
 
         --Dimensions
         local dimensionsData = buttonTemplateData.dimensions
