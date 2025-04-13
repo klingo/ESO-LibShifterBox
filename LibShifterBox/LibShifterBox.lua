@@ -4,6 +4,7 @@ local LIB_IDENTIFIER = "LibShifterBox"
 local CM = CALLBACK_MANAGER
 local EM = EVENT_MANAGER
 local WM = WINDOW_MANAGER
+local sounds = SOUNDS
 
 local tos = tostring
 local tcon = table.concat
@@ -237,8 +238,8 @@ local defaultListSettingsLeftList = {
 local defaultListSettingsRightList = {
     buttonTemplates = {
         moveButton = {
-            normalTexture = "/esoui/art/buttons/large_lefttarrow_up.dds",
-            mouseOverTexture = "/esoui/art/buttons/large_rightarrow_over.dds",
+            normalTexture = "/esoui/art/buttons/large_leftarrow_up.dds",
+            mouseOverTexture = "/esoui/art/buttons/large_leftarrow_over.dds",
             pressedTexture = "/esoui/art/buttons/large_leftarrow_down.dds",
             disabledTexture = "/esoui/art/buttons/large_leftarrow_disabled.dds",
             anchors = {
@@ -359,13 +360,6 @@ local function _validateType(customSettingsSection, customSettingsTbl, parameter
         local isSpecialTypeText = specialTypeTexts[typeText]
         local assertionBool = (not isSpecialTypeText and type(customValue) == typeText) or false
 
-
-        if lib.doDebug then
-            if typeText == "string" then
-                d(">>>[LSB]_validateType-customValue: " .. tos(customValue) .."; assertionBool: " ..tos(assertionBool) .. "; isSpecialTypeText: " ..tos(isSpecialTypeText) .. "; customSettingsSection: " ..tos(customSettingsSection))
-            end
-        end
-
         if typeText == "number+" then
             assertionBool = customValue > 0
             typeText = typeText .. " and positive"
@@ -376,11 +370,15 @@ local function _validateType(customSettingsSection, customSettingsTbl, parameter
             assertionBool = (type(customValue) == "string" and (customValue == "value" or customValue == "key")) or false
             typeText = "either \'value\' or \'key\'"
         elseif typeText == "sound" then
-            local sounds = SOUNDS
             assertionBool = (type(customValue) == "string" and sounds[customValue] ~= nil) or false
             typeText = "String and existing in global SOUNDS table"
         end
-        assert(assertionBool == true, _errorText("Invalid %s parameter %q provided in custom settings %q! Must be %s", tos(customSettingsSection), tos(parameterName), tos(customValue), tos(typeText)))
+
+        if lib.doDebug then
+            d(">>>[LSB]_validateType-customValue: " .. tos(customValue) .."; parameterName: " .. tos(parameterName) .. ", assertionBool: " ..tos(assertionBool) .. "; isSpecialTypeText: " ..tos(isSpecialTypeText) .. "; customSettingsSection: " ..tos(customSettingsSection))
+        end
+
+        assert(assertionBool == true, _errorText("Invalid section %q parameter %q provided in custom settings %q! Must be %s", tos(customSettingsSection), tos(parameterName), tos(customValue), tos(typeText)))
         settingsTbl[parameterName] = customValue
     end
 end
