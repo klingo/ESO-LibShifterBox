@@ -10,9 +10,10 @@ local tcon = table.concat
 local tins = table.insert
 local tsort = table.sort
 local strfor = string.format
-local zostrlow = zo_strlower
 local strfind = string.find
 
+local zostrlow = zo_strlower
+local zomixin = zo_mixin
 
 --Error text output
 local function _errorText(textTemplate, ...)
@@ -191,12 +192,15 @@ end
 local existingShifterBoxes = {}
 lib.existingShifterBoxes = existingShifterBoxes --todo: Removed after debugging
 
-local defaultListSettings = {
+local defaultListSettingsAllLists = {
     title = "",
     rowHeight = 32,
     rowTemplateName = "ShifterBoxEntryTemplate",
     emptyListText = GetString(LIBSHIFTERBOX_EMPTY),
     fontSize = 18,
+}
+
+local defaultListSettingsLeftList = {
     buttonTemplates = {
         moveButton = {
             normalTexture = "/esoui/art/buttons/large_rightarrow_up.dds",
@@ -230,30 +234,59 @@ local defaultListSettings = {
         }
     }
 }
+local defaultListSettingsRightList = {
+    buttonTemplates = {
+        moveButton = {
+            normalTexture = "/esoui/art/buttons/large_lefttarrow_up.dds",
+            mouseOverTexture = "/esoui/art/buttons/large_rightarrow_over.dds",
+            pressedTexture = "/esoui/art/buttons/large_leftarrow_down.dds",
+            disabledTexture = "/esoui/art/buttons/large_leftarrow_disabled.dds",
+            anchors = {
+                [1] = { TOPLEFT, "$(parent)List", TOPRIGHT, 0, 50 },
+            },
+            dimensions = { x=40, y=40 }
+        },
+        moveAllButton = {
+            normalTexture = "/LibShifterBox/bin/textures/double_large_leftarrow_up.dds",
+            mouseOverTexture = "/LibShifterBox/bin/textures/double_large_leftarrow_over.dds",
+            pressedTexture = "/LibShifterBox/bin/textures/double_large_leftarrow_down.dds",
+            disabledTexture = "/LibShifterBox/bin/textures/double_large_leftarrow_disabled.dds",
+            anchors = {
+                [1] = { BOTTOM, "$(parent)Button", TOP, 0, 10 },
+            },
+            dimensions = { x=40, y=40 }
+        },
+        searchButton = {
+            normalTexture = "/esoui/art/inventory/inventory_trait_not_researched_icon.dds",
+            mouseOverTexture = "/esoui/art/inventory/inventory_trait_not_researched_icon.dds",
+            pressedTexture = "/esoui/art/inventory/inventory_trait_not_researched_icon.dds",
+            disabledTexture = "/esoui/art/inventory/inventory_trait_not_researched_icon.dds",
+            anchors = {
+                [1] = { RIGHT, "$(parent)", RIGHT, 0, 0 },
+            },
+            dimensions = { x=28, y=28 }
+        }
+    }
+}
+
+--The default settings for the shifter boxes
+local defaultSettingsAllLists_LeftUpdated = ZO_DeepTableCopy(defaultListSettingsAllLists)
+zomixin(defaultSettingsAllLists_LeftUpdated,  defaultListSettingsLeftList)
+local defaultSettingsAllLists_RightUpdated = ZO_DeepTableCopy(defaultListSettingsAllLists)
+zomixin(defaultSettingsAllLists_RightUpdated, defaultListSettingsRightList)
 
 local defaultSettings = {
     showMoveAllButtons = true,
     dragDropEnabled = true,
     sortEnabled = true,
     sortBy = "value",
-    leftList = defaultListSettings,
-    rightList = defaultListSettings,
+    leftList = defaultSettingsAllLists_LeftUpdated,
+    rightList = defaultSettingsAllLists_RightUpdated,
     search = {
         enabled = false,
         --searchFunc = function(shifterBox, entry, searchStr) return string.find(.......)  end
     },
 }
---Overwrite rightList buttonTemplates textures
-local rightListButtonTemplates = defaultSettings.rightList.buttonTemplates
-rightListButtonTemplates.moveButton.normalTexture = "/esoui/art/buttons/large_leftarrow_up.dds"
-rightListButtonTemplates.moveButton.mouseOverTexture = "/esoui/art/buttons/large_leftarrow_over.dds"
-rightListButtonTemplates.moveButton.pressedTexture = "/esoui/art/buttons/large_leftarrow_down.dds"
-rightListButtonTemplates.moveButton.disabledTexture = "/esoui/art/buttons/large_leftarrow_disabled.dds"
-rightListButtonTemplates.moveAllButton.normalTexture = "/LibShifterBox/bin/textures/double_large_leftarrow_up.dds"
-rightListButtonTemplates.moveAllButton.mouseOverTexture = "/LibShifterBox/bin/textures/double_large_leftarrow_over.dds"
-rightListButtonTemplates.moveAllButton.pressedTexture = "/LibShifterBox/bin/textures/double_large_leftarrow_down.dds"
-rightListButtonTemplates.moveAllButton.disabledTexture = "/LibShifterBox/bin/textures/double_large_leftarrow_disabled.dds"
-
 
 -- KNOWN ISSUES
 -- TODO: Calling UnselectAllEntries() when mouse-over causes text to become white
@@ -459,9 +492,9 @@ local function validateCustomSettingEntryNow(customSettingsSection, validationTy
             -- validate the individual custom settings for head (both lists etc.) related settings
             validationFunc(customSettingsSection, customSettings, name, defaultSettingsForCustomSettings)
         else
-            if defaultSettingsForCustomSettings["customSettingsSection"] ~= nil then
+            if defaultSettingsForCustomSettings[customSettingsSection] ~= nil then
                 -- validate leftList or rightList or any other settings
-                validationFunc(customSettingsSection, customSettings["customSettingsSection"], name, defaultSettingsForCustomSettings["customSettingsSection"])
+                validationFunc(customSettingsSection, customSettings[customSettingsSection], name, defaultSettingsForCustomSettings[customSettingsSection])
             end
         end
     end
@@ -558,7 +591,7 @@ local function _getShifterBoxChildControls(obj)
 end
 
 local function _initShifterBoxControls(obj)
-    local _, leftControl, leftHeadersControl, leftListControl, fromLeftButtonControl, fromLeftAllButtonControl, leftSearchButtonControl, rightControl, rightHeadersControl, rightListControl, fromRightButtonControl, fromRightAllButtonControl, rightSearchButtonControl = _getShifterBoxChildControls(obj)
+    local _, _, leftHeadersControl, leftListControl, fromLeftButtonControl, fromLeftAllButtonControl, leftSearchButtonControl, _, rightHeadersControl, rightListControl, fromRightButtonControl, fromRightAllButtonControl, rightSearchButtonControl = _getShifterBoxChildControls(obj)
     local shifterBoxSettings = obj.shifterBoxSettings
 
     if lib.doDebug then
@@ -736,10 +769,10 @@ local function _initShifterBoxHandlers(obj)
     end
 
     -- initialize the handler when the buttons are clicked
-    fromLeftButtonControl:SetHandler("OnClicked", toRightButtonClicked)
-    fromLeftAllButtonControl:SetHandler("OnClicked", toRightAllButtonClicked)
-    fromRightButtonControl:SetHandler("OnClicked", toLeftButtonClicked)
-    fromRightAllButtonControl:SetHandler("OnClicked", toLeftAllButtonClicked)
+    fromLeftButtonControl:SetHandler("OnClicked",       toRightButtonClicked)
+    fromLeftAllButtonControl:SetHandler("OnClicked",    toRightAllButtonClicked)
+    fromRightButtonControl:SetHandler("OnClicked",      toLeftButtonClicked)
+    fromRightAllButtonControl:SetHandler("OnClicked",   toLeftAllButtonClicked)
 end
 
 local function _getListBoxWidthAndArrowOffset(width, height)
