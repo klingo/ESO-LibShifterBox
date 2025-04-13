@@ -22,10 +22,11 @@
                                     <Dimensions x="28" y="28" />
                                     <Anchor point="RIGHT" relativeTo="$(parent)" relativePoint="RIGHT" offsetX="0" />
                                     <!-- /esoui/art/miscellaneous/search_icon.dds -->
+                                    <!--
                                     <Textures normal="/esoui/art/inventory/inventory_trait_not_researched_icon.dds"
                                               pressed="/esoui/art/inventory/inventory_trait_not_researched_icon.dds"
                                               mouseOver="/esoui/art/inventory/inventory_trait_not_researched_icon.dds"
-                                              disabled="/esoui/art/inventory/inventory_trait_not_researched_icon.dds"/>
+                                              disabled="/esoui/art/inventory/inventory_trait_not_researched_icon.dds"/> -->
                                 </Button>
                                 <Backdrop name="$(parent)SearchUI" tier="HIGH" inherits="ZO_SingleLineEditBackdrop_Keyboard" hidden="true">
                                     <Anchor point="RIGHT" relativeTo="$(parent)SearchButton" relativePoint="LEFT" offsetX="0" offsetY="-2" />
@@ -65,18 +66,20 @@
                         <Button name="$(parent)AllButton" inherits="ZO_ButtonBehaviorClickSound">
                             <Dimensions x="40" y="40" />
                             <Anchor point="BOTTOM" relativeTo="$(parent)Button" relativePoint="TOP" offsetY="10" />
+                                    <!--
                             <Textures normal="/LibShifterBox/bin/textures/double_large_rightarrow_up.dds"
                                       pressed="/LibShifterBox/bin/textures/double_large_rightarrow_down.dds"
                                       mouseOver="/LibShifterBox/bin/textures/double_large_rightarrow_over.dds"
-                                      disabled="/LibShifterBox/bin/textures/double_large_rightarrow_disabled.dds"/>
+                                      disabled="/LibShifterBox/bin/textures/double_large_rightarrow_disabled.dds"/> -->
                         </Button>
                         <Button name="$(parent)Button" inherits="ZO_ButtonBehaviorClickSound">
                             <Dimensions x="40" y="40" />
                             <Anchor point="TOPLEFT" relativeTo="$(parent)List" relativePoint="TOPRIGHT" offsetY="50" />
+                                    <!--
                             <Textures normal="/esoui/art/buttons/large_rightarrow_up.dds"
                                       pressed="/esoui/art/buttons/large_rightarrow_down.dds"
                                       mouseOver="/esoui/art/buttons/large_rightarrow_over.dds"
-                                      disabled="/esoui/art/buttons/large_rightarrow_disabled.dds"/>
+                                      disabled="/esoui/art/buttons/large_rightarrow_disabled.dds"/> -->
                         </Button>
                     </Controls>
                 </Control>
@@ -98,10 +101,11 @@
                                 <Button name="$(parent)SearchButton" inherits="ZO_ButtonBehaviorClickSound">
                                     <Dimensions x="28" y="28" />
                                     <Anchor point="RIGHT" relativeTo="$(parent)" relativePoint="RIGHT" offsetX="0" />
+                                    <!--
                                     <Textures normal="/esoui/art/inventory/inventory_trait_not_researched_icon.dds"
                                               pressed="/esoui/art/inventory/inventory_trait_not_researched_icon.dds"
                                               mouseOver="/esoui/art/inventory/inventory_trait_not_researched_icon.dds"
-                                              disabled="/esoui/art/inventory/inventory_trait_not_researched_icon.dds"/>
+                                              disabled="/esoui/art/inventory/inventory_trait_not_researched_icon.dds"/> -->
                                 </Button>
                                 <Backdrop name="$(parent)SearchUI" tier="HIGH" inherits="ZO_SingleLineEditBackdrop_Keyboard" hidden="true">
                                     <Anchor point="RIGHT" relativeTo="$(parent)SearchButton" relativePoint="LEFT" offsetX="0" offsetY="-2" />
@@ -141,18 +145,20 @@
                         <Button name="$(parent)Button" inherits="ZO_ButtonBehaviorClickSound">
                             <Dimensions x="40" y="40" />
                             <Anchor point="BOTTOMRIGHT" relativeTo="$(parent)List" relativePoint="BOTTOMLEFT" offsetX="-2" offsetY="-50" />
+                                    <!--
                             <Textures normal="/esoui/art/buttons/large_leftarrow_up.dds"
                                       pressed="/esoui/art/buttons/large_leftarrow_down.dds"
                                       mouseOver="/esoui/art/buttons/large_leftarrow_over.dds"
-                                      disabled="/esoui/art/buttons/large_leftarrow_disabled.dds"/>
+                                      disabled="/esoui/art/buttons/large_leftarrow_disabled.dds"/> -->
                         </Button>
                         <Button name="$(parent)AllButton" inherits="ZO_ButtonBehaviorClickSound">
                             <Dimensions x="40" y="40" />
                             <Anchor point="TOP" relativeTo="$(parent)Button" relativePoint="BOTTOM" offsetY="10" />
+                                    <!--
                             <Textures normal="/LibShifterBox/bin/textures/double_large_leftarrow_up.dds"
                                       pressed="/LibShifterBox/bin/textures/double_large_leftarrow_down.dds"
                                       mouseOver="/LibShifterBox/bin/textures/double_large_leftarrow_over.dds"
-                                      disabled="/LibShifterBox/bin/textures/double_large_leftarrow_disabled.dds"/>
+                                      disabled="/LibShifterBox/bin/textures/double_large_leftarrow_disabled.dds"/> -->
                         </Button>
                     </Controls>
                 </Control>

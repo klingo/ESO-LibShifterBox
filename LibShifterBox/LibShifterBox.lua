@@ -116,7 +116,12 @@ local possibleCustomSettings = {
                     { name = "mouseOverTexture",    validationType = "string" },
                     { name = "pressedTexture",      validationType = "string" },
                     { name = "disabledTexture",     validationType = "string" },
-                    { name = "anchorData",          validationType = "table"  },
+                    { name = "anchors",             validationType = "table"  },
+                    { name = "dimensions",          validationType = "table",       validationEntries = {
+                            { name = "x",             validationType = "number"  },
+                            { name = "y",             validationType = "number"  },
+                        }
+                    },
                 } -- buttonTemplates <- moveButton <- validationEntries
               },
               { name = "moveAllButton",             validationType = "table",       validationEntries = {
@@ -124,7 +129,12 @@ local possibleCustomSettings = {
                     { name = "mouseOverTexture",    validationType = "string" },
                     { name = "pressedTexture",      validationType = "string" },
                     { name = "disabledTexture",     validationType = "string" },
-                    { name = "anchorData",          validationType = "table"  },
+                    { name = "anchors",             validationType = "table"  },
+                    { name = "dimensions",          validationType = "table",       validationEntries = {
+                            { name = "x",             validationType = "number"  },
+                            { name = "y",             validationType = "number"  },
+                        }
+                    },
                 } -- buttonTemplates <- moveAllButton <- validationEntries
               },
               { name = "searchButton",              validationType = "table",       validationEntries = {
@@ -132,7 +142,12 @@ local possibleCustomSettings = {
                     { name = "mouseOverTexture",    validationType = "string" },
                     { name = "pressedTexture",      validationType = "string" },
                     { name = "disabledTexture",     validationType = "string" },
-                    { name = "anchorData",          validationType = "table"  },
+                    { name = "anchors",             validationType = "table"  },
+                    { name = "dimensions",          validationType = "table",       validationEntries = {
+                            { name = "x",             validationType = "number"  },
+                            { name = "y",             validationType = "number"  },
+                        }
+                    },
                 } -- buttonTemplates <- moveAllButton <- validationEntries
               },
             }, -- buttonTemplates <- validationEntries
@@ -187,18 +202,30 @@ local defaultListSettings = {
             mouseOverTexture = "/esoui/art/buttons/large_leftarrow_over.dds",
             pressedTexture = "/esoui/art/buttons/large_leftarrow_down.dds",
             disabledTexture = "/esoui/art/buttons/large_leftarrow_disabled.dds",
+            anchors = {
+                [1] = { TOPLEFT, "$(parent)List", TOPRIGHT, 0, 50 },
+            },
+            dimensions = { x=40, y=40 }
         },
         moveAllButton = {
             normalTexture = "/LibShifterBox/bin/textures/double_large_leftarrow_up.dds",
             mouseOverTexture = "/LibShifterBox/bin/textures/double_large_leftarrow_over.dds",
             pressedTexture = "/LibShifterBox/bin/textures/double_large_leftarrow_down.dds",
             disabledTexture = "/LibShifterBox/bin/textures/double_large_leftarrow_disabled.dds",
+            anchors = {
+                [1] = { BOTTOM, "$(parent)Button", TOP, 0, 10 },
+            },
+            dimensions = { x=40, y=40 }
         },
         searchButton = {
             normalTexture = "/esoui/art/inventory/inventory_trait_not_researched_icon.dds",
             mouseOverTexture = "/esoui/art/inventory/inventory_trait_not_researched_icon.dds",
             pressedTexture = "/esoui/art/inventory/inventory_trait_not_researched_icon.dds",
             disabledTexture = "/esoui/art/inventory/inventory_trait_not_researched_icon.dds",
+            anchors = {
+                [1] = { RIGHT, "$(parent)", RIGHT, 0, 0 },
+            },
+            dimensions = { x=28, y=28 }
         }
     }
 }
@@ -498,15 +525,29 @@ local function _applyCustomSettings(obj, customSettings)
     return defSettingsForCustomSettings
 end
 
-local function _initShifterBoxControls(obj)
+local function _getShifterBoxChildControls(obj)
     local control = obj.shifterBoxControl
-    local shifterBoxSettings = obj.shifterBoxSettings
+
     local leftControl = control:GetNamedChild("Left")
-    local rightControl = control:GetNamedChild("Right")
+    local leftHeadersControl = leftControl:GetNamedChild("Headers")
+    local leftListControl = leftControl:GetNamedChild("Left")
     local fromLeftButtonControl = leftControl:GetNamedChild("Button")
+    local fromLeftAllButtonControl = leftControl:GetNamedChild("AllButton")
+    local leftSearchButtonControl = leftHeadersControl:GetNamedChild("SearchButton")
+
+    local rightControl = control:GetNamedChild("Right")
+    local rightHeadersControl = rightControl:GetNamedChild("Headers")
+    local rightListControl = rightControl:GetNamedChild("Left")
     local fromRightButtonControl = rightControl:GetNamedChild("Button")
-    local rightListControl = rightControl:GetNamedChild("List")
-    local leftListControl = leftControl:GetNamedChild("List")
+    local fromRightAllButtonControl = rightControl:GetNamedChild("AllButton")
+    local rightSearchButtonControl = rightHeadersControl:GetNamedChild("SearchButton")
+
+    return control, leftControl, leftHeadersControl, leftListControl, fromLeftButtonControl, fromLeftAllButtonControl, leftSearchButtonControl, rightControl, rightHeadersControl, rightListControl, fromRightButtonControl, fromRightAllButtonControl, rightSearchButtonControl
+end
+
+local function _initShifterBoxControls(obj)
+    local _, leftControl, leftHeadersControl, leftListControl, fromLeftButtonControl, fromLeftAllButtonControl, leftSearchButtonControl, rightControl, rightHeadersControl, rightListControl, fromRightButtonControl, fromRightAllButtonControl, rightSearchButtonControl = _getShifterBoxChildControls(obj)
+    local shifterBoxSettings = obj.shifterBoxSettings
 
     if lib.doDebug then
         LSB_Debug = LSB_Debug or {}
@@ -522,25 +563,60 @@ local function _initShifterBoxControls(obj)
         listFrameControl:SetEdgeTexture(nil, 1, 1, 1, 1)
     end
 
-
     local function initHeaders(objVar, leftListTitle, rightListTitle)
         if lib.doDebug then d("[LSB]initHeaders-addonName: " .. tos(objVar.addonName) .. ", boxName: "..tos(objVar.shifterBoxName) ..", leftListTitle: " ..tos(leftListTitle) .. ", rightListTitle: " .. tos(rightListTitle)) end
         if leftListTitle ~= nil or rightListTitle ~= nil then
             objVar.headerHeight = HEADER_HEIGHT
             -- show the headers (default = hidden)
-            local leftHeaders = leftControl:GetNamedChild("Headers")
+            local leftHeaders = leftHeadersControl
             local leftHeadersTitle = leftHeaders:GetNamedChild("Value"):GetNamedChild("Name")
             leftHeaders:SetHeight(objVar.headerHeight)
             leftHeaders:SetHidden(false)
             leftHeadersTitle:SetText(leftListTitle or "")
 
-            local rightHeaders = rightControl:GetNamedChild("Headers")
+            local rightHeaders = rightHeadersControl
             local rightHeadersTitle = rightHeaders:GetNamedChild("Value"):GetNamedChild("Name")
             rightHeaders:SetHeight(objVar.headerHeight)
             rightHeaders:SetHidden(false)
             rightHeadersTitle:SetText(rightListTitle or "")
         else
             objVar.headerHeight = 0
+        end
+    end
+
+    local function applyButtonTemplate(buttonCtrl, buttonTemplateData)
+        if buttonTemplateData == nil then return end
+
+        --Anchors
+        local anchorData = buttonTemplateData.anchors
+        if anchorData ~= nil then
+            buttonCtrl:ClearAnchors()
+            buttonCtrl:SetAnchors(unpack(anchorData[1]))
+            if anchorData[2] ~= nil then
+                buttonCtrl:SetAnchors(unpack(anchorData[2]))
+            end
+        end
+
+        --Dimensions
+        local dimensionsData = buttonTemplateData.dimensions
+        if dimensionsData ~= nil then
+            dimensionsData.x = dimensionsData.x or 32
+            dimensionsData.y = dimensionsData.y or 32
+            buttonCtrl:SetDimensions(dimensionsData.x, dimensionsData.y )
+        end
+
+        --Textures
+        if buttonTemplateData.normalTexture then
+            buttonCtrl:SetNormalTexture(buttonTemplateData.normalTexture)
+        end
+        if buttonTemplateData.mouseOverTexture then
+            buttonCtrl:SetMouseOverTexture(buttonTemplateData.mouseOverTexture)
+        end
+        if buttonTemplateData.pressedTexture then
+            buttonCtrl:SetPressedTexture(buttonTemplateData.pressedTexture)
+        end
+        if buttonTemplateData.disabledTexture then
+            buttonCtrl:SetDisabledTexture(buttonTemplateData.disabledTexture)
         end
     end
 
@@ -553,20 +629,26 @@ local function _initShifterBoxControls(obj)
     initListFrames(leftListControl)
     initListFrames(rightListControl)
 
+    -- set the button textures, anchors, offsets and sizes
+    local leftListButtonTemplateSettings =  leftListSettings.buttonTemplates
+    applyButtonTemplate(fromLeftButtonControl,      leftListButtonTemplateSettings.moveButton)
+    applyButtonTemplate(fromLeftAllButtonControl,   leftListButtonTemplateSettings.moveAllButton)
+    applyButtonTemplate(leftSearchButtonControl,    leftListButtonTemplateSettings.searchButton)
+
+    local rightListButtonTemplateSettings = rightListSettings.buttonTemplates
+    applyButtonTemplate(fromRightButtonControl,     rightListButtonTemplateSettings.moveButton)
+    applyButtonTemplate(fromRightAllButtonControl,  rightListButtonTemplateSettings.moveAllButton)
+    applyButtonTemplate(rightSearchButtonControl,   rightListButtonTemplateSettings.searchButton)
+
     -- initialize the buttons in disabled state
     fromLeftButtonControl:SetState(BSTATE_DISABLED, true)
     fromRightButtonControl:SetState(BSTATE_DISABLED, true)
+    leftSearchButtonControl:SetState(BSTATE_DISABLED, true)
+    rightSearchButtonControl:SetState(BSTATE_DISABLED, true)
 end
 
 local function _initShifterBoxHandlers(obj)
-    local control = obj.shifterBoxControl
-
-    local leftControl = control:GetNamedChild("Left")
-    local fromLeftButtonControl = leftControl:GetNamedChild("Button")
-    local fromLeftAllButtonControl = leftControl:GetNamedChild("AllButton")
-    local rightControl = control:GetNamedChild("Right")
-    local fromRightButtonControl = rightControl:GetNamedChild("Button")
-    local fromRightAllButtonControl = rightControl:GetNamedChild("AllButton")
+    local _, _, _, _, fromLeftButtonControl, fromLeftAllButtonControl, _, _, _, _, fromRightButtonControl, fromRightAllButtonControl, _ = _getShifterBoxChildControls(obj)
 
     local function toLeftButtonClicked(buttonControl)
         local leftList = obj.leftList
@@ -574,7 +656,7 @@ local function _initShifterBoxHandlers(obj)
         local rightListSelectedData = _getShallowClonedTable(rightList.list.selectedMultiData)
         local retVarLoop = false
         local retVar = true
-        for key, data in pairs(rightListSelectedData) do
+        for _, data in pairs(rightListSelectedData) do
             retVarLoop = _moveEntryFromTo(rightList, leftList, data.key, obj)
             if not retVarLoop then
                 retVar = false
@@ -2014,6 +2096,14 @@ function lib.GetControl(uniqueAddonName, uniqueShifterBoxName)
     end
     return nil, nil
 end
+
+--- Returns the child controls of an existing ShifterBox instance
+-- @param shifterBox - an existing shifterBox instance
+--@return control,
+--        leftControl, leftHeadersControl, leftListControl, fromLeftButtonControl, fromLeftAllButtonControl, leftSearchButtonControl,
+--        rightControl, rightHeadersControl, leftListControl, fromRightButtonControl, fromRightAllButtonControl, rightSearchButtonControl
+lib.GetShifterBoxChildControls = _getShifterBoxChildControls
+
 
 function lib.Create(...)
     return ShifterBox:New(...)
