@@ -94,8 +94,8 @@ local possibleCustomSettings = {
         { name = "search",                          validationType = "table",  validationEntries = {
               { name = "enabled",                   validationType = "boolean" },
               { name = "searchFunc",                validationType = "function"}
-          }
-        }, -- search <- validationEntries
+          } -- search <- validationEntries
+        },
 
    },
    ["leftList"] = {
@@ -351,8 +351,24 @@ local function defaultSearchFunc(shifterBox, entry, searchStr)
 end
 
 -- validation function for custom settings
-local function _validateType(customSettingsSection, customSettingsTbl, parameterName, settingsTbl, typeText)
-    local customValue = customSettingsTbl[parameterName]
+local function _validateType(customSettingsSection, customSettingsTbl, parameterName, settingsTbl, typeText, parentTabBreadcrumbsForSettingsUpdate)
+    local customValue
+    if ZO_IsTableEmpty(parentTabBreadcrumbsForSettingsUpdate) then
+        customValue = customSettingsTbl[parameterName]
+    else
+        local customSettingsTblRef = customSettingsTbl
+        for _, settingsSubTabName in ipairs(parentTabBreadcrumbsForSettingsUpdate) do
+            if customSettingsTblRef[settingsSubTabName] then
+                if lib.doDebug then d("!>found customSettingsTbl subtab: " .. tos(settingsSubTabName)) end
+                customSettingsTblRef = customSettingsTblRef[settingsSubTabName]
+            end
+        end
+        if customSettingsTblRef ~= nil and customSettingsTblRef ~= customSettingsTbl then
+            customValue = customSettingsTblRef[parameterName]
+        end
+    end
+    if lib.doDebug then d(">customValue: " .. tos(customValue)) end
+
     if customValue ~= nil then
         --Resolve callbackFunctions used to return an actual value
         customValue = getValueOrCallback(customValue, customSettingsTbl)
@@ -379,7 +395,25 @@ local function _validateType(customSettingsSection, customSettingsTbl, parameter
         end
 
         assert(assertionBool == true, _errorText("Invalid section %q parameter %q provided in custom settings %q! Must be %s", tos(customSettingsSection), tos(parameterName), tos(customValue), tos(typeText)))
-        settingsTbl[parameterName] = customValue
+
+        if ZO_IsTableEmpty(parentTabBreadcrumbsForSettingsUpdate) then
+            settingsTbl[parameterName] = customValue
+            if lib.doDebug then d("!>updated settings parameterName = " .. tos(customValue)) end
+            return true
+        else
+            local settingsTblRef = settingsTbl
+            for _, settingsSubTabName in ipairs(parentTabBreadcrumbsForSettingsUpdate) do
+                if settingsTblRef[settingsSubTabName] then
+                    if lib.doDebug then d("!>found settingsTbl subtab: " .. tos(settingsSubTabName)) end
+                    settingsTblRef = settingsTblRef[settingsSubTabName]
+                end
+            end
+            if settingsTblRef ~= nil and settingsTblRef ~= settingsTbl then
+                settingsTblRef[parameterName] = customValue
+                if lib.doDebug then d("!>updated settings subTables parameterName = " .. tos(customValue)) end
+                return true
+            end
+        end
     end
 end
 
@@ -394,26 +428,26 @@ local function _assertKeyIsNotInTable(key, value, self, sideControl)
     assert(masterList[key] == nil, _errorText("Violation of UNIQUE KEY. Cannot insert duplicate key '%s' with value '%s' in control '%s'. The statement has been terminated.", tos(key), tos(value), sideControl:GetName()))
 end
 
-local function _assertPositiveNumber(customSettingsSection, customSettingsTbl, parameterName, settingsTbl)
-    _validateType(customSettingsSection, customSettingsTbl, parameterName, settingsTbl, "number+")
+local function _assertPositiveNumber(customSettingsSection, customSettingsTbl, parameterName, settingsTbl, parentTabBreadcrumbsForSettingsUpdate)
+    _validateType(customSettingsSection, customSettingsTbl, parameterName, settingsTbl, "number+", parentTabBreadcrumbsForSettingsUpdate)
 end
-local function _assertBoolean(customSettingsSection, customSettingsTbl, parameterName, settingsTbl)
-    _validateType(customSettingsSection, customSettingsTbl, parameterName, settingsTbl, "boolean")
+local function _assertBoolean(customSettingsSection, customSettingsTbl, parameterName, settingsTbl, parentTabBreadcrumbsForSettingsUpdate)
+    _validateType(customSettingsSection, customSettingsTbl, parameterName, settingsTbl, "boolean", parentTabBreadcrumbsForSettingsUpdate)
 end
-local function _assertString(customSettingsSection, customSettingsTbl, parameterName, settingsTbl)
-    _validateType(customSettingsSection, customSettingsTbl, parameterName, settingsTbl, "string")
+local function _assertString(customSettingsSection, customSettingsTbl, parameterName, settingsTbl, parentTabBreadcrumbsForSettingsUpdate)
+    _validateType(customSettingsSection, customSettingsTbl, parameterName, settingsTbl, "string", parentTabBreadcrumbsForSettingsUpdate)
 end
-local function _assertStringValueKey(customSettingsSection, customSettingsTbl, parameterName, settingsTbl)
-    _validateType(customSettingsSection, customSettingsTbl, parameterName, settingsTbl, "stringValue")
+local function _assertStringValueKey(customSettingsSection, customSettingsTbl, parameterName, settingsTbl, parentTabBreadcrumbsForSettingsUpdate)
+    _validateType(customSettingsSection, customSettingsTbl, parameterName, settingsTbl, "stringValue", parentTabBreadcrumbsForSettingsUpdate)
 end
-local function _assertFunction(customSettingsSection, customSettingsTbl, parameterName, settingsTbl)
-    _validateType(customSettingsSection, customSettingsTbl, parameterName, settingsTbl, "function")
+local function _assertFunction(customSettingsSection, customSettingsTbl, parameterName, settingsTbl, parentTabBreadcrumbsForSettingsUpdate)
+    _validateType(customSettingsSection, customSettingsTbl, parameterName, settingsTbl, "function", parentTabBreadcrumbsForSettingsUpdate)
 end
-local function _assertSound(customSettingsSection, customSettingsTbl, parameterName, settingsTbl)
-    _validateType(customSettingsSection, customSettingsTbl, parameterName, settingsTbl, "sound")
+local function _assertSound(customSettingsSection, customSettingsTbl, parameterName, settingsTbl, parentTabBreadcrumbsForSettingsUpdate)
+    _validateType(customSettingsSection, customSettingsTbl, parameterName, settingsTbl, "sound", parentTabBreadcrumbsForSettingsUpdate)
 end
-local function _assertTable(customSettingsSection, customSettingsTbl, parameterName, settingsTbl)
-    _validateType(customSettingsSection, customSettingsTbl, parameterName, settingsTbl, "table")
+local function _assertTable(customSettingsSection, customSettingsTbl, parameterName, settingsTbl, parentTabBreadcrumbsForSettingsUpdate)
+    _validateType(customSettingsSection, customSettingsTbl, parameterName, settingsTbl, "table", parentTabBreadcrumbsForSettingsUpdate)
 end
 
 local function _moveEntryFromTo(fromList, toList, moveKey, shifterBox)
@@ -478,27 +512,28 @@ local function _onSearchHeaderButtonClicked(shifterBox, listObj, buttonCtrl)
     _toggleSearchHeaderUI(shifterBox, listObj, buttonCtrl)
 end
 
-local function validateCustomSettingEntryNow(customSettingsSection, validationType, validationData, defaultSettingsForCustomSettings, customSettings)
+local function validateCustomSettingEntryNow(customSettingsSection, validationType, validationData, defaultSettingsForCustomSettings, customSettings, parentTabBreadcrumbsForSettingsUpdate)
     local validationFunc = validationTypeToFunc[validationType]
+    local result = false
     if type(validationFunc) == "function" then
         local name = validationData.name
-        if lib.doDebug then d(">validating ShifterBox section '" .. tos(customSettingsSection) .. "' setting: " ..tos(name)) end
         if lib.doDebug then
-            d(">>validating ShifterBox section '" .. tos(customSettingsSection) .. ", setting: " ..tos(name).. ", validationFunc: " ..tos(validationFunc))
+            d(">>validating ShifterBox section '" .. tos(customSettingsSection) .. ", parentTabBreadcrumbsForSettingsUpdate: " .. tos(parentTabBreadcrumbsForSettingsUpdate ~= nil and #parentTabBreadcrumbsForSettingsUpdate or nil) ..", setting: " ..tos(name).. ", validationFunc: " ..tos(validationFunc))
         end
         if customSettingsSection == "head" then
             -- validate the individual custom settings for head (both lists etc.) related settings
-            validationFunc(customSettingsSection, customSettings, name, defaultSettingsForCustomSettings)
+            validationFunc(customSettingsSection, customSettings, name, defaultSettingsForCustomSettings, parentTabBreadcrumbsForSettingsUpdate)
         else
             if defaultSettingsForCustomSettings[customSettingsSection] ~= nil then
-                -- validate leftList or rightList or any other settings
-                validationFunc(customSettingsSection, customSettings[customSettingsSection], name, defaultSettingsForCustomSettings[customSettingsSection])
+                -- validate leftList or rightList, or any other settings
+                validationFunc(customSettingsSection, customSettings[customSettingsSection], name, defaultSettingsForCustomSettings[customSettingsSection], parentTabBreadcrumbsForSettingsUpdate)
             end
         end
     end
 end
 
 local preventEndlessLoopCounter = 0
+local parentTabBreadcrumbs = {}
 local function recursiveleyValidateCustomSettingsEntriesNow(customSettingsSection, customSettingsSectionData, defaultSettingsForCustomSettings, customSettings)
     preventEndlessLoopCounter = preventEndlessLoopCounter + 1
     if lib.doDebug then
@@ -520,9 +555,11 @@ local function recursiveleyValidateCustomSettingsEntriesNow(customSettingsSectio
             --Loop a subtable with provided validationEntries, and validate each of them?
             local validationSubTableEntries = (validationType == "table" and validationData.validationEntries) or nil
             if not ZO_IsTableEmpty(validationSubTableEntries) then
+                tins(parentTabBreadcrumbs, validationData.name)
                 recursiveleyValidateCustomSettingsEntriesNow(customSettingsSection, validationSubTableEntries, defaultSettingsForCustomSettings, customSettings)
             else
-                validateCustomSettingEntryNow(customSettingsSection, validationType, validationData, defaultSettingsForCustomSettings, customSettings)
+                validateCustomSettingEntryNow(customSettingsSection, validationType, validationData, defaultSettingsForCustomSettings, customSettings, parentTabBreadcrumbs)
+                parentTabBreadcrumbs = {}
             end
         end
     end
@@ -555,6 +592,7 @@ local function _applyCustomSettings(obj, customSettings)
         --customSettingsSection: "head", "leftList", "rightList" / customSettingsSectionData: table with index 1, 2, 3 and data = table { name="...", validationType="...", validationEntries={ ... } }
         for customSettingsSection, customSettingsSectionData in pairs(possibleCustomSettings) do
             preventEndlessLoopCounter = 0
+            parentTabBreadcrumbs = {}
             recursiveleyValidateCustomSettingsEntriesNow(customSettingsSection, customSettingsSectionData, defSettingsForCustomSettings, customSettings)
         end
     end
