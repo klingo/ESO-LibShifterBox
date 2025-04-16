@@ -201,6 +201,10 @@ local defaultListSettingsAllLists = {
     fontSize = 18,
 }
 
+--[[
+local leftButtonAnchorOptions = {TOPLEFT, leftList.list, TOPRIGHT, 0, arrowOffset}
+local leftButtonAllAnchorOptions = {TOPLEFT, leftList.list, TOPRIGHT, 0, arrowAllOffset}
+]]
 local defaultListSettingsLeftList = {
     buttonTemplates = {
         moveButton = {
@@ -209,7 +213,7 @@ local defaultListSettingsLeftList = {
             pressedTexture = "/esoui/art/buttons/large_rightarrow_down.dds",
             disabledTexture = "/esoui/art/buttons/large_rightarrow_disabled.dds",
             anchors = {
-                [1] = { TOPLEFT, "$(parent)List", TOPRIGHT, 0, 50 },
+                [1] = { TOPLEFT, "$(parent)List", TOPRIGHT, 0, 10 } --Offsets will be dynamically changed based on list height -> See _setListBoxDimensions
             },
             dimensions = { x=40, y=40 }
         },
@@ -219,7 +223,7 @@ local defaultListSettingsLeftList = {
             pressedTexture = "/LibShifterBox/bin/textures/double_large_rightarrow_down.dds",
             disabledTexture = "/LibShifterBox/bin/textures/double_large_rightarrow_disabled.dds",
             anchors = {
-                [1] = { BOTTOM, "$(parent)Button", TOP, 0, 10 },
+                [1] = { TOPLEFT, "$(parent)List", TOPRIGHT, 0, 50 }, --Offsets will be dynamically changed based on list height -> See _setListBoxDimensions
             },
             dimensions = { x=40, y=40 }
         },
@@ -235,6 +239,11 @@ local defaultListSettingsLeftList = {
         }
     }
 }
+
+--[[
+local rightButtonAnchorOptions = {BOTTOMRIGHT, rightList.list, BOTTOMLEFT, -2, arrowOffset * -1} -- lower arrow requires negative offset
+local rightButtonAllAnchorOptions = {BOTTOMRIGHT, rightList.list, BOTTOMLEFT, -2, arrowAllOffset * -1} -- lower arrow requires negative offset
+]]
 local defaultListSettingsRightList = {
     buttonTemplates = {
         moveButton = {
@@ -243,7 +252,7 @@ local defaultListSettingsRightList = {
             pressedTexture = "/esoui/art/buttons/large_leftarrow_down.dds",
             disabledTexture = "/esoui/art/buttons/large_leftarrow_disabled.dds",
             anchors = {
-                [1] = { TOPLEFT, "$(parent)List", TOPRIGHT, 0, 50 },
+                [1] = { BOTTOMRIGHT, "$(parent)List", BOTTOMLEFT, -2, -10 }, --Offsets will be dynamically changed based on list height -> See _setListBoxDimensions
             },
             dimensions = { x=40, y=40 }
         },
@@ -253,7 +262,7 @@ local defaultListSettingsRightList = {
             pressedTexture = "/LibShifterBox/bin/textures/double_large_leftarrow_down.dds",
             disabledTexture = "/LibShifterBox/bin/textures/double_large_leftarrow_disabled.dds",
             anchors = {
-                [1] = { BOTTOM, "$(parent)Button", TOP, 0, 10 },
+                [1] = { BOTTOMRIGHT, "$(parent)List", BOTTOMLEFT, -2, -50 }, --Offsets will be dynamically changed based on list height -> See _setListBoxDimensions
             },
             dimensions = { x=40, y=40 }
         },
@@ -291,6 +300,7 @@ local defaultSettings = {
 
 -- KNOWN ISSUES
 -- TODO: Calling UnselectAllEntries() when mouse-over causes text to become white
+
 
 -- =================================================================================================================
 -- == SHIFTERBOX PRIVATE FUNCTIONS == --
@@ -514,7 +524,6 @@ end
 
 local function validateCustomSettingEntryNow(customSettingsSection, validationType, validationData, defaultSettingsForCustomSettings, customSettings, parentTabBreadcrumbsForSettingsUpdate)
     local validationFunc = validationTypeToFunc[validationType]
-    local result = false
     if type(validationFunc) == "function" then
         local name = validationData.name
         if lib.doDebug then
@@ -555,11 +564,16 @@ local function recursiveleyValidateCustomSettingsEntriesNow(customSettingsSectio
             --Loop a subtable with provided validationEntries, and validate each of them?
             local validationSubTableEntries = (validationType == "table" and validationData.validationEntries) or nil
             if not ZO_IsTableEmpty(validationSubTableEntries) then
+                --Add new parentTab layer so variables can be properly found in the subtables
                 tins(parentTabBreadcrumbs, validationData.name)
                 recursiveleyValidateCustomSettingsEntriesNow(customSettingsSection, validationSubTableEntries, defaultSettingsForCustomSettings, customSettings)
+                --Remove last addeded parentTab layer again so variables can be properly found
+                local numEntries = #parentTabBreadcrumbs
+                if numEntries > 0 then
+                    parentTabBreadcrumbs[numEntries] = nil
+                end
             else
                 validateCustomSettingEntryNow(customSettingsSection, validationType, validationData, defaultSettingsForCustomSettings, customSettings, parentTabBreadcrumbs)
-                parentTabBreadcrumbs = {}
             end
         end
     end
@@ -626,6 +640,129 @@ local function _getShifterBoxChildControls(obj)
     return control, leftControl, leftHeadersControl, leftListControl, fromLeftButtonControl, fromLeftAllButtonControl, leftSearchButtonControl, rightControl, rightHeadersControl, rightListControl, fromRightButtonControl, fromRightAllButtonControl, rightSearchButtonControl
 end
 
+local function getAnchorParentAndChild(buttonCtrl, relativeTo)
+    local parentCtrl = buttonCtrl:GetParent()
+    if parentCtrl ~= nil then
+        if type(relativeTo) == "string" then
+            if relativeTo == "$(parent)" then
+                return parentCtrl
+            elseif strfind(relativeTo, "$(parent)", 0, true) == 1 then
+                --Get the suffix after the ) -> childControl name of parent
+                local childName = string.match(relativeTo, "%$%(parent%)(.*)")
+                if childName ~= nil and childName ~= "" then
+                    return parentCtrl:GetNamedChild(childName)
+                end
+            end
+        end
+    end
+    return relativeTo
+end
+
+local function applyAnchors(buttonCtrl, anchorsData, arrowOffset)
+d("[LSB]applyAnchors - name: " .. tos(buttonCtrl:GetName()) .. "; arrowOffset: " ..tos(arrowOffset))
+    if not ZO_IsTableEmpty(anchorsData) then
+        for idx, anchorData in ipairs(anchorsData) do
+            if idx == 1 then
+                buttonCtrl:ClearAnchors()
+            end
+
+            local myPoint, relativeTo, relativePoint, offsetX, offsetY = unpack(anchorData)
+            relativeTo = getAnchorParentAndChild(buttonCtrl, relativeTo)
+
+            if arrowOffset ~= nil and arrowOffset ~= 0 then
+                offsetY = arrowOffset
+            end
+d(">anchorIndex: " ..tos(idx) .. "; myPoint: " .. tos(myPoint) .. "; relativeTo: " .. tos((relativeTo ~= nil and relativeTo.GetName and relativeTo:GetName()) or "nil") .. "; relativePoint: " ..tos(relativePoint) .. "; x: " ..tos(offsetX) .."; y: " ..tos(offsetY))
+            buttonCtrl:SetAnchor(myPoint, relativeTo, relativePoint, offsetX, offsetY)
+        end
+    end
+end
+
+local function applyButtonTemplate(buttonCtrl, buttonTemplateData, arrowOffset)
+d("[LSB]applyButtonTemplate - name: " .. tos(buttonCtrl:GetName()) .. "; arrowOffset: " ..tos(arrowOffset))
+    if buttonTemplateData == nil then return end
+
+    --Anchors
+    applyAnchors(buttonCtrl, buttonTemplateData.anchors, arrowOffset)
+
+    --Dimensions
+    local dimensionsData = buttonTemplateData.dimensions
+    if dimensionsData ~= nil then
+        dimensionsData.x = zo_clamp(dimensionsData.x or 32, 4, 1000)
+        dimensionsData.y = zo_clamp(dimensionsData.y or 32, 4, 1000)
+d(">dimensions x: " .. tos(dimensionsData.x) .. "; y: " ..tos(dimensionsData.y))
+        buttonCtrl:SetDimensions(dimensionsData.x, dimensionsData.y )
+    end
+
+    --Textures
+    if buttonTemplateData.normalTexture then
+d(">normalTexture: " .. tos(buttonTemplateData.normalTexture))
+        buttonCtrl:SetNormalTexture(buttonTemplateData.normalTexture)
+    end
+    if buttonTemplateData.mouseOverTexture then
+d(">mouseOverTexture: " .. tos(buttonTemplateData.mouseOverTexture))
+        buttonCtrl:SetMouseOverTexture(buttonTemplateData.mouseOverTexture)
+    end
+    if buttonTemplateData.pressedTexture then
+d(">pressedTexture: " .. tos(buttonTemplateData.pressedTexture))
+        buttonCtrl:SetPressedTexture(buttonTemplateData.pressedTexture)
+    end
+    if buttonTemplateData.disabledTexture then
+d(">disabledTexture: " .. tos(buttonTemplateData.disabledTexture))
+        buttonCtrl:SetDisabledTexture(buttonTemplateData.disabledTexture)
+    end
+end
+
+local function _updateAllButtonTemplates(obj, arrowOffset, arrowAllOffset)
+    local _, _, _, _, fromLeftButtonControl, fromLeftAllButtonControl, leftSearchButtonControl, _, _, _, fromRightButtonControl, fromRightAllButtonControl, rightSearchButtonControl = _getShifterBoxChildControls(obj)
+    local shifterBoxSettings = obj.shifterBoxSettings
+    local leftListSettings = shifterBoxSettings.leftList
+    local rightListSettings = shifterBoxSettings.rightList
+
+    arrowOffset = arrowOffset or 0
+    arrowAllOffset = arrowAllOffset or 0
+
+    -- set the button textures, anchors, offsets and sizes
+    local leftListButtonTemplateSettings =  leftListSettings.buttonTemplates
+d("!!!!! LEFT LIST BUTTONS !!!!!")
+    applyButtonTemplate(fromLeftButtonControl,      leftListButtonTemplateSettings.moveButton,      arrowOffset)
+    applyButtonTemplate(fromLeftAllButtonControl,   leftListButtonTemplateSettings.moveAllButton,   arrowAllOffset)
+    applyButtonTemplate(leftSearchButtonControl,    leftListButtonTemplateSettings.searchButton)
+
+    local rightListButtonTemplateSettings = rightListSettings.buttonTemplates
+d("!!!!! RIGHT LIST bUTTONS !!!!!")
+    applyButtonTemplate(fromRightButtonControl,     rightListButtonTemplateSettings.moveButton,     arrowOffset * -1)
+    applyButtonTemplate(fromRightAllButtonControl,  rightListButtonTemplateSettings.moveAllButton,  arrowAllOffset * -1)
+    applyButtonTemplate(rightSearchButtonControl,   rightListButtonTemplateSettings.searchButton)
+end
+
+local function _getListBoxWidthAndArrowOffset(width, height)
+    -- width must be at least three times the space between the listBoxes
+    if width < (3 * LIST_SPACING) then width = (3 * LIST_SPACING) end
+    -- the width of a listBox is the total width minus the spacing divided by two
+    local singleListWidth = (width - LIST_SPACING) / 2
+    -- get the "free height" that is not required by the arrows
+    local freeHeight = height - (4 * ARROW_SIZE)
+    -- the offset of the arrow is 2/4th of the remaining height plus the height of the arrow
+    local arrowOffset = ARROW_SIZE + (freeHeight / 5 * 2)
+    -- the offset of the all-arrow is 1/5th of the remaining height
+    local arrowAllOffset = freeHeight / 5
+    return singleListWidth, arrowOffset, arrowAllOffset
+end
+
+local function _setListBoxDimensions(obj, list, width, height)
+    if lib.doDebug then d("[LSB]_setListBoxDimensions - width: " ..tos(width) .. ", height: " ..tos(height)) end
+    -- height must be at least 4x the height of the arrow buttons, so that all 4 buttons can show properly
+    if height < 4 * ARROW_SIZE then height = 4 * ARROW_SIZE end
+    local singleListWidth, arrowOffset, arrowAllOffset = _getListBoxWidthAndArrowOffset(width, height)
+    local headerHeight = obj.headerHeight
+
+    _updateAllButtonTemplates(obj, arrowOffset, arrowAllOffset)
+
+    list:SetCustomDimensions(singleListWidth, height, headerHeight)
+    list:Refresh()
+end
+
 local function _initShifterBoxControls(obj)
     local _, _, leftHeadersControl, leftListControl, fromLeftButtonControl, fromLeftAllButtonControl, leftSearchButtonControl, _, rightHeadersControl, rightListControl, fromRightButtonControl, fromRightAllButtonControl, rightSearchButtonControl = _getShifterBoxChildControls(obj)
     local shifterBoxSettings = obj.shifterBoxSettings
@@ -665,67 +802,6 @@ local function _initShifterBoxControls(obj)
         end
     end
 
-    local function getAnchorParentAndChild(buttonCtrl, relativeTo)
-        local parentCtrl = buttonCtrl:GetParent()
-        if parentCtrl ~= nil then
-            if type(relativeTo) == "string" then
-                if relativeTo == "$(parent)" then
-                    return parentCtrl
-                elseif strfind(relativeTo, "$(parent)", 0, true) == 1 then
-                    --Get the suffix after the ) -> childControl name of parent
-                    local childName = string.match(relativeTo, "%$%(parent%)(.*)")
-                    if childName ~= nil and childName ~= "" then
-                        return parentCtrl:GetNamedChild(childName)
-                    end
-                end
-            end
-        end
-        return relativeTo
-    end
-
-    local function applyAnchors(buttonCtrl, anchorsData)
-        if not ZO_IsTableEmpty(anchorsData) then
-            for idx, anchorData in ipairs(anchorsData) do
-                if idx == 1 then
-                    buttonCtrl:ClearAnchors()
-                end
-
-                local myPoint, relativeTo, relativePoint, offsetX, offsetY = unpack(anchorData)
-                relativeTo = getAnchorParentAndChild(buttonCtrl, relativeTo)
-                buttonCtrl:SetAnchor(myPoint, relativeTo, relativePoint, offsetX, offsetY)
-            end
-        end
-    end
-
-    local function applyButtonTemplate(buttonCtrl, buttonTemplateData)
-        if buttonTemplateData == nil then return end
-
-        --Anchors
-        applyAnchors(buttonCtrl, buttonTemplateData.anchors)
-
-        --Dimensions
-        local dimensionsData = buttonTemplateData.dimensions
-        if dimensionsData ~= nil then
-            dimensionsData.x = dimensionsData.x or 32
-            dimensionsData.y = dimensionsData.y or 32
-            buttonCtrl:SetDimensions(dimensionsData.x, dimensionsData.y )
-        end
-
-        --Textures
-        if buttonTemplateData.normalTexture then
-            buttonCtrl:SetNormalTexture(buttonTemplateData.normalTexture)
-        end
-        if buttonTemplateData.mouseOverTexture then
-            buttonCtrl:SetMouseOverTexture(buttonTemplateData.mouseOverTexture)
-        end
-        if buttonTemplateData.pressedTexture then
-            buttonCtrl:SetPressedTexture(buttonTemplateData.pressedTexture)
-        end
-        if buttonTemplateData.disabledTexture then
-            buttonCtrl:SetDisabledTexture(buttonTemplateData.disabledTexture)
-        end
-    end
-
     -- initialise the headers
     local leftListSettings = shifterBoxSettings.leftList
     local rightListSettings = shifterBoxSettings.rightList
@@ -735,16 +811,7 @@ local function _initShifterBoxControls(obj)
     initListFrames(leftListControl)
     initListFrames(rightListControl)
 
-    -- set the button textures, anchors, offsets and sizes
-    local leftListButtonTemplateSettings =  leftListSettings.buttonTemplates
-    applyButtonTemplate(fromLeftButtonControl,      leftListButtonTemplateSettings.moveButton)
-    applyButtonTemplate(fromLeftAllButtonControl,   leftListButtonTemplateSettings.moveAllButton)
-    applyButtonTemplate(leftSearchButtonControl,    leftListButtonTemplateSettings.searchButton)
-
-    local rightListButtonTemplateSettings = rightListSettings.buttonTemplates
-    applyButtonTemplate(fromRightButtonControl,     rightListButtonTemplateSettings.moveButton)
-    applyButtonTemplate(fromRightAllButtonControl,  rightListButtonTemplateSettings.moveAllButton)
-    applyButtonTemplate(rightSearchButtonControl,   rightListButtonTemplateSettings.searchButton)
+    _updateAllButtonTemplates(obj, nil, nil)
 
     -- initialize the buttons in disabled state
     fromLeftButtonControl:SetState(BSTATE_DISABLED, true)
@@ -809,31 +876,6 @@ local function _initShifterBoxHandlers(obj)
     fromLeftAllButtonControl:SetHandler("OnClicked",    toRightAllButtonClicked)
     fromRightButtonControl:SetHandler("OnClicked",      toLeftButtonClicked)
     fromRightAllButtonControl:SetHandler("OnClicked",   toLeftAllButtonClicked)
-end
-
-local function _getListBoxWidthAndArrowOffset(width, height)
-    -- widh must be at least three times the space between the listBoxes
-    if width < (3 * LIST_SPACING) then width = (3 * LIST_SPACING) end
-    -- the width of a listBox is the total width minus the spacing divided by two
-    local singleListWidth = (width - LIST_SPACING) / 2
-    -- get the "free height" that is not required by the arrows
-    local freeHeight = height - (4 * ARROW_SIZE)
-    -- the offset of the arrow is 2/4th of the remaining height plus the height of the arrow
-    local arrowOffset = ARROW_SIZE + (freeHeight / 5 * 2)
-    -- the offset of the all-arrow is 1/5th of the remaining height
-    local arrowAllOffset = freeHeight / 5
-    return singleListWidth, arrowOffset, arrowAllOffset
-end
-
-local function _setListBoxDimensions(list, singleListWidth, height, headerHeight, buttonAnchorOptions, buttonAllAnchorOptions)
-    local buttonControl = list.control:GetNamedChild("Button")
-    buttonControl:ClearAnchors()
-    buttonControl:SetAnchor(unpack(buttonAnchorOptions))
-    local buttonAllControl = list.control:GetNamedChild("AllButton")
-    buttonAllControl:ClearAnchors()
-    buttonAllControl:SetAnchor(unpack(buttonAllAnchorOptions))
-    list:SetCustomDimensions(singleListWidth, height, headerHeight)
-    list:Refresh()
 end
 
 -- ---------------------------------------------------------------------------------------------------------------------
@@ -1101,7 +1143,7 @@ local function _autoScroll(shifterBox)
     local controlBelowMouse = moc()
     if not controlBelowMouse or not controlBelowMouse.GetParent or controlBelowMouse:GetParent() ~= contents then return end
     local isValid, point, relTo, relPoint, offsetX, offsetY = controlBelowMouse:GetAnchor(0)
-    local libShifterBoxRowHeight = otherSideShifterBoxList.rowHeight or defaultListSettings.rowHeight
+    local libShifterBoxRowHeight = otherSideShifterBoxList.rowHeight or defaultListSettingsAllLists.rowHeight
     local libShifterBoxScrollArea = libShifterBoxRowHeight * 1.5
     local scrollValue
     if offsetY < 0 or (offsetY >= 0 and offsetY <= libShifterBoxScrollArea) then
@@ -1918,18 +1960,8 @@ end
 -- @param height - the height for the whole shifterBox (incl. headers if applicable)
 function ShifterBox:SetDimensions(width, height)
     assert(type(width) == "number" and type(height) == "number", _errorText("width and height must be numeric values!"))
-    -- height must be at least 4x the height of the arrows
-    if height < 4 * ARROW_SIZE then height = 4 * ARROW_SIZE end
-    local singleListWidth, arrowOffset, arrowAllOffset = _getListBoxWidthAndArrowOffset(width, height)
-    local headerHeight = self.headerHeight
-    local leftList = self.leftList
-    local rightList = self.rightList
-    local leftButtonAnchorOptions = {TOPLEFT, leftList.list, TOPRIGHT, 0, arrowOffset}
-    local leftButtonAllAnchorOptions = {TOPLEFT, leftList.list, TOPRIGHT, 0, arrowAllOffset}
-    local rightButtonAnchorOptions = {BOTTOMRIGHT, rightList.list, BOTTOMLEFT, -2, arrowOffset * -1} -- lower arrow requires negative offset
-    local rightButtonAllAnchorOptions = {BOTTOMRIGHT, rightList.list, BOTTOMLEFT, -2, arrowAllOffset * -1} -- lower arrow requires negative offset
-    _setListBoxDimensions(leftList, singleListWidth, height, self.headerHeight, leftButtonAnchorOptions, leftButtonAllAnchorOptions)
-    _setListBoxDimensions(rightList, singleListWidth, height, self.headerHeight, rightButtonAnchorOptions, rightButtonAllAnchorOptions)
+    _setListBoxDimensions(self, self.leftList,   width,  height)
+    _setListBoxDimensions(self, self.rightList,  width,  height)
 end
 
 function ShifterBox:SetEnabled(enabled)
@@ -2115,7 +2147,7 @@ function ShifterBox:UpdateCursorTLC(isHidden, draggedControl)
     CURSORTLC.label:ClearAnchors()
     local draggedData = self.currentDragData
     if not isHidden and draggedData ~= nil then
-        local minLabelHeight = defaultListSettings.rowHeight
+        local minLabelHeight = defaultListSettingsAllLists.rowHeight
         local maxLabelWidth = 400
         local maxLabelHeight = 80
 
