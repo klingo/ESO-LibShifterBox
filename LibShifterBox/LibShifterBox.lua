@@ -659,7 +659,7 @@ local function getAnchorParentAndChild(buttonCtrl, relativeTo)
 end
 
 local function applyAnchors(buttonCtrl, anchorsData, arrowOffset)
-d("[LSB]applyAnchors - name: " .. tos(buttonCtrl:GetName()) .. "; arrowOffset: " ..tos(arrowOffset))
+    if lib.doDebug then d("[LSB]applyAnchors - name: " .. tos(buttonCtrl:GetName()) .. "; arrowOffset: " ..tos(arrowOffset)) end
     if not ZO_IsTableEmpty(anchorsData) then
         for idx, anchorData in ipairs(anchorsData) do
             if idx == 1 then
@@ -672,14 +672,14 @@ d("[LSB]applyAnchors - name: " .. tos(buttonCtrl:GetName()) .. "; arrowOffset: "
             if arrowOffset ~= nil and arrowOffset ~= 0 then
                 offsetY = arrowOffset
             end
-d(">anchorIndex: " ..tos(idx) .. "; myPoint: " .. tos(myPoint) .. "; relativeTo: " .. tos((relativeTo ~= nil and relativeTo.GetName and relativeTo:GetName()) or "nil") .. "; relativePoint: " ..tos(relativePoint) .. "; x: " ..tos(offsetX) .."; y: " ..tos(offsetY))
+            if lib.doDebug then d(">anchorIndex: " ..tos(idx) .. "; myPoint: " .. tos(myPoint) .. "; relativeTo: " .. tos((relativeTo ~= nil and relativeTo.GetName and relativeTo:GetName()) or "nil") .. "; relativePoint: " ..tos(relativePoint) .. "; x: " ..tos(offsetX) .."; y: " ..tos(offsetY)) end
             buttonCtrl:SetAnchor(myPoint, relativeTo, relativePoint, offsetX, offsetY)
         end
     end
 end
 
 local function applyButtonTemplate(buttonCtrl, buttonTemplateData, arrowOffset)
-d("[LSB]applyButtonTemplate - name: " .. tos(buttonCtrl:GetName()) .. "; arrowOffset: " ..tos(arrowOffset))
+    if lib.doDebug then d("[LSB]applyButtonTemplate - name: " .. tos(buttonCtrl:GetName()) .. "; arrowOffset: " ..tos(arrowOffset)) end
     if buttonTemplateData == nil then return end
 
     --Anchors
@@ -690,25 +690,25 @@ d("[LSB]applyButtonTemplate - name: " .. tos(buttonCtrl:GetName()) .. "; arrowOf
     if dimensionsData ~= nil then
         dimensionsData.x = zo_clamp(dimensionsData.x or 32, 4, 1000)
         dimensionsData.y = zo_clamp(dimensionsData.y or 32, 4, 1000)
-d(">dimensions x: " .. tos(dimensionsData.x) .. "; y: " ..tos(dimensionsData.y))
+        if lib.doDebug then d(">dimensions x: " .. tos(dimensionsData.x) .. "; y: " ..tos(dimensionsData.y)) end
         buttonCtrl:SetDimensions(dimensionsData.x, dimensionsData.y )
     end
 
     --Textures
     if buttonTemplateData.normalTexture then
-d(">normalTexture: " .. tos(buttonTemplateData.normalTexture))
+        if lib.doDebug then d(">normalTexture: " .. tos(buttonTemplateData.normalTexture)) end
         buttonCtrl:SetNormalTexture(buttonTemplateData.normalTexture)
     end
     if buttonTemplateData.mouseOverTexture then
-d(">mouseOverTexture: " .. tos(buttonTemplateData.mouseOverTexture))
+        if lib.doDebug then d(">mouseOverTexture: " .. tos(buttonTemplateData.mouseOverTexture)) end
         buttonCtrl:SetMouseOverTexture(buttonTemplateData.mouseOverTexture)
     end
     if buttonTemplateData.pressedTexture then
-d(">pressedTexture: " .. tos(buttonTemplateData.pressedTexture))
+        if lib.doDebug then d(">pressedTexture: " .. tos(buttonTemplateData.pressedTexture)) end
         buttonCtrl:SetPressedTexture(buttonTemplateData.pressedTexture)
     end
     if buttonTemplateData.disabledTexture then
-d(">disabledTexture: " .. tos(buttonTemplateData.disabledTexture))
+        if lib.doDebug then d(">disabledTexture: " .. tos(buttonTemplateData.disabledTexture)) end
         buttonCtrl:SetDisabledTexture(buttonTemplateData.disabledTexture)
     end
 end
@@ -724,13 +724,13 @@ local function _updateAllButtonTemplates(obj, arrowOffset, arrowAllOffset)
 
     -- set the button textures, anchors, offsets and sizes
     local leftListButtonTemplateSettings =  leftListSettings.buttonTemplates
-d("!!!!! LEFT LIST BUTTONS !!!!!")
+    if lib.doDebug then d("!!!!! LEFT LIST BUTTONS !!!!!") end
     applyButtonTemplate(fromLeftButtonControl,      leftListButtonTemplateSettings.moveButton,      arrowOffset)
     applyButtonTemplate(fromLeftAllButtonControl,   leftListButtonTemplateSettings.moveAllButton,   arrowAllOffset)
     applyButtonTemplate(leftSearchButtonControl,    leftListButtonTemplateSettings.searchButton)
 
     local rightListButtonTemplateSettings = rightListSettings.buttonTemplates
-d("!!!!! RIGHT LIST bUTTONS !!!!!")
+    if lib.doDebug then d("!!!!! RIGHT LIST bUTTONS !!!!!") end
     applyButtonTemplate(fromRightButtonControl,     rightListButtonTemplateSettings.moveButton,     arrowOffset * -1)
     applyButtonTemplate(fromRightAllButtonControl,  rightListButtonTemplateSettings.moveAllButton,  arrowAllOffset * -1)
     applyButtonTemplate(rightSearchButtonControl,   rightListButtonTemplateSettings.searchButton)
@@ -1073,7 +1073,7 @@ local function _setMouseCursor(cursorName)
 end
 
 local function _getCursorTLC()
---d(">_getCursorTLC")
+    if lib.doDebug then d(">_getCursorTLC") end
     CURSORTLC = CURSORTLC or WM:GetControlByName(CURSOR_TLC_NAME, nil)
     if not CURSORTLC then return end
     CURSORTLC.label = CURSORTLC.label or GetControl(CURSORTLC, "Label")
@@ -1091,14 +1091,14 @@ local function _getDraggedDataAndTarget(shifterBox)
 end
 
 local function _clearDragging(shifterBox)
---d(">_clearDragging")
+    if lib.doDebug then d(">_clearDragging") end
     shifterBox.currentDragData = nil
     shifterBox.draggingUpdateTime = nil
     shifterBox.draggingMouseButtonPressed = nil
 end
 
 local function _disableOnUpdateHandler(shifterBox)
---d(">_disableOnUpdateHandlerAndResetMouseCursor")
+    if lib.doDebug then d(">_disableOnUpdateHandlerAndResetMouseCursor") end
     EM:UnregisterForEvent(EVENT_HANDLER_NAMESPACE .. GLOBAL_MOUSE_DOWN, EVENT_GLOBAL_MOUSE_DOWN)
     EM:UnregisterForEvent(EVENT_HANDLER_NAMESPACE .. GLOBAL_MOUSE_UP,   EVENT_GLOBAL_MOUSE_UP)
     shifterBox.shifterBoxControl:SetHandler("OnUpdate", nil)
@@ -1108,13 +1108,13 @@ local function _disableOnUpdateHandler(shifterBox)
 end
 
 local function _abortDragging(shifterBox)
---d(">_abortDragging")
+    if lib.doDebug then d(">_abortDragging") end
     _disableOnUpdateHandler(shifterBox)
     _clearDragging(shifterBox)
 end
 
 local function _checkIfDraggedAndDisableUpdateHandler(lamPanel)
---d("_checkIfDraggedAndDisableUpdateHandler")
+    if lib.doDebug then d("_checkIfDraggedAndDisableUpdateHandler") end
     if CURSORTLC == nil then _getCursorTLC() end
     if not CURSORTLC then return end
     local shifterBox = CURSORTLC.shifterBox
@@ -1124,14 +1124,14 @@ local function _checkIfDraggedAndDisableUpdateHandler(lamPanel)
 end
 
 local function _resetDragData(shifterBox)
---d(">>resetDragData")
+    if lib.doDebug then d(">>resetDragData") end
     _abortDragging(shifterBox)
     _setMouseCursor(MOUSECURSOR_DONOTCATRE)
 end
 
 --Auto scroll the orderListBox upon dragging an entry to the top/bottom of the list
 local function _autoScroll(shifterBox)
---d(">autoscroll")
+    if lib.doDebug then d(">autoscroll") end
     local dragData, sourceListControl, otherSideShifterBoxList = _getDraggedDataAndTarget(shifterBox)
     if not dragData or not sourceListControl or not otherSideShifterBoxList then
         _resetDragData(shifterBox)
@@ -1154,7 +1154,7 @@ local function _autoScroll(shifterBox)
         scrollValue = libShifterBoxRowHeight * 2
     end
     if scrollValue == nil or scrollValue == 0 then return end
---d(">scrollValue: " ..tos(scrollValue))
+    if lib.doDebug then d(">scrollValue: " ..tos(scrollValue)) end
     ZO_ScrollList_ScrollRelative(otherSideShifterBoxList, scrollValue, nil, true)
 end
 
@@ -1721,7 +1721,7 @@ end
 
 --Drag & drop functions
 function ShifterBoxList:OnGlobalMouseDownDuringDrag(eventId, mouseButton, ctrl, alt, shift, command)
---d("[OrderListBox]OnGlobalMouseDownDuringDrag - draggedKey: " ..tos(self.shifterBox.currentDragData.key) .. ", mouseButton: " ..tos(mouseButton))
+    if lib.doDebug then d("[OrderListBox]OnGlobalMouseDownDuringDrag - draggedKey: " ..tos(self.shifterBox.currentDragData.key) .. ", mouseButton: " ..tos(mouseButton)) end
     if not self.enabled or not self.shifterBoxSettings.dragDropEnabled then return end
     if self.shifterBox.currentDragData then
         self.shifterBox.draggingMouseButtonPressed = mouseButton
@@ -1729,15 +1729,15 @@ function ShifterBoxList:OnGlobalMouseDownDuringDrag(eventId, mouseButton, ctrl, 
 end
 
 function ShifterBoxList:OnGlobalMouseUpDuringDrag(eventId, mouseButton, ctrl, alt, shift, command)
---d("[OrderListBox]OnGlobalMouseUpDuringDrag - draggedKey: " ..tos(self.shifterBox.currentDragData.key) .. ", mouseButton: " ..tos(mouseButton))
+    if lib.doDebug then d("[OrderListBox]OnGlobalMouseUpDuringDrag - draggedKey: " ..tos(self.shifterBox.currentDragData.key) .. ", mouseButton: " ..tos(mouseButton)) end
     if not self.enabled or not self.shifterBoxSettings.dragDropEnabled then return end
     if mouseButton ~= MOUSE_BUTTON_INDEX_LEFT then
---d("<ABORT due to wrong mouse button!")
+        if lib.doDebug then d("<ABORT due to wrong mouse button!") end
         _resetDragData(self.shifterBox)
     end
     local dragData, sourceListControl, otherSideShifterBox = _getDraggedDataAndTarget(self.shifterBox)
     if not dragData or not sourceListControl or not otherSideShifterBox then
---d(">drag data or source list or other side's list of shifterbox is missing")
+        if lib.doDebug then  d(">drag data or source list or other side's list of shifterbox is missing") end
         _resetDragData(self.shifterBox)
     end
     --is the control below the mouse, or it's parent, a valid LibShifterBox's other side, e.g left->dragged to right)
@@ -1746,11 +1746,11 @@ function ShifterBoxList:OnGlobalMouseUpDuringDrag(eventId, mouseButton, ctrl, al
     if (not controlBelowMouse or not parentOfMoc or
             (
                     (controlBelowMouse and parentOfMoc) and
-                    (parentOfMoc == sourceListControl or
-                        (parentOfMoc ~= otherSideShifterBox and parentOfMoc ~= otherSideShifterBox.contents))
+                            (parentOfMoc == sourceListControl or
+                                    (parentOfMoc ~= otherSideShifterBox and parentOfMoc ~= otherSideShifterBox.contents))
             )
     ) then
---d(">control below mouse is not supported")
+        if lib.doDebug then d(">control below mouse is not supported") end
         _resetDragData(self.shifterBox)
     end
 end
@@ -1768,7 +1768,7 @@ function ShifterBoxList:DragOnUpdateCallback(draggedControl)
     local gameTimeMS = GetGameTimeMilliseconds()
     local gameTimeDeltaNeeded = 200 --milliseconds
     local draggingUpdateTime = self.shifterBox.draggingUpdateTime
---d("[LibShifterBox]OnUpdate-gameTime: " ..tos(gameTimeMS) .. ", self.draggingUpdateTime: " ..tos(self.draggingUpdateTime))
+    if lib.doDebug then d("[LibShifterBox]OnUpdate-gameTime: " ..tos(gameTimeMS) .. ", self.draggingUpdateTime: " ..tos(self.draggingUpdateTime)) end
     local updateAutoScroll = false
     if draggingUpdateTime == nil then
         self.shifterBox.draggingUpdateTime = gameTimeMS
@@ -1779,14 +1779,14 @@ function ShifterBoxList:DragOnUpdateCallback(draggedControl)
             updateAutoScroll = true
         end
     end
---d(">updateAutoScroll: " .. tos(updateAutoScroll) ..", needed: " ..tos(self.draggingUpdateTime + gameTimeDeltaNeeded))
+    if lib.doDebug then d(">updateAutoScroll: " .. tos(updateAutoScroll) ..", needed: " ..tos(self.draggingUpdateTime + gameTimeDeltaNeeded)) end
     if updateAutoScroll == true then
         _autoScroll(self.shifterBox)
     end
 end
 
 function ShifterBoxList:StartDragging(draggedControl, mouseButton)
---d("StartDragging")
+    if lib.doDebug then d("StartDragging") end
     if not self.enabled or not self.shifterBoxSettings.dragDropEnabled then return end
     if mouseButton ~= MOUSE_BUTTON_INDEX_LEFT then return end
 
@@ -1797,7 +1797,7 @@ function ShifterBoxList:StartDragging(draggedControl, mouseButton)
     --Multiple rows were selected. Is the row we started the drag on also selected?
     --If not: Select it!
     local isSelected = selectedData and selectedData[draggedDataEntry.key] ~= nil
---d("[ShifterBoxList]StartDragging - key: " ..tos(draggedDataEntry.key) .. ", draggedControlKey: " ..tos(draggedControl.key) ..", isSelected: " ..tos(isSelected))
+    if lib.doDebug then d("[ShifterBoxList]StartDragging - key: " ..tos(draggedDataEntry.key) .. ", draggedControlKey: " ..tos(draggedControl.key) ..", isSelected: " ..tos(isSelected)) end
     if not isSelected and selectedData then
         for _, selectedRowData in pairs(selectedData) do
             if draggedDataEntry.key == selectedRowData.key then
@@ -1848,18 +1848,18 @@ end
 
 
 function ShifterBoxList:StopDragging(draggedOnToControl)
---d("ShifterBoxList:StopDragging")
+    if lib.doDebug then d("ShifterBoxList:StopDragging") end
     --Delay so the OnMouseButtonDown/Up handlers fire first
     -->ShifterBoxList:OnGlobalMouseUpDuringDrag will clear teh draggedData if the draggedToControl is not a supported one
     zo_callLater(function()
         local mouseButton = self.shifterBox.draggingMouseButtonPressed
---d("StopDragging - mouseButton: " ..tos(mouseButton) ..", contentType: " ..tos(GetCursorContentType()))
+        if lib.doDebug then d("StopDragging - mouseButton: " ..tos(mouseButton) ..", contentType: " ..tos(GetCursorContentType())) end
         if not self.enabled or not self.shifterBoxSettings.dragDropEnabled then return end
         _disableOnUpdateHandler(self.shifterBox)
         _setMouseCursor(MOUSECURSOR_DONOTCATRE)
 
         if mouseButton and mouseButton == MOUSE_BUTTON_INDEX_LEFT and GetCursorContentType() == MOUSE_CONTENT_EMPTY then
---d("[ShifterBoxList]StopDragging -- from key: " ..tos(self.shifterBox.currentDragData.key) .." to key: " ..tos(draggedOnToControl.key))
+            if lib.doDebug then d("[ShifterBoxList]StopDragging -- from key: " ..tos(self.shifterBox.currentDragData.key) .." to key: " ..tos(draggedOnToControl.key)) end
             local dragData = self.shifterBox.currentDragData
             if dragData then
                 local wasDragSuccessful = false
@@ -2169,7 +2169,7 @@ function ShifterBox:UpdateCursorTLC(isHidden, draggedControl)
             textForLabel = draggedControlText .. "\n" .. draggedAdditionalText
         end
         local textHeight = (draggedAdditionalTextIsGiven == true and (2 * minLabelHeight)) or minLabelHeight
---d(">draggedAdditionalText: " ..tos(draggedAdditionalText) .. ", textWidth: " .. tos(textWidth) .. ", textHeight: " ..tos(textHeight))
+        if lib.doDebug then d(">draggedAdditionalText: " ..tos(draggedAdditionalText) .. ", textWidth: " .. tos(textWidth) .. ", textHeight: " ..tos(textHeight)) end
 
         CURSORTLC.label:SetText(textForLabel)
         CURSORTLC.label:SetWidth(textWidth)
@@ -2180,7 +2180,7 @@ function ShifterBox:UpdateCursorTLC(isHidden, draggedControl)
         local width, height = CURSORTLC.label:GetDimensions()
         if width > maxLabelWidth then width = maxLabelWidth end
         if height > maxLabelHeight then height = maxLabelHeight end
---d(">GuiMouse:isHidden: " ..tos(GuiMouse:IsHidden()) .. ", cursorTLC.width: " ..tos(CURSORTLC:GetWidth()) ..", cursorTLC.height: " ..tos(CURSORTLC:GetHeight()) .. ", text: " ..tos(textForLabel))
+        if lib.doDebug then d(">GuiMouse:isHidden: " ..tos(GuiMouse:IsHidden()) .. ", cursorTLC.width: " ..tos(CURSORTLC:GetWidth()) ..", cursorTLC.height: " ..tos(CURSORTLC:GetHeight()) .. ", text: " ..tos(textForLabel)) end
 
         CURSORTLC:SetDimensionConstraints(width, height, maxLabelWidth, maxLabelHeight)
         CURSORTLC:SetDrawTier(DT_HIGH)
