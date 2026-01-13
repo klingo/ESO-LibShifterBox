@@ -12,7 +12,7 @@ This is a full example of how to use the LibShifterBox.
 ![alt text][shifterbox-example]
 \
 \
-In your `MyAddon.txt` file, make sure you defined LibShifterBox as a dependency (currently using version 000700, change this if a newer version was released):
+In your `MyAddon.txt` (or .addon) file, make sure you defined LibShifterBox as a dependency (currently using version 000700, change this if a newer version was released):
 ```
 ## DependsOn: LibShifterBox>=000700
 ```
